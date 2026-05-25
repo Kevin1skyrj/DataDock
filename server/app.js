@@ -1,12 +1,32 @@
 import express from "express";
+import cors from "cors";
+import { readdir } from "fs/promises";
+
 const port = 4000;
+
 const app = express();
 
-app.use(express.static('storage'));
-app.get('/',(req,res) =>{
-    res.send('Hello World!')
-})
+// Enable CORS
+app.use(cors());
 
-app.listen(port,()=>{
-    console.log(`app listening on port ${port}`);
-})
+// Serve static files from storage folder
+app.use(express.static("storage"));
+
+// Get all files from storage folder
+app.get("/", async (req, res) => {
+  try {
+    const filesList = await readdir("./storage");
+
+    res.json(filesList);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Error reading storage folder",
+    });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`App listening on port ${port}`);
+});
