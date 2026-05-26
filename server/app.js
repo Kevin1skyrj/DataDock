@@ -10,7 +10,14 @@ const app = express();
 app.use(cors());
 
 // Serve static files from storage folder
-app.use(express.static("storage"));
+
+app.use((req,res,next) =>{
+  if(req.query.action === "download"){
+    res.setHeader("Content-Disposition", "attachment");
+  }
+  const serveStatic = express.static('storage');
+  serveStatic(req,res,next);
+})
 
 // Get all files from storage folder
 app.get("/", async (req, res) => {
