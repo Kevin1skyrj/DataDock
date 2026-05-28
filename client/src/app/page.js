@@ -31,9 +31,9 @@ export default function Home() {
 
     const xhr = new XMLHttpRequest();
 
-    xhr.open("POST", URL, true);
+    xhr.open("POST", `${URL}${file.name}`, true);
 
-    xhr.setRequestHeader("filename", file.name);
+    // xhr.setRequestHeader("filename", file.name);
 
     xhr.addEventListener("load", () => {
       console.log(xhr.response);
@@ -52,9 +52,8 @@ export default function Home() {
 
   async function handleDelete(filename) {
     try {
-      const response = await fetch(URL, {
+      const response = await fetch(`${URL}${filename}`, {
         method: "DELETE",
-        body: filename,
       });
 
       const data = await response.text();
@@ -73,7 +72,7 @@ export default function Home() {
 
   async function saveFilename(oldFilename) {
     try {
-      const response = await fetch(URL, {
+      const response = await fetch(`${URL}${oldFilename}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -84,7 +83,7 @@ export default function Home() {
         }),
       });
 
-      const data = await response.text();
+      const data = await response.json();
 
       console.log(data);
 

@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
-import { readdir } from "fs/promises";
+import path from "path";
+
+import { readdir, rename, rm } from "fs/promises";
+import { createWriteStream } from "fs";
 
 const port = 4000;
 
@@ -8,6 +11,7 @@ const app = express();
 
 // Enable CORS
 app.use(cors());
+app.use(express.json());
 
 // Serve static files from storage folder
 
@@ -28,7 +32,19 @@ app.get('/:filename', (req, res) => {
   }
   res.sendFile(`${import.meta.dirname}/storage/${filename}`);
 })
-// Get all files from storage folder
+
+// Create
+app.post("/:filename",(req,res) => {
+  const writeStream = createWriteStream(`./storage/${req.params.filename}`);
+  req.pipe(writeStream);
+  req.on("end", () => {
+    res.json({
+      message: "File uploaded successfully",
+    });
+  });
+})
+
+// Read
 app.get("/", async (req, res) => {
   try {
     const filesList = await readdir("./storage");
@@ -43,6 +59,30 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Update
+app.patch("/:filename", async (req,res) => {
+  const {filename} = req.params;
+  await rename(`./storage/${filename}`, `./storage/${req.body.newFilename}`);
+  res.json({
+    message: "File renamed successfully",
+  });
+})
+
+// Delete
+app.delete("/:filename", async (req,res) => {
+  const {filename} = req.params;
+  const filePath = `./storage/${filename}`;
+  try {
+    await rm(filePath);
+    res.json({
+      message: "File deleted successfully",
+    });
+  } catch (error) {
+    res.status(404).json({
+      message: "File not found",
+    });
+  }
+});
 app.listen(port, () => {
   console.log(`App listening on port ${port}`);
 });
