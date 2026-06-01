@@ -33,8 +33,6 @@ export default function Home() {
 
     xhr.open("POST", `${URL}${file.name}`, true);
 
-    // xhr.setRequestHeader("filename", file.name);
-
     xhr.addEventListener("load", () => {
       console.log(xhr.response);
 
