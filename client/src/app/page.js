@@ -20,9 +20,9 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    getDirectoryItems();
-  }, []);
+  // useEffect(() => {
+  //   getDirectoryItems();
+  // }, []);
 
   async function uploadFile(e) {
     const file = e.target.files[0];
