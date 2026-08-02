@@ -1,0 +1,318 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   DataDock design tokens
+   Palette values are extracted from the finalised Claude Design. The radius and
+   type ladders normalise the design's ad-hoc values into a reusable scale
+   without changing how anything looks.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  /* Type — UI ladder. Rem-based at a 16px root so browser font scaling works. */
+  --text-2xs: 0.625rem; /* 10 */
+  --text-xs: 0.6875rem; /* 11 */
+  --text-sm: 0.75rem; /* 12 */
+  --text-base: 0.8125rem; /* 13 */
+  --text-md: 0.875rem; /* 14 */
+  --text-lg: 0.9375rem; /* 15 */
+  --text-xl: 1rem; /* 16 */
+  --text-2xl: 1.09375rem; /* 17.5 */
+
+  /* Type — display ladder. */
+  --text-display-xs: 1.25rem; /* 20 */
+  --text-display-sm: 1.5rem; /* 24 */
+  --text-display-md: 1.75rem; /* 28 */
+  --text-display-lg: 2.25rem; /* 36 */
+  --text-display-xl: 2.625rem; /* 42 */
+  --text-display-2xl: 2.875rem; /* 46 */
+  --text-display-hero: 4.75rem; /* 76 */
+
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.035em;
+  --tracking-hero: -0.045em;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.08em;
+  --tracking-widest: 0.1em;
+
+  /* Radius — normalised from the design's 2px–19px range. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 19px;
+  --radius-full: 999px;
+
+  /* Easing — lifted verbatim from the design's transitions. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --container-page: 1160px;
+}
+
+@theme inline {
+  --font-sans: var(--font-instrument-sans);
+  --font-heading: var(--font-instrument-sans);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* shadcn semantic surface — mapped onto DataDock values so every generated
+     primitive inherits the product's look with no per-component overrides. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* DataDock-native tokens. `brand` is the switchable accent; shadcn's
+     `accent` stays the subtle hover surface it expects. */
+  --color-bg-deep: var(--bg-deep);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-dim: var(--dim);
+  --color-lit: var(--lit);
+  --color-sheen: var(--sheen);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-glow: var(--brand-glow);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --shadow-elevated: var(--elevation);
+  --shadow-elevated-hover: var(--elevation-hover);
+}
+
+/* --------------------------------- light --------------------------------- */
+
+:root {
+  --background: #fbfbfc;
+  --bg-deep: #ffffff;
+  --foreground: #101215;
+  --surface: rgba(10, 12, 16, 0.022);
+  --surface-2: rgba(10, 12, 16, 0.045);
+  --line: rgba(10, 12, 16, 0.09);
+  --line-2: rgba(10, 12, 16, 0.16);
+  --dim: #6e727b;
+  --lit: rgba(255, 255, 255, 0.9);
+  --sheen: rgba(255, 255, 255, 0.5);
+
+  --card: #ffffff;
+  --card-foreground: #101215;
+  --popover: #ffffff;
+  --popover-foreground: #101215;
+  --secondary: rgba(10, 12, 16, 0.045);
+  --secondary-foreground: #101215;
+  --muted: rgba(10, 12, 16, 0.045);
+  --muted-foreground: #5c6068;
+  --accent: rgba(10, 12, 16, 0.045);
+  --accent-foreground: #101215;
+  --border: rgba(10, 12, 16, 0.09);
+  --input: rgba(10, 12, 16, 0.09);
+
+  --destructive: #dc2626;
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+
+  --elevation: 0 24px 60px -24px rgba(12, 16, 24, 0.16);
+  --elevation-hover: 0 30px 70px -28px rgba(12, 16, 24, 0.22);
+
+  --radius: 12px;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #101215;
+  --sidebar-accent: rgba(10, 12, 16, 0.045);
+  --sidebar-accent-foreground: #101215;
+  --sidebar-border: rgba(10, 12, 16, 0.09);
+}
+
+/* ---------------------------------- dark ---------------------------------- */
+
+.dark {
+  --background: #08090b;
+  --bg-deep: #0d0f12;
+  --foreground: #f2f3f5;
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.075);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --dim: #8a8f9c;
+  --lit: rgba(255, 255, 255, 0.07);
+  --sheen: rgba(255, 255, 255, 0.26);
+
+  --card: #0d0f12;
+  --card-foreground: #f2f3f5;
+  --popover: #0d0f12;
+  --popover-foreground: #f2f3f5;
+  --secondary: rgba(255, 255, 255, 0.06);
+  --secondary-foreground: #f2f3f5;
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: #9497a1;
+  --accent: rgba(255, 255, 255, 0.06);
+  --accent-foreground: #f2f3f5;
+  --border: rgba(255, 255, 255, 0.075);
+  --input: rgba(255, 255, 255, 0.14);
+
+  --destructive: #f87171;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+
+  --elevation: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  --elevation-hover: 0 30px 70px -24px rgba(0, 0, 0, 0.8);
+
+  --sidebar: #0d0f12;
+  --sidebar-foreground: #f2f3f5;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #f2f3f5;
+  --sidebar-border: rgba(255, 255, 255, 0.075);
+}
+
+/* --------------------------------- accents --------------------------------
+   Blue is the design's own pair. Purple and teal are derived by applying the
+   design's measured dark→light shift (L −0.0934, C ×1.0137 in OKLCH) to the
+   accent hues already declared in the design's props. `brand-soft` and
+   `brand-glow` use the design's own colour-mix ratios (15% / 55%).
+   `brand-contrast` is the legible foreground on a filled brand surface.
+   --------------------------------------------------------------------------- */
+
+:root,
+:root[data-accent="blue"] {
+  --brand: #2f6fe0;
+  --brand-soft: rgba(47, 111, 224, 0.09);
+  --brand-glow: rgba(47, 111, 224, 0.4);
+  --brand-contrast: #ffffff;
+}
+
+.dark,
+.dark[data-accent="blue"] {
+  --brand: #4c8dff;
+  --brand-soft: rgba(76, 141, 255, 0.14);
+  --brand-glow: rgba(76, 141, 255, 0.55);
+  --brand-contrast: #ffffff;
+}
+
+:root[data-accent="purple"] {
+  --brand: #553bd6;
+  --brand-soft: rgba(85, 59, 214, 0.09);
+  --brand-glow: rgba(85, 59, 214, 0.4);
+  --brand-contrast: #ffffff;
+}
+
+.dark[data-accent="purple"] {
+  --brand: #6d5cf5;
+  --brand-soft: rgba(109, 92, 245, 0.14);
+  --brand-glow: rgba(109, 92, 245, 0.55);
+  --brand-contrast: #ffffff;
+}
+
+/* Teal is light enough that white text on it measures 2.30:1 (dark) and
+   3.22:1 (light) — both illegible. Near-black lifts those to 8.65:1 and
+   6.20:1 while keeping the hue the design specified. */
+:root[data-accent="teal"] {
+  --brand: #00a289;
+  --brand-soft: rgba(0, 162, 137, 0.09);
+  --brand-glow: rgba(0, 162, 137, 0.4);
+  --brand-contrast: #08090b;
+}
+
+.dark[data-accent="teal"] {
+  --brand: #2fbfa5;
+  --brand-soft: rgba(47, 191, 165, 0.14);
+  --brand-glow: rgba(47, 191, 165, 0.55);
+  --brand-contrast: #08090b;
+}
+
+/* The brand drives shadcn's primary + focus ring, so generated primitives
+   follow the accent switch automatically. */
+:root,
+.dark {
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-contrast);
+  --ring: var(--brand);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-contrast);
+  --sidebar-ring: var(--brand);
+}
+
+/* ---------------------------------- base ---------------------------------- */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground text-base antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Keyboard users get a visible ring; pointer users do not. */
+  :focus-visible {
+    @apply outline-brand outline-2 outline-offset-2;
+  }
+
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Progress indicators are exempt: a frozen spinner reads as a hung
+     interface, which is worse than the motion it avoids. Attribute
+     selectors outrank the universal rule above, so this wins. */
+  [data-motion="loop"] {
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
