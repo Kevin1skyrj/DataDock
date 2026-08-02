@@ -303,6 +303,76 @@
   }
 }
 
+/* ------------------------------- motion ----------------------------------
+   Entrance animations need their targets to start hidden, but hiding them in
+   plain CSS would blank the page whenever JavaScript fails. These initial
+   states are gated behind `data-motion="ready"`, which only the boot script
+   sets — and which it withholds from anyone who asked for reduced motion.
+   GSAP animates the elements back to rest and then clears the properties.
+   --------------------------------------------------------------------------- */
+
+[data-motion="ready"] [data-animate="word"] {
+  /* Deliberately no opacity: Chrome discounts zero-opacity elements when
+     measuring LCP, and the headline is this page's LCP element. */
+  transform: translateY(110%);
+  filter: blur(10px);
+}
+
+[data-motion="ready"] [data-animate="rise"] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+[data-motion="ready"] [data-animate="cta"] {
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+}
+
+[data-motion="ready"] [data-animate="glow"] {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+@keyframes dd-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -22px, 0) scale(1.06);
+  }
+}
+
+@keyframes dd-drift-alt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  50% {
+    transform: translate3d(-24px, 16px, 0) scale(1);
+  }
+}
+
+@keyframes dd-sheen {
+  0% {
+    transform: translateX(-130%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(240%) skewX(-12deg);
+  }
+}
+
+/* Tiled fractal noise. Large dark gradients band visibly on 8-bit displays;
+   a couple of percent of noise dithers the steps away. */
+.dd-noise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

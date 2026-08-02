@@ -1,7 +1,7 @@
 import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
 
+import { bootScript } from "@/lib/boot-script";
 import { AppProviders } from "@/providers/app-providers";
-import { accentNoFlashScript } from "@/providers/accent-provider";
 
 import "./globals.css";
 
@@ -41,10 +41,9 @@ export default function RootLayout({ children }) {
       className={`${instrumentSans.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh">
-        {/* Runs synchronously during HTML parsing, before first paint, so a
-            stored accent never flashes through as the default. next/script's
+        {/* Synchronous by design — see lib/boot-script.js. next/script's
             beforeInteractive defers into __next_s, which is too late. */}
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: accentNoFlashScript }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: bootScript }} />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

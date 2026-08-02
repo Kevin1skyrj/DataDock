@@ -4,15 +4,8 @@ import { createContext, useCallback, useContext, useMemo, useSyncExternalStore }
 
 import { ACCENT_IDS, ACCENT_STORAGE_KEY, DEFAULT_ACCENT } from "@/constants/accents";
 
-const AccentContext = createContext(null);
 
-/**
- * Runs before paint so a stored accent never flashes through as blue.
- * Mirrors how next-themes avoids the same problem for light/dark.
- */
-export const accentNoFlashScript = `(function(){try{var a=localStorage.getItem("${ACCENT_STORAGE_KEY}");if(${JSON.stringify(
-  ACCENT_IDS,
-)}.indexOf(a)>-1){document.documentElement.dataset.accent=a}}catch(e){}})();`;
+const AccentContext = createContext(null);
 
 /**
  * The accent lives on `<html data-accent>`, written before hydration by the
