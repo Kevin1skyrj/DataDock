@@ -91,6 +91,7 @@
   /* DataDock-native tokens. `brand` is the switchable accent; shadcn's
      `accent` stays the subtle hover surface it expects. */
   --color-bg-deep: var(--bg-deep);
+  --color-overlay: var(--overlay);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-line: var(--line);
@@ -115,6 +116,9 @@
 :root {
   --background: #fbfbfc;
   --bg-deep: #ffffff;
+  /* Floating surfaces — dialogs, dropdowns, tooltips, popovers. The design
+     lifts these slightly off the page so they read as a separate plane. */
+  --overlay: #ffffff;
   --foreground: #101215;
   --surface: rgba(10, 12, 16, 0.022);
   --surface-2: rgba(10, 12, 16, 0.045);
@@ -159,6 +163,7 @@
 .dark {
   --background: #08090b;
   --bg-deep: #0d0f12;
+  --overlay: color-mix(in oklab, #0d0f12 94%, #f2f3f5);
   --foreground: #f2f3f5;
   --surface: rgba(255, 255, 255, 0.035);
   --surface-2: rgba(255, 255, 255, 0.06);

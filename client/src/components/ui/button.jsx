@@ -84,10 +84,16 @@ export function Button({
   const isNativeButton =
     nativeButton ?? (isValidElement(render) ? render.type === "button" : true);
 
+  // A control that navigates should be announced as a link, not a button.
+  // Base UI defaults non-native targets to role="button", so anything with an
+  // href gets its native link semantics put back.
+  const isLink = isValidElement(render) && render.props?.href != null;
+
   return (
     <ButtonPrimitive
       render={render}
       nativeButton={isNativeButton}
+      role={isLink ? "link" : undefined}
       disabled={isDisabled}
       // Keeps the button focused while a submit is in flight; without this the
       // focus ring jumps to <body> the moment the button disables itself.

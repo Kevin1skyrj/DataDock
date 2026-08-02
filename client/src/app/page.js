@@ -1,9 +1,30 @@
 "use client";
 
-import { ArrowRight, Trash2, Upload } from "lucide-react";
+import { ArrowRight, Search, Trash2, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Kbd } from "@/components/ui/kbd";
 import { ACCENTS } from "@/constants/accents";
 import { useMounted } from "@/hooks/use-mounted";
 import { useAccent } from "@/providers/accent-provider";
@@ -108,6 +129,160 @@ export default function FoundationPage() {
             Rendered as anchor
             <ArrowRight />
           </Button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6 rounded-xl border border-line bg-surface p-6">
+        <p className="text-display-xs font-semibold tracking-tight">Input</p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input placeholder="Small" size="sm" />
+          <Input placeholder="Medium (default)" />
+          <Input placeholder="Large" size="lg" />
+          <Input placeholder="Search files and folders" startIcon={<Search />} />
+          <Input placeholder="Disabled" disabled />
+          <Input placeholder="Invalid" invalid defaultValue="not-an-email" />
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg border border-line bg-bg-deep px-3">
+          <Search className="size-4 shrink-0 text-dim" />
+          <Input variant="bare" placeholder="Bare variant, inside its own container" />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Input placeholder="Aligns with buttons" size="sm" className="w-56" />
+          <Button size="sm" variant="secondary">
+            Toolbar action
+          </Button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6 rounded-xl border border-line bg-surface p-6">
+        <p className="text-display-xs font-semibold tracking-tight">Kbd &amp; Badge</p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Kbd>⌘K</Kbd>
+          <span className="flex items-center gap-1">
+            <Kbd variant="key">⌘</Kbd>
+            <Kbd variant="key">K</Kbd>
+          </span>
+          <Kbd variant="bare">↑↓ navigate</Kbd>
+          <Input
+            placeholder="Search everything"
+            startIcon={<Search />}
+            endSlot={<Kbd>⌘K</Kbd>}
+            className="w-72"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant="brand" pill className="uppercase tracking-wide">
+            Popular
+          </Badge>
+          <Badge variant="brand">PDF</Badge>
+          <Badge>248 files</Badge>
+          <Badge variant="success">Link active</Badge>
+          <Badge variant="warning">Expires in 3 days</Badge>
+          <Badge variant="error">Upload failed</Badge>
+          <Badge size="sm">sm</Badge>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <p className="text-display-xs font-semibold tracking-tight">Card</p>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card interactive>
+            <CardHeader>
+              <CardTitle>Instant search</CardTitle>
+              <CardDescription>
+                Results appear as you type — filter by type, size, or date without leaving the
+                keyboard.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card as="article" variant="raised">
+            <CardHeader>
+              <CardTitle>Pro</CardTitle>
+              <CardDescription>For daily working files.</CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button size="sm" className="w-full">
+                Choose Pro
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card padding="lg">
+            <CardHeader>
+              <CardTitle>Storage</CardTitle>
+              <CardDescription>61.2 GB of 100 GB used</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6 rounded-xl border border-line bg-surface p-6">
+        <p className="text-display-xs font-semibold tracking-tight">Dialog</p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Dialog>
+            <DialogTrigger render={<Button variant="secondary">Rename file</Button>} />
+            <DialogContent size="sm">
+              <DialogHeader>
+                <DialogTitle>Rename file</DialogTitle>
+                <DialogDescription>
+                  Choose a new name for “Brand guidelines.pdf”.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogBody>
+                <Input defaultValue="Brand guidelines.pdf" aria-label="File name" />
+              </DialogBody>
+              <DialogFooter>
+                <DialogClose render={<Button variant="secondary">Cancel</Button>} />
+                <DialogClose render={<Button>Save</Button>} />
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger render={<Button variant="destructive">Delete</Button>} />
+            <DialogContent size="sm">
+              <DialogHeader>
+                <DialogTitle>Move to trash?</DialogTitle>
+                <DialogDescription>
+                  Deleted files rest in trash for 30 days and restore to their original folder.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose render={<Button variant="secondary">Cancel</Button>} />
+                <DialogClose render={<Button variant="destructive">Move to trash</Button>} />
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger render={<Button variant="ghost">Top-anchored (palette shape)</Button>} />
+            <DialogContent position="top" showClose={false}>
+              <DialogHeader className="sr-only">
+                <DialogTitle>Command palette</DialogTitle>
+              </DialogHeader>
+              <div className="flex items-center gap-3 border-b border-line px-4">
+                <Search className="size-4 shrink-0 text-dim" />
+                <Input
+                  variant="bare"
+                  size="lg"
+                  placeholder="Search this page, or type a command…"
+                  aria-label="Search"
+                />
+                <Kbd>ESC</Kbd>
+              </div>
+              <DialogBody className="py-4 text-base text-muted-foreground">
+                Palette results will live here in step 4.
+              </DialogBody>
+            </DialogContent>
+          </Dialog>
         </div>
       </section>
 
