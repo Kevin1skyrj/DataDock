@@ -43,7 +43,7 @@ const FILE_ICONS = {
 
 export function PreviewSidebar() {
   return (
-    <aside className="hidden min-w-0 flex-col justify-between border-r border-line/70 p-4 lg:flex">
+    <aside className="hidden min-w-0 flex-col justify-between border-r border-line/70 p-3.5 lg:flex xl:p-4">
       <div className="flex flex-col gap-5">
         {PREVIEW_NAV.map((group) => (
           <div key={group.label} className="flex flex-col gap-0.5">
@@ -85,9 +85,18 @@ export function PreviewSidebar() {
   );
 }
 
-function StorageMeter() {
+/**
+ * Mounted twice on purpose — in the sidebar above `lg`, and inline under the
+ * file list below it, where there is no sidebar to hold it. One component, two
+ * slots, so the storage beat in the entrance has something to animate at every
+ * width rather than playing to an empty room on phones.
+ */
+export function StorageMeter({ className }) {
   return (
-    <div data-preview="item" className="rounded-lg border border-line/70 bg-surface p-3.5">
+    <div
+      data-preview="item"
+      className={cn("rounded-lg border border-line/70 bg-surface p-3.5", className)}
+    >
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">Storage</span>
         <span data-storage-pct className="font-mono text-brand">
@@ -126,7 +135,9 @@ export function PreviewFileRow({ file, active, dimmed, onActivate }) {
       className={cn(
         "relative grid w-full grid-cols-[minmax(0,1fr)_76px] items-center gap-3 rounded-md px-2.5 py-2.5 text-left",
         "transition-[background-color,opacity,transform] duration-220 ease-standard",
-        "sm:grid-cols-[minmax(0,1fr)_84px_108px] sm:py-3 lg:grid-cols-[minmax(0,1fr)_84px_108px_64px]",
+        // The Shared column defers to xl now that the details panel appears at
+        // lg: three panes plus four columns is more than 1024px can carry.
+        "sm:grid-cols-[minmax(0,1fr)_84px_108px] sm:py-3 xl:grid-cols-[minmax(0,1fr)_84px_108px_64px]",
         // The selected row is the hovered row — hover just sets `active`. Both
         // land in the live accent so the table answers the palette switch;
         // the CSS hover is the fallback before state commits, and for touch.
@@ -153,7 +164,7 @@ export function PreviewFileRow({ file, active, dimmed, onActivate }) {
 
       <span className="text-right font-mono text-xs text-dim sm:text-left">{file.size}</span>
       <span className="hidden text-xs text-dim sm:block">{file.modified}</span>
-      <span className="hidden text-xs lg:block">
+      <span className="hidden text-xs xl:block">
         {file.shared ? <span className="text-brand">{file.shared}</span> : <span className="text-dim">—</span>}
       </span>
     </button>
@@ -166,13 +177,13 @@ export function PreviewFileHeader() {
       data-preview="item"
       className={cn(
         "grid grid-cols-[minmax(0,1fr)_76px] gap-3 border-b border-line/70 px-2.5 pb-2.5 text-xs tracking-wide text-dim uppercase",
-        "sm:grid-cols-[minmax(0,1fr)_84px_108px] lg:grid-cols-[minmax(0,1fr)_84px_108px_64px]",
+        "sm:grid-cols-[minmax(0,1fr)_84px_108px] xl:grid-cols-[minmax(0,1fr)_84px_108px_64px]",
       )}
     >
       <span>Name</span>
       <span className="text-right sm:text-left">Size</span>
       <span className="hidden sm:block">Modified</span>
-      <span className="hidden lg:block">Shared</span>
+      <span className="hidden xl:block">Shared</span>
     </div>
   );
 }
@@ -183,11 +194,14 @@ export function PreviewDetails({ file }) {
   const Icon = FILE_ICONS[file.kind] ?? FileText;
 
   return (
-    <aside className="hidden min-w-0 flex-col gap-5 border-l border-line/70 p-5 xl:flex">
+    // Visible from lg, not xl. This panel is the preview's proof that the
+    // product is alive — hovering a row moves it — so it is the last thing that
+    // should be dropped as the frame narrows, not the first.
+    <aside className="hidden min-w-0 flex-col gap-4 border-l border-line/70 p-4 lg:flex xl:gap-5 xl:p-5">
       <p className="text-xs tracking-widest text-dim uppercase">Details</p>
 
       <div className="flex aspect-4/3 items-center justify-center rounded-lg border border-line/70 bg-surface">
-        <Icon className="size-9 text-dim" />
+        <Icon className="size-8 text-dim xl:size-9" />
       </div>
 
       <div className="flex flex-col gap-1">

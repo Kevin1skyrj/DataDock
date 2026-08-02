@@ -10,6 +10,7 @@ import { AmbientBackdrop } from "@/components/landing/ambient-backdrop";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BEAT, EASE } from "@/constants/motion";
+import { hasSeenEntrance, markEntranceSeen } from "@/lib/entrance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -46,56 +47,63 @@ export function Hero({ children }) {
             const { animate, finePointer } = context.conditions;
             if (!animate) return undefined;
 
-            const animated = gsap.utils.toArray("[data-animate]", root);
+            // On a repeat view within the session the boot script withheld
+            // data-motion, so nothing is hidden and there is nothing to reveal.
+            // Everything below the entrance — parallax, handoff, pointer work —
+            // still applies; only the choreography is skipped.
+            if (!hasSeenEntrance()) {
+              const animated = gsap.utils.toArray("[data-animate]", root);
 
-            const timeline = gsap.timeline({
-              defaults: { ease: EASE.entrance },
-              onComplete: () => {
-                // Hand the elements back to CSS: drop the hook so the initial
-                // state no longer matches, then clear GSAP's inline styles.
-                // Leaving a blur filter behind would soften the text forever.
-                animated.forEach((element) => element.removeAttribute("data-animate"));
-                gsap.set(animated, { clearProps: "all" });
-              },
-            });
+              const timeline = gsap.timeline({
+                defaults: { ease: EASE.entrance },
+                onComplete: () => {
+                  // Hand the elements back to CSS: drop the hook so the initial
+                  // state no longer matches, then clear GSAP's inline styles.
+                  // Leaving a blur filter behind would soften the text forever.
+                  animated.forEach((element) => element.removeAttribute("data-animate"));
+                  gsap.set(animated, { clearProps: "all" });
+                  markEntranceSeen();
+                },
+              });
 
-            timeline
-              .to("[data-animate='glow']", { opacity: 1, scale: 1, duration: 1.4 }, BEAT.ambient)
-              .to(
-                "[data-animate='rise'][data-step='badge']",
-                { opacity: 1, y: 0, duration: 0.7 },
-                BEAT.badge,
-              );
+              timeline
+                .to("[data-animate='glow']", { opacity: 1, scale: 1, duration: 1.4 }, BEAT.ambient)
+                .to(
+                  "[data-animate='rise'][data-step='badge']",
+                  { opacity: 1, y: 0, duration: 0.6 },
+                  BEAT.badge,
+                );
 
-            // Line by line, not word by word across the whole headline: the
-            // second clause should land as a reply to the first, which a single
-            // continuous stagger flattens into one long sweep.
-            HEADLINE.forEach((_, line) => {
-              timeline.to(
-                `[data-line='${line}'] [data-animate='word']`,
-                { y: 0, filter: "blur(0px)", duration: 1.1, stagger: 0.085 },
-                BEAT.headline + line * BEAT.headlineLine,
-              );
-            });
+              // Line by line, not word by word across the whole headline: the
+              // second clause should land as a reply to the first, which a
+              // single continuous stagger flattens into one long sweep.
+              HEADLINE.forEach((_, line) => {
+                timeline.to(
+                  `[data-line='${line}'] [data-animate='word']`,
+                  { y: 0, filter: "blur(0px)", duration: 0.95, stagger: 0.07 },
+                  BEAT.headline + line * BEAT.headlineLine,
+                );
+              });
 
-            timeline
-              .to(
-                "[data-animate='rise'][data-step='copy']",
-                { opacity: 1, y: 0, duration: 0.8 },
-                BEAT.copy,
-              )
-              .to(
-                "[data-animate='cta']",
-                { opacity: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.07 },
-                BEAT.cta,
-              )
-              // The glow lands after the buttons, so the CTA reads as powering
-              // on rather than fading in.
-              .to(
-                "[data-animate='rise'][data-step='cta-glow']",
-                { opacity: 1, duration: 0.9 },
-                BEAT.ctaGlow,
-              );
+              timeline
+                .to(
+                  "[data-animate='rise'][data-step='copy']",
+                  { opacity: 1, y: 0, duration: 0.7 },
+                  BEAT.copy,
+                )
+                .to(
+                  "[data-animate='cta']",
+                  { opacity: 1, y: 0, scale: 1, duration: 0.6, stagger: 0.06 },
+                  BEAT.cta,
+                )
+                // The glow lands after the buttons, so the CTA reads as powering
+                // on rather than fading in.
+                .to(
+                  "[data-animate='rise'][data-step='cta-glow']",
+                  { opacity: 1, duration: 0.8 },
+                  BEAT.ctaGlow,
+                );
+            }
 
             // Ambient layers drift against the scroll so the hero reads as
             // stacked planes. Scrubbed, never a scroll listener.
@@ -260,7 +268,10 @@ export function Hero({ children }) {
         <p
           data-animate="rise"
           data-step="copy"
-          className="mt-6 max-w-155 text-md text-muted-foreground text-balance sm:text-xl"
+          // The hero's second voice, not body copy: 15 → 17.5 → 20px against a
+          // 36 → 76px headline. An explicit leading, because the type ladder
+          // pairs no line-height and `normal` is too tight at 20px.
+          className="mt-6 max-w-165 text-lg leading-[1.55] text-muted-foreground text-balance sm:text-2xl lg:text-display-xs"
         >
           A cloud drive that behaves like a desktop app. Upload, find, and share files in seconds —
           without the clutter of an enterprise suite.

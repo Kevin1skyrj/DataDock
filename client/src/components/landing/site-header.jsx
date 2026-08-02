@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { BEAT, EASE } from "@/constants/motion";
 import { MARKETING_NAV } from "@/constants/nav";
+import { hasSeenEntrance } from "@/lib/entrance";
 import { requestPalette } from "@/lib/palette-event";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,8 @@ export function SiteHeader() {
         const mm = gsap.matchMedia();
 
         mm.add("(prefers-reduced-motion: no-preference)", () => {
+          if (hasSeenEntrance()) return;
+
           const items = gsap.utils.toArray("[data-animate='nav']", root);
           if (!items.length) return;
 

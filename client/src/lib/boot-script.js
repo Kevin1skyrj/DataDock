@@ -1,4 +1,5 @@
 import { ACCENT_IDS, ACCENT_STORAGE_KEY } from "@/constants/accents";
+import { ENTRANCE_STORAGE_KEY } from "@/lib/entrance";
 
 /**
  * Runs synchronously during HTML parsing, before first paint. Two jobs, both of
@@ -18,7 +19,14 @@ import { ACCENT_IDS, ACCENT_STORAGE_KEY } from "@/constants/accents";
  * support the feature matches neither, so testing the negation would set the
  * flag — hiding the content — while GSAP declined to run the animation that
  * brings it back. Asking the same question in both places cannot diverge.
+ *
+ * The flag is also withheld once the entrance has played this session. It has
+ * to be decided here rather than in React: by the time a component could check,
+ * the hidden initial state has already painted, and unhiding it would be a
+ * visible flash on every repeat view.
  */
 export const bootScript = `(function(){var d=document.documentElement;try{var a=localStorage.getItem("${ACCENT_STORAGE_KEY}");if(${JSON.stringify(
   ACCENT_IDS,
-)}.indexOf(a)>-1){d.dataset.accent=a}}catch(e){}try{if(matchMedia("(prefers-reduced-motion: no-preference)").matches){d.dataset.motion="ready"}}catch(e){}})();`;
+)}.indexOf(a)>-1){d.dataset.accent=a}}catch(e){}var s=false;try{s=sessionStorage.getItem(${JSON.stringify(
+  ENTRANCE_STORAGE_KEY,
+)})==="1"}catch(e){}try{if(!s&&matchMedia("(prefers-reduced-motion: no-preference)").matches){d.dataset.motion="ready"}}catch(e){}})();`;

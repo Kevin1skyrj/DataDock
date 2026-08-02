@@ -12,11 +12,13 @@ import {
   PreviewFileHeader,
   PreviewFileRow,
   PreviewSidebar,
+  StorageMeter,
 } from "@/components/landing/preview-parts";
 import { Kbd } from "@/components/ui/kbd";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
-import { BEAT, EASE } from "@/constants/motion";
+import { BEAT, EASE, PALETTE_HOLD_MS } from "@/constants/motion";
 import { PALETTE_DEMO, PREVIEW_FILES, PREVIEW_STORAGE } from "@/constants/preview-data";
+import { hasSeenEntrance } from "@/lib/entrance";
 import { OPEN_PALETTE_EVENT } from "@/lib/palette-event";
 import { cn } from "@/lib/utils";
 
@@ -37,21 +39,54 @@ export function ProductPreview() {
   const [typed, setTyped] = useState("");
 
   const reduced = usePrefersReducedMotion();
+  const dismissRef = useRef(null);
 
-  // Reduced motion gets the finished state rather than the performance, so it
-  // is derived here instead of written from an effect.
-  const paletteVisible = reduced || paletteOpen;
+  // Reduced motion skips the typing, not the palette: pressing ⌘K still opens
+  // it, fully typed. Derived rather than written from an effect.
   const shownQuery = reduced ? PALETTE_DEMO.query : typed;
 
   const activeFile = PREVIEW_FILES.find((file) => file.id === activeId) ?? PREVIEW_FILES[0];
   const query = shownQuery.toLowerCase();
   const matches = PREVIEW_FILES.filter((file) => file.name.toLowerCase().includes(query));
-  const filtering = paletteVisible && query.length >= 2;
+  const filtering = paletteOpen && query.length >= 2;
 
+  const cancelDismiss = useCallback(() => {
+    if (dismissRef.current) {
+      window.clearTimeout(dismissRef.current);
+      dismissRef.current = null;
+    }
+  }, []);
+
+  // Closing by hand also cancels any pending auto-dismiss, so a demo still in
+  // flight cannot reopen or re-close underneath the visitor.
+  const closePalette = useCallback(() => {
+    cancelDismiss();
+    setPaletteOpen(false);
+  }, [cancelDismiss]);
+
+  // Opened by the visitor — ⌘K, or the header's command bar. It stays open
+  // until they close it; only the demo dismisses itself.
   const openPalette = useCallback(() => {
+    cancelDismiss();
     setTyped("");
     setPaletteOpen(true);
-  }, []);
+  }, [cancelDismiss]);
+
+  // Opened by the entrance. Types itself, holds long enough to be read, then
+  // hands the frame back to the file table — which is the hero's resting
+  // state, and the only state in which the row-to-details interaction is
+  // reachable at all.
+  const playPaletteDemo = useCallback(() => {
+    cancelDismiss();
+    setTyped("");
+    setPaletteOpen(true);
+    dismissRef.current = window.setTimeout(() => {
+      dismissRef.current = null;
+      setPaletteOpen(false);
+    }, PALETTE_HOLD_MS);
+  }, [cancelDismiss]);
+
+  useEffect(() => cancelDismiss, [cancelDismiss]);
 
   // The palette types itself in, then holds. Re-runs whenever it reopens, so
   // the demo replays on demand rather than only once on load.
@@ -83,7 +118,7 @@ export function ProductPreview() {
         reveal();
         return;
       }
-      if (key === "escape") setPaletteOpen(false);
+      if (key === "escape") closePalette();
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -92,7 +127,7 @@ export function ProductPreview() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(OPEN_PALETTE_EVENT, reveal);
     };
-  }, [openPalette]);
+  }, [openPalette, closePalette]);
 
   useGSAP(
     () => {
@@ -111,22 +146,34 @@ export function ProductPreview() {
             const { animate, finePointer } = context.conditions;
 
             const frame = root.querySelector("[data-tilt]");
-            const bar = root.querySelector("[data-storage-bar]");
-            const pct = root.querySelector("[data-storage-pct]");
+            // Two meters exist — sidebar above lg, inline below it — and only
+            // one is visible at a time. Both are driven, so the storage beat
+            // lands at every width.
+            const bars = gsap.utils.toArray("[data-storage-bar]", root);
+            const pcts = gsap.utils.toArray("[data-storage-pct]", root);
+            const writePct = (value) => {
+              const text = `${Math.round(value)}%`;
+              pcts.forEach((node) => {
+                node.textContent = text;
+              });
+            };
 
             if (!animate) {
-              if (bar) gsap.set(bar, { scaleX: PREVIEW_STORAGE.percent / 100 });
-              if (pct) pct.textContent = `${PREVIEW_STORAGE.percent}%`;
+              gsap.set(bars, { scaleX: PREVIEW_STORAGE.percent / 100 });
+              writePct(PREVIEW_STORAGE.percent);
               return undefined;
             }
 
             const parts = gsap.utils.toArray("[data-preview]", root);
             const counter = { value: 0 };
+            const replay = hasSeenEntrance();
 
             // The preview runs on the same clock as the header and the hero
             // copy; `frame` is its cue, and everything below is relative to it.
+            // On a repeat view there is nothing hidden to reveal, so the
+            // timeline collapses to its end state and the demo plays alone.
             const timeline = gsap.timeline({
-              delay: BEAT.frame,
+              delay: replay ? 0 : BEAT.frame,
               defaults: { ease: EASE.entrance },
               onComplete: () => {
                 parts.forEach((element) => element.removeAttribute("data-preview"));
@@ -134,51 +181,58 @@ export function ProductPreview() {
               },
             });
 
-            timeline
-              .to("[data-preview='frame']", { opacity: 1, y: 0, scale: 1, duration: 1.1 }, 0)
-              // The shell arrives first, then it fills itself in — the pane
-              // assembles rather than appearing.
-              .to(
-                "[data-preview='item']",
-                { opacity: 1, y: 0, duration: 0.6, stagger: 0.035 },
-                BEAT.chrome - BEAT.frame,
-              )
-              .to(
-                "[data-preview='row']",
-                { opacity: 1, y: 0, duration: 0.5, stagger: 0.04 },
-                BEAT.rows - BEAT.frame,
-              )
-              .to(
-                bar,
-                { scaleX: PREVIEW_STORAGE.percent / 100, duration: 1.4, ease: EASE.glide },
-                BEAT.storage - BEAT.frame,
-              )
-              .to(
-                counter,
-                {
-                  value: PREVIEW_STORAGE.percent,
-                  duration: 1.4,
-                  ease: EASE.glide,
-                  onUpdate: () => {
-                    if (pct) pct.textContent = `${Math.round(counter.value)}%`;
+            if (replay) {
+              // No entrance, and no demo either. A page that renders instantly
+              // and then covers itself 700ms later is more disruptive than the
+              // sequence it replaced. ⌘K is still there for anyone who wants it.
+              gsap.set(bars, { scaleX: PREVIEW_STORAGE.percent / 100 });
+              writePct(PREVIEW_STORAGE.percent);
+              counter.value = PREVIEW_STORAGE.percent;
+            } else {
+              timeline
+                .to("[data-preview='frame']", { opacity: 1, y: 0, scale: 1, duration: 0.95 }, 0)
+                // The shell arrives first, then it fills itself in — the pane
+                // assembles rather than appearing.
+                .to(
+                  "[data-preview='item']",
+                  { opacity: 1, y: 0, duration: 0.55, stagger: 0.03 },
+                  BEAT.chrome - BEAT.frame,
+                )
+                .to(
+                  "[data-preview='row']",
+                  { opacity: 1, y: 0, duration: 0.45, stagger: 0.035 },
+                  BEAT.rows - BEAT.frame,
+                )
+                .to(
+                  bars,
+                  { scaleX: PREVIEW_STORAGE.percent / 100, duration: 1.2, ease: EASE.glide },
+                  BEAT.storage - BEAT.frame,
+                )
+                .to(
+                  counter,
+                  {
+                    value: PREVIEW_STORAGE.percent,
+                    duration: 1.2,
+                    ease: EASE.glide,
+                    onUpdate: () => writePct(counter.value),
                   },
-                },
-                BEAT.storage - BEAT.frame,
-              )
-              .call(() => setPaletteOpen(true), null, BEAT.palette - BEAT.frame);
+                  BEAT.storage - BEAT.frame,
+                )
+                .call(playPaletteDemo, null, BEAT.palette - BEAT.frame);
+            }
 
             // Storage creeps the way a real drive does while a background
             // upload finishes — then stops, rather than looping forever.
             const creep = window.setInterval(() => {
               if (document.hidden) return;
               counter.value = Math.min(counter.value + 0.9, PREVIEW_STORAGE.ceiling);
-              if (pct) pct.textContent = `${Math.round(counter.value)}%`;
-              gsap.to(bar, { scaleX: counter.value / 100, duration: 1.4, ease: EASE.glide });
+              writePct(counter.value);
+              gsap.to(bars, { scaleX: counter.value / 100, duration: 1.4, ease: EASE.glide });
               // A brief lift on the bar as the number moves. Without it the
               // creep is invisible unless you happen to be reading the digits,
               // and a change nobody notices communicates nothing.
               gsap.fromTo(
-                bar,
+                bars,
                 { filter: "brightness(1)" },
                 { filter: "brightness(1.45)", duration: 0.35, yoyo: true, repeat: 1, ease: "power2.inOut" },
               );
@@ -272,7 +326,10 @@ export function ProductPreview() {
 
               <PreviewChrome />
 
-              <div className="grid lg:grid-cols-[248px_minmax(0,1fr)] xl:grid-cols-[248px_minmax(0,1fr)_288px]">
+              {/* Three panes from lg, not xl: the details panel is the proof
+                  the product is alive, so it earns its place before the extra
+                  breathing room does. */}
+              <div className="grid lg:grid-cols-[200px_minmax(0,1fr)_236px] xl:grid-cols-[248px_minmax(0,1fr)_288px]">
                 <PreviewSidebar />
 
                 <div className="relative flex min-w-0 flex-col p-4 sm:p-5">
@@ -320,11 +377,15 @@ export function ProductPreview() {
                     <span className="float-right hidden sm:inline">Sorted by modified</span>
                   </p>
 
+                  {/* Below lg there is no sidebar to hold the meter, and the
+                      storage beat would otherwise animate nothing on a phone. */}
+                  <StorageMeter className="mt-4 lg:hidden" />
+
                   <PaletteDemo
-                    open={paletteVisible}
+                    open={paletteOpen}
                     typed={shownQuery}
                     matches={matches}
-                    onClose={() => setPaletteOpen(false)}
+                    onClose={closePalette}
                   />
                 </div>
 
