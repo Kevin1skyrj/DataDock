@@ -3,6 +3,7 @@
 import { Menu, Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { AccentPicker } from "@/components/common/accent-picker";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
@@ -100,6 +101,7 @@ export function SiteHeader({ onOpenSearch }) {
               <Kbd data-search-hint>⌘K</Kbd>
             </button>
 
+            <AccentPicker className="hidden sm:inline-flex" />
             <ThemeToggle className="hidden sm:inline-flex" />
 
             <Button variant="ghost" size="sm" render={<a href="/login" />} className="hidden sm:inline-flex">
@@ -170,6 +172,7 @@ export function SiteHeader({ onOpenSearch }) {
                 >
                   Get started
                 </Button>
+                <AccentPicker />
                 <ThemeToggle />
               </div>
             </nav>
