@@ -30,7 +30,11 @@ const buttonVariants = cva(
         secondary: [
           "border border-line bg-surface text-foreground",
           "shadow-[0_1px_0_var(--lit)_inset]",
-          "hover:-translate-y-px hover:border-line-2 hover:bg-surface-2",
+          // The border warms towards the accent and the surface lifts, so the
+          // secondary answers a hover in the same language as the primary
+          // without competing with it for attention.
+          "hover:-translate-y-px hover:border-brand/35 hover:bg-surface-2",
+          "hover:shadow-[0_1px_0_var(--lit)_inset,0_8px_20px_-12px_var(--brand-glow)]",
           "active:translate-y-0 active:scale-[0.985]",
         ],
         ghost: "text-muted-foreground hover:bg-surface hover:text-foreground active:scale-[0.98]",

@@ -26,6 +26,7 @@ export function AmbientBackdrop({ className }) {
       <div data-parallax="0.5" className="absolute -top-48 left-1/2 -translate-x-1/2 opacity-70">
         <div data-animate="glow">
           <div
+            data-idle-motion
             className="size-[min(820px,140vw)] animate-[dd-drift_22s_ease-in-out_infinite] rounded-full"
             style={GLOW("var(--brand-glow)")}
           />
@@ -35,6 +36,7 @@ export function AmbientBackdrop({ className }) {
       <div data-parallax="0.28" className="absolute top-24 -left-40 hidden opacity-40 md:block">
         <div data-animate="glow">
           <div
+            data-idle-motion
             className="size-140 animate-[dd-drift-alt_26s_ease-in-out_infinite] rounded-full"
             style={GLOW("var(--brand-glow)")}
           />
@@ -44,6 +46,7 @@ export function AmbientBackdrop({ className }) {
       <div data-parallax="0.18" className="absolute top-64 -right-40 hidden opacity-30 md:block">
         <div data-animate="glow">
           <div
+            data-idle-motion
             className="size-155 animate-[dd-drift_30s_ease-in-out_infinite] rounded-full"
             style={GLOW("var(--sheen)")}
           />
@@ -56,6 +59,18 @@ export function AmbientBackdrop({ className }) {
         data-spotlight
         className="absolute top-0 left-1/2 size-170 -translate-x-1/2 rounded-full opacity-0"
         style={GLOW("var(--brand-glow)")}
+      />
+
+      {/* Draws the eye to the centre column by letting the corners fall away.
+          Barely perceptible on its own — it is doing hierarchy work, not
+          decorative work. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 32%, transparent 40%, var(--background) 100%)",
+          opacity: 0.55,
+        }}
       />
 
       {/* Grounds the composition so the light fades into the page rather than

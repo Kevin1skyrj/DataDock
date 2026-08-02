@@ -101,6 +101,7 @@
   --color-sheen: var(--sheen);
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-tint: var(--brand-tint);
   --color-brand-glow: var(--brand-glow);
   --color-brand-contrast: var(--brand-contrast);
   --color-success: var(--success);
@@ -127,6 +128,16 @@
   --dim: #6e727b;
   --lit: rgba(255, 255, 255, 0.9);
   --sheen: rgba(255, 255, 255, 0.5);
+  /* The hot core of the revolving border beam. Lifted towards white so the
+     arc reads as light rather than paint, but kept mostly brand so it still
+     answers the accent switch. Light mode needs far less lift — a near-white
+     core on a pale page reads as a gap in the border, not a highlight. */
+  --beam-core: color-mix(in oklab, var(--brand) 84%, #ffffff);
+  /* A light version of the accent for selected and hovered surfaces.
+     `brand-soft` is the design's wash of the *pure* accent, which on a large
+     surface reads as a stain of the brand rather than a tint of it. On a pale
+     page a low-alpha accent already lands light, so no lift is needed here. */
+  --brand-tint: color-mix(in oklab, var(--brand) 12%, transparent);
 
   --card: #ffffff;
   --card-foreground: #101215;
@@ -172,6 +183,11 @@
   --dim: #8a8f9c;
   --lit: rgba(255, 255, 255, 0.07);
   --sheen: rgba(255, 255, 255, 0.26);
+  --beam-core: color-mix(in oklab, var(--brand) 52%, #ffffff);
+  /* On a near-black panel the accent has to be lifted towards white *before*
+     the alpha is applied, otherwise the wash reads as a darker blue rather
+     than a lighter one. */
+  --brand-tint: color-mix(in oklab, color-mix(in oklab, var(--brand) 58%, #ffffff) 24%, transparent);
 
   --card: #0d0f12;
   --card-foreground: #f2f3f5;
@@ -323,6 +339,12 @@
   transform: translateY(14px);
 }
 
+/* The header arrives from above the fold it is pinned to. */
+[data-motion="ready"] [data-animate="nav"] {
+  opacity: 0;
+  transform: translateY(-9px);
+}
+
 [data-motion="ready"] [data-animate="cta"] {
   opacity: 0;
   transform: translateY(10px) scale(0.96);
@@ -331,6 +353,68 @@
 [data-motion="ready"] [data-animate="glow"] {
   opacity: 0;
   transform: scale(0.92);
+}
+
+[data-motion="ready"] [data-preview] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+[data-motion="ready"] [data-preview="frame"] {
+  opacity: 0;
+  transform: translateY(28px) scale(0.985);
+}
+
+/* A text caret, not a pulse. `animate-pulse` is a sine fade, which reads as a
+   decorative glow; a caret is on, then off. Steps timing is what makes the
+   preview's search field register as a live input rather than an image. */
+@keyframes dd-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Details panel cross-fade as the selected file changes. */
+@keyframes dd-detail {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A light sweep that answers the pointer rather than looping forever — a
+   permanent shimmer reads as cheap within a minute. */
+.dd-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.dd-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(100deg, transparent, var(--sheen), transparent);
+  transform: translateX(-130%) skewX(-12deg);
+}
+
+.dd-shine:hover::after,
+.dd-shine:focus-visible::after {
+  opacity: 1;
+  animation: dd-sheen 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 @keyframes dd-drift {
@@ -359,6 +443,66 @@
   }
   100% {
     transform: translateX(240%) skewX(-12deg);
+  }
+}
+
+/* ------------------------------- border beam ------------------------------
+   A light that revolves around the product preview's edge, continuously.
+
+   The gradient rides an oversized square rather than the frame itself: a conic
+   gradient on a wide rectangle sweeps its long sides far faster than its short
+   ones, so the beam would visibly stall in the corners. On a square it travels
+   at a constant rate. The parent's padding plus an opaque inner panel are what
+   turn the sweep into a border.
+
+   Rotating a transform keeps the work on the compositor. Animating the
+   gradient's own `from` angle instead would re-raster the whole panel on every
+   frame, which is the usual reason these borders jank.
+   --------------------------------------------------------------------------- */
+
+@keyframes dd-beam-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.dd-beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Square, and wide enough to cover the frame's diagonal at every aspect
+     ratio it takes. 200% carries the portrait frame on phones; from tablet up
+     the frame is much wider than it is tall, so this can drop and save a
+     large amount of compositor memory. */
+  width: 200%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  animation: dd-beam-spin 11s linear infinite;
+
+  /* Two arcs, opposite each other, so no edge of the frame is ever unlit.
+     The ramps are kept short and their falloff faint: a wide, half-lit ramp
+     is what makes these borders look hazy rather than lit. */
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 74deg,
+    color-mix(in oklab, var(--brand) 22%, transparent) 82deg,
+    var(--brand) 88deg,
+    var(--beam-core) 90deg,
+    var(--brand) 92deg,
+    color-mix(in oklab, var(--brand) 22%, transparent) 98deg,
+    transparent 106deg 254deg,
+    color-mix(in oklab, var(--brand) 22%, transparent) 262deg,
+    var(--brand) 268deg,
+    var(--beam-core) 270deg,
+    var(--brand) 272deg,
+    color-mix(in oklab, var(--brand) 22%, transparent) 278deg,
+    transparent 286deg 360deg
+  );
+}
+
+@media (min-width: 900px) {
+  .dd-beam {
+    width: 135%;
   }
 }
 

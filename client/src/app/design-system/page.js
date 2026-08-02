@@ -82,6 +82,7 @@ export default function FoundationPage() {
           { name: "surface-2", className: "bg-surface-2" },
           { name: "brand", className: "bg-brand text-brand-contrast" },
           { name: "brand-soft", className: "bg-brand-soft" },
+          { name: "brand-tint", className: "bg-brand-tint" },
           { name: "success", className: "bg-success text-background" },
           { name: "warning", className: "bg-warning text-background" },
         ].map((swatch) => (

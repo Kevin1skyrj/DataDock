@@ -36,6 +36,7 @@ const twMerge = extendTailwindMerge({
         "sheen",
         "brand",
         "brand-soft",
+        "brand-tint",
         "brand-glow",
         "brand-contrast",
         "success",
