@@ -5,6 +5,7 @@ import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Pricing } from "@/components/landing/pricing";
 import { ProductPreview } from "@/components/landing/product-preview";
+import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 
 export default function LandingPage() {
@@ -24,6 +25,8 @@ export default function LandingPage() {
         <Pricing />
         <FinalCta />
       </main>
+
+      <SiteFooter />
     </>
   );
 }
