@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * Nothing here schedules its own animation — one score, one component that owns
  * it, and screens that stay declarative.
  */
-export function AuthPanel({ title, description, children, footer, className }) {
+export function AuthPanel({ title, description, icon, children, footer, className }) {
   return (
     <section
       data-auth="sheet"
@@ -26,6 +26,19 @@ export function AuthPanel({ title, description, children, footer, className }) {
         className,
       )}
     >
+      {/* Only the two success screens use this, and both use it for the same
+          thing: saying "it worked" before the sentence that explains what
+          worked. Left-aligned with everything else — a centred success panel
+          would be the one screen in the flow that changes shape. */}
+      {icon ? (
+        <div
+          data-auth="item"
+          className="mb-5 grid size-11 place-items-center rounded-full bg-brand-tint text-brand ring-1 ring-brand/25 ring-inset [&_svg]:size-5"
+        >
+          {icon}
+        </div>
+      ) : null}
+
       <header className="flex flex-col gap-2">
         <h1
           data-auth="item"

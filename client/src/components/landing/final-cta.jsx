@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight, Check } from "lucide-react";
+import Link from "next/link";
 import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -115,7 +116,7 @@ export function FinalCta() {
             >
               <Button
                 size="lg"
-                render={<a href={CTA.primary.href} />}
+                render={<Link href={CTA.primary.href} />}
                 className="dd-shine w-full sm:w-auto"
               >
                 {CTA.primary.label}

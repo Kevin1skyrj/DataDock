@@ -24,6 +24,9 @@ export function Field({
   error,
   hint,
   labelSlot,
+  // Anything that belongs to the control but sits under it — a strength meter,
+  // a remaining-characters count. Not the input: `Field` renders that itself.
+  children,
   id,
   className,
   // Pulled out by name so the window's entrance animates the whole field
@@ -57,6 +60,8 @@ export function Field({
         aria-describedby={describedBy}
         {...props}
       />
+
+      {children}
 
       {message ? (
         <p

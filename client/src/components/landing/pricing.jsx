@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { AnimatePresence, motion } from "motion/react";
 import { Check } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { SectionHeading } from "@/components/common/section-heading";
@@ -183,7 +184,7 @@ export function Pricing() {
               <Button
                 size="lg"
                 variant={plan.featured ? "primary" : "secondary"}
-                render={<a href="/register" />}
+                render={<Link href="/register" />}
                 className={cn("mt-6 w-full", plan.featured && "dd-shine")}
               >
                 {plan.cta}

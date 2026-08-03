@@ -40,6 +40,7 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    getValues,
     setError,
     setFocus,
     formState: { errors, isSubmitting },
@@ -66,7 +67,10 @@ export function LoginForm() {
         setError(error.field, { message: error.message });
         setFocus(error.field);
       } else {
-        setError("root", { message: error.message });
+        // The code rides along as the error's `type`, which is what lets the
+        // alert below offer a way out of the specific thing that went wrong
+        // instead of being a sentence in a red box.
+        setError("root", { type: error.code, message: error.message });
       }
     }
   };
@@ -103,13 +107,30 @@ export function LoginForm() {
       </div>
 
       {errors.root ? (
-        <p
+        <div
           role="alert"
           className="flex animate-[dd-detail_240ms_var(--ease-standard)] items-start gap-2.5 rounded-lg border border-error/30 bg-error/10 px-3.5 py-3 text-base text-error"
         >
           <CircleAlert className="mt-px size-4 shrink-0" />
-          {errors.root.message}
-        </p>
+          <p>
+            {errors.root.message}
+            {/* An unverified account is the one failure here that has an
+                obvious next step, and leaving it as a sentence would make the
+                visitor go and find it. The code was already sent; this just
+                points at the screen that takes it. */}
+            {errors.root.type === "unverified" ? (
+              <>
+                {" "}
+                <Link
+                  href={`/verify-email?email=${encodeURIComponent(getValues("email"))}`}
+                  className="rounded-xs font-medium underline underline-offset-2 hover:text-foreground"
+                >
+                  Enter your code
+                </Link>
+              </>
+            ) : null}
+          </p>
+        </div>
       ) : null}
 
       <Field

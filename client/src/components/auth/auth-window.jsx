@@ -2,6 +2,7 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
 
 import {
@@ -12,6 +13,7 @@ import {
 import { AUTH_WINDOW } from "@/constants/auth";
 import { EASE } from "@/constants/motion";
 import { PREVIEW_FILES, PREVIEW_STORAGE } from "@/constants/preview-data";
+import { useAuthScreen } from "@/lib/auth-screen";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
@@ -44,6 +46,18 @@ gsap.registerPlugin(useGSAP);
  */
 export function AuthWindow({ children }) {
   const scope = useRef(null);
+  const pathname = usePathname();
+
+  // Most moves through the flow are navigations; the success states are not.
+  // This is how those announce themselves — see lib/auth-screen.js.
+  const screen = useAuthScreen();
+
+  // The height of the window's body as it was on the screen we are leaving.
+  // Null until the first measurement, which is also how the entrance knows it
+  // is an arrival rather than a move between screens.
+  const lastHeight = useRef(null);
+
+  /* ------------------------------------------------- arriving at the window -- */
 
   useGSAP(
     () => {
@@ -52,44 +66,19 @@ export function AuthWindow({ children }) {
 
       const mm = gsap.matchMedia();
 
+      // `from`, not a CSS initial state. useGSAP runs in a layout effect, so
+      // the start values are written before paint and there is no flash — and
+      // if the script never runs at all, a fully composed window is already on
+      // screen rather than an invisible one.
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // `from`, not a CSS initial state. useGSAP runs in a layout effect, so
-        // the start values are written before paint and there is no flash —
-        // and if the script never runs at all, a fully composed window is
-        // already on screen rather than an invisible one.
-        //
-        // Children mark themselves `data-auth="item"`; React mounts them before
-        // this runs, so one timeline covers the whole window without the screens
-        // inside it having to know anything about the score.
-        const timeline = gsap.timeline({ defaults: { ease: EASE.entrance } });
-
-        timeline
-          .from("[data-auth='window']", {
-            opacity: 0,
-            y: 18,
-            scale: 0.985,
-            duration: 0.9,
-            clearProps: "opacity,transform",
-          })
-          // The sheet lands *on* the window rather than arriving with it, which
-          // is the whole illusion: something was already open, and this was
-          // placed over it.
-          .from(
-            "[data-auth='sheet']",
-            { opacity: 0, y: 10, duration: 0.7, clearProps: "opacity,transform" },
-            0.16,
-          )
-          .from(
-            "[data-auth='item']",
-            {
-              opacity: 0,
-              y: 10,
-              duration: 0.6,
-              stagger: 0.055,
-              clearProps: "opacity,transform",
-            },
-            0.3,
-          );
+        gsap.from("[data-auth='window']", {
+          opacity: 0,
+          y: 18,
+          scale: 0.985,
+          duration: 0.9,
+          ease: EASE.entrance,
+          clearProps: "opacity,transform",
+        });
       });
 
       // The pane catching room light as the cursor crosses it — the same
@@ -124,6 +113,82 @@ export function AuthWindow({ children }) {
     { scope },
   );
 
+  /* --------------------------------------------- moving between the screens -- */
+
+  /**
+   * The layout does not remount between authentication routes, which is exactly
+   * what makes the window feel like one window — but it also means React swaps
+   * the sheet's contents with no transition at all and the window snaps to the
+   * new height. This is the transition: the frame stays put, the contents
+   * change inside it.
+   *
+   * Keyed on the path *and* on the screen counter, because not every change of
+   * screen is a change of route — a form becoming its success state happens at
+   * the same URL.
+   */
+  useGSAP(
+    () => {
+      const root = scope.current;
+      if (!root) return undefined;
+
+      const body = root.querySelector("[data-auth='body']");
+
+      // Measured now, before anything animates: the DOM already holds the new
+      // screen, so this is the height we are moving *to*, and `lastHeight` is
+      // still the one we are moving from.
+      const previous = lastHeight.current;
+      const next = body?.getBoundingClientRect().height ?? null;
+      lastHeight.current = next;
+
+      const arriving = previous == null;
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const timeline = gsap.timeline({ defaults: { ease: EASE.entrance } });
+
+        // Register is a taller screen than login. Growing into it keeps this
+        // the same window; snapping to it makes it a different page. Height is
+        // a layout property and this is the one place the whole flow animates
+        // one — half a second, on a single isolated element that is centred in
+        // the viewport, so nothing around it is pushed about.
+        if (!arriving && body && Math.abs(next - previous) > 1) {
+          timeline.fromTo(
+            body,
+            { height: previous },
+            { height: next, duration: 0.5, ease: EASE.settle, clearProps: "height" },
+            0,
+          );
+        }
+
+        timeline
+          // On arrival the sheet lands *on* the window rather than with it,
+          // which is the whole illusion: something was already open, and this
+          // was placed over it. Between screens there is no window to wait for,
+          // so it moves up right behind the height.
+          .from(
+            "[data-auth='sheet']",
+            { opacity: 0, y: 10, duration: 0.7, clearProps: "opacity,transform" },
+            arriving ? 0.16 : 0.04,
+          )
+          .from(
+            "[data-auth='item']",
+            {
+              opacity: 0,
+              y: 10,
+              duration: 0.6,
+              stagger: 0.055,
+              clearProps: "opacity,transform",
+            },
+            arriving ? 0.3 : 0.12,
+          );
+      });
+
+      return () => mm.revert();
+    },
+    { dependencies: [pathname, screen], scope },
+  );
+
   return (
     // Deliberately the same container width as the marketing header above it,
     // so the wordmark does not shift sideways between the landing page and this
@@ -150,7 +215,7 @@ export function AuthWindow({ children }) {
                 whichever is taller. Below `lg` the backdrop is gone entirely and
                 the sheet alone sets the height — no viewport-unit guesswork, no
                 empty window on a phone. */}
-            <div className="relative grid">
+            <div data-auth="body" className="relative grid">
               <DriveBackdrop />
 
               <div

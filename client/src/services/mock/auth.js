@@ -76,6 +76,104 @@ export async function signIn({ email }) {
   return asUser(email.trim());
 }
 
+const SIGN_UP_FAILURES = {
+  "taken@datadock.app": {
+    field: "email",
+    code: "email-taken",
+    message: "An account already uses this email address.",
+  },
+  "blocked@datadock.app": {
+    field: null,
+    code: "blocked",
+    message: "We can't create an account for this address. Contact support if that seems wrong.",
+  },
+};
+
+/**
+ * Creates the account and leaves it unverified — the code goes out, and the
+ * visitor is handed to the verification screen. Nothing is signed in yet, which
+ * is the whole reason that screen exists.
+ *
+ * @param {{ name: string, email: string, password: string }} details
+ * @returns {Promise<{ id: string, email: string, name: string, verified: false }>}
+ * @throws {AuthError}
+ */
+export async function signUp({ name, email }) {
+  await wait();
+
+  const failure = SIGN_UP_FAILURES[email.trim().toLowerCase()];
+  if (failure) throw new AuthError(failure.message, failure);
+
+  return { ...asUser(email.trim()), name: name.trim(), verified: false };
+}
+
+/* ------------------------------------------------------------ the code -- */
+
+/** Any six digits are accepted except these two, which fail on purpose. */
+const OTP_FAILURES = {
+  "000000": {
+    code: "otp-invalid",
+    message: "That code isn't right. Check it and try again.",
+  },
+  "111111": {
+    code: "otp-expired",
+    message: "That code has expired. Send yourself a new one.",
+  },
+};
+
+/**
+ * Confirms a code, whether it came from registering or from a reset request.
+ *
+ * Returns a token because the reset flow needs one: the screen that sets a new
+ * password has to be able to prove a code was checked, or it is a page anyone
+ * can open and change any account from.
+ *
+ * @param {{ email: string, code: string }} attempt
+ * @returns {Promise<{ token: string }>}
+ * @throws {AuthError}
+ */
+export async function verifyOtp({ code }) {
+  await wait();
+
+  const failure = OTP_FAILURES[code];
+  if (failure) throw new AuthError(failure.message, { field: "code", code: failure.code });
+
+  return { token: `rst_${Math.random().toString(36).slice(2, 12)}` };
+}
+
+export async function resendOtp({ email }) {
+  await wait(500);
+  return { sentTo: email };
+}
+
+/**
+ * Sends a reset code — and resolves the same way whether or not an account
+ * exists.
+ *
+ * Reporting "no account uses this address" here would turn an anonymous form
+ * into an account enumeration oracle: anyone could stand outside and learn who
+ * has a DataDock account. `signIn` can afford to be specific because the person
+ * asking has already produced a password; this form has nothing to go on.
+ */
+export async function requestPasswordReset({ email }) {
+  await wait();
+  return { sentTo: email };
+}
+
+/**
+ * @param {{ email: string, token: string, password: string }} change
+ * @throws {AuthError} when the token is missing or was never issued
+ */
+export async function resetPassword({ token }) {
+  await wait();
+
+  if (!token) {
+    throw new AuthError("This reset link is no longer valid.", { code: "bad-token" });
+  }
+
+  return { ok: true };
+}
+
 /**
  * The real thing hands off to Google and comes back; there is nothing to hand
  * off to yet, so this only proves the pending state renders.

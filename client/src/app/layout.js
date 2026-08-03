@@ -40,7 +40,14 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
       className={`${instrumentSans.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="min-h-dvh">
+      {/* Extensions edit `<body>` before React hydrates — ClickUp adds
+          `clickup-chrome-ext_installed`, password managers and Grammarly add
+          their own — and React reports the resulting attribute mismatch as a
+          hydration error on every load. It suppresses this element's own
+          attributes and text only, one level deep, so a genuine mismatch
+          anywhere inside the tree is still reported. Same reason `<html>`
+          above carries it for next-themes. */}
+      <body suppressHydrationWarning className="min-h-dvh">
         {/* Synchronous by design — see lib/boot-script.js. next/script's
             beforeInteractive defers into __next_s, which is too late. */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: bootScript }} />
