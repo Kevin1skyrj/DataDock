@@ -44,6 +44,14 @@ export default function RootLayout({ children }) {
         {/* Synchronous by design — see lib/boot-script.js. next/script's
             beforeInteractive defers into __next_s, which is too late. */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: bootScript }} />
+
+        {/* Page-wide grain. It belongs here rather than on any one section:
+            scoped to the hero it stopped at that section's edge, and a 3.5%
+            lift ending on a hard line reads as two different backgrounds.
+            Fixed rather than absolute so it is one viewport-sized layer that
+            never repaints on scroll. */}
+        <div aria-hidden="true" className="dd-noise pointer-events-none fixed inset-0 -z-10" />
+
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

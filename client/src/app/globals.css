@@ -379,6 +379,19 @@
   }
 }
 
+/* An upload completing. Deliberately CSS rather than a Motion `initial`: a
+   library start-state serialises into the HTML, so the bar would render empty
+   and stay empty for anyone without JavaScript. A keyframe needs none, and the
+   reduced-motion rule collapses it to the finished state on its own. */
+@keyframes dd-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Details panel cross-fade as the selected file changes. */
 @keyframes dd-detail {
   from {

@@ -395,14 +395,6 @@ export function ProductPreview() {
           </div>
         </div>
       </div>
-
-      <p className="mt-6 text-center text-base text-dim">
-        Press{" "}
-        <Kbd variant="key" className="mx-0.5 align-middle">
-          ⌘K
-        </Kbd>{" "}
-        anywhere — it works on this page.
-      </p>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { useRef } from "react";
 import { AmbientBackdrop } from "@/components/landing/ambient-backdrop";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import { BEAT, EASE } from "@/constants/motion";
 import { hasSeenEntrance, markEntranceSeen } from "@/lib/entrance";
 
@@ -101,6 +102,11 @@ export function Hero({ children }) {
                 .to(
                   "[data-animate='rise'][data-step='cta-glow']",
                   { opacity: 1, duration: 0.8 },
+                  BEAT.ctaGlow,
+                )
+                .to(
+                  "[data-animate='rise'][data-step='hint']",
+                  { opacity: 1, y: 0, duration: 0.7 },
                   BEAT.ctaGlow,
                 );
             }
@@ -230,7 +236,9 @@ export function Hero({ children }) {
   );
 
   return (
-    <section ref={scope} id="top" className="relative isolate overflow-hidden">
+    // The bottom padding is the transition: it gives the ambient light empty
+    // space to resolve in, rather than dying against the next section's edge.
+    <section ref={scope} id="top" className="relative isolate overflow-hidden pb-16 sm:pb-24">
       <AmbientBackdrop />
 
       <div
@@ -317,6 +325,18 @@ export function Hero({ children }) {
             </div>
           </div>
         </div>
+
+        {/* The shortcut sits with the actions it belongs to. Stranded under the
+            preview it was a caption on something already scrolled past, and it
+            left the section ending on a line of small grey text. */}
+        <p
+          data-animate="rise"
+          data-step="hint"
+          className="mt-5 flex items-center gap-1.5 text-base text-dim"
+        >
+          Or press
+          <Kbd variant="inline">⌘K</Kbd>— search works right here.
+        </p>
       </div>
 
       {/* The product preview mounts here, inside the hero's light and parallax

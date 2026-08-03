@@ -7,8 +7,9 @@ const GLOW = (color) => ({
 /**
  * The hero's light.
  *
- * Three soft radial pools plus a cursor-tracked spotlight, over a noise layer
- * that dithers away the banding large dark gradients produce on 8-bit displays.
+ * Three soft radial pools plus a cursor-tracked spotlight. The grain that
+ * dithers away gradient banding is page-wide and lives in the root layout —
+ * ending it at this section's edge made the hero read as a separate page.
  *
  * Each pool is split across three elements on purpose, because three things
  * want to write to the same box and only one can own each property:
@@ -21,7 +22,7 @@ export function AmbientBackdrop({ className }) {
   return (
     <div
       aria-hidden="true"
-      className={cn("dd-noise pointer-events-none absolute inset-0 overflow-hidden", className)}
+      className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
     >
       <div data-parallax="0.5" className="absolute -top-48 left-1/2 -translate-x-1/2 opacity-70">
         <div data-animate="glow">
