@@ -2,19 +2,18 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { Menu, Search, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { AccentPicker } from "@/components/common/accent-picker";
+import { CommandTrigger } from "@/components/common/command-trigger";
 import { HEADER_GUTTER, HeaderIsland } from "@/components/common/header-island";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
 import { BEAT, EASE } from "@/constants/motion";
 import { MARKETING_NAV } from "@/constants/nav";
 import { hasSeenEntrance } from "@/lib/entrance";
-import { requestPalette } from "@/lib/palette-event";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
@@ -148,28 +147,7 @@ export function SiteHeader() {
           </div>
 
           <div data-animate="nav" className="flex items-center gap-2">
-            {/* Reads as a command bar, not a text field: fixed width so it
-                never looks like it wants typing, the shortcut carried inside
-                it, and the accent surfacing on hover to signal it opens
-                something rather than accepting input. */}
-            <button
-              type="button"
-              onClick={requestPalette}
-              aria-label="Open command palette"
-              className={cn(
-                "group hidden w-56 items-center gap-2 rounded-md border border-line bg-surface py-1.5 pr-1.5 pl-3 md:flex",
-                "shadow-[0_1px_0_var(--lit)_inset] transition-[border-color,background-color,box-shadow] duration-200 ease-standard",
-                "hover:border-brand/40 hover:bg-surface-2 hover:shadow-[0_1px_0_var(--lit)_inset,0_0_0_3px_var(--brand-soft)]",
-              )}
-            >
-              <Search className="size-4 shrink-0 text-dim transition-colors duration-200 ease-standard group-hover:text-brand" />
-              <span className="flex-1 text-left text-base text-muted-foreground">
-                Search or jump to…
-              </span>
-              <Kbd className="transition-colors duration-200 ease-standard group-hover:border-brand/40 group-hover:text-brand">
-                ⌘K
-              </Kbd>
-            </button>
+            <CommandTrigger label="Search or jump to…" className="hidden w-56 md:flex" />
 
             <AccentPicker className="hidden sm:inline-flex" />
             <ThemeToggle className="hidden sm:inline-flex" />

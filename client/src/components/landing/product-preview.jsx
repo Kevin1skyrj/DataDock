@@ -6,13 +6,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CornerDownLeft, Grid2x2, Rows3, Search, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { StorageMeter } from "@/components/common/storage-meter";
 import {
   PreviewChrome,
   PreviewDetails,
   PreviewFileHeader,
   PreviewFileRow,
   PreviewSidebar,
-  StorageMeter,
 } from "@/components/landing/preview-parts";
 import { Kbd } from "@/components/ui/kbd";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";

@@ -563,6 +563,76 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* --------------------------------------------------------------- shell -- */
+
+/*
+ * The dashboard sidebar has three states and only one of them is a choice.
+ *
+ * Below `md` it is a drawer that slides in over the page. From `md` to `lg` it
+ * is always a rail — two panes and a file table do not fit in 768px, so there
+ * is nothing to choose. From `lg` it is expanded unless the visitor collapsed
+ * it, and that decision is applied by the boot script before the first paint.
+ *
+ * All of it lives in CSS rather than in React for that last reason: the width
+ * has to be right in the very first frame, and no component has rendered yet.
+ */
+[data-shell="sidebar"] {
+  width: 17rem;
+  /* `translate`, not `transform`. Tailwind v4 writes `-translate-x-full` to the
+     standalone `translate` property, so naming `transform` here transitions
+     nothing and the drawer snaps in instead of sliding. */
+  transition:
+    translate 220ms var(--ease-standard),
+    width 200ms var(--ease-standard);
+}
+
+@media (min-width: 768px) {
+  [data-shell="sidebar"] {
+    width: 15.5rem;
+  }
+}
+
+/*
+ * Rail. Labels are removed, not faded: a width animating while text reflows
+ * inside it is the single thing that makes a collapse look cheap, and an
+ * instant swap is also what makes it feel fast. The icons re-centre in the
+ * narrower box rather than staying pinned to a padding edge they no longer sit
+ * comfortably in.
+ */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  [data-shell="sidebar"] {
+    width: 4.25rem;
+  }
+
+  [data-shell="sidebar"] [data-shell="rail-hide"] {
+    display: none;
+  }
+
+  [data-shell="sidebar"] [data-shell="nav-item"],
+  [data-shell="sidebar"] [data-shell="rail-center"] {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-sidebar="collapsed"] [data-shell="sidebar"] {
+    width: 4.25rem;
+  }
+
+  [data-sidebar="collapsed"] [data-shell="rail-hide"] {
+    display: none;
+  }
+
+  /* With the wordmark and the labels gone, anything still using
+     `justify-between` is left pinned to one edge of a 68px column. */
+  [data-sidebar="collapsed"] [data-shell="nav-item"],
+  [data-sidebar="collapsed"] [data-shell="rail-center"] {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
