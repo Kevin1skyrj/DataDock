@@ -192,6 +192,11 @@ export function CommandShowcase() {
           duration: 0.9,
           ease: EASE.entrance,
           scrollTrigger: { trigger: "[data-command-panel]", start: "top 88%", once: true },
+          // The panel is scaled imperatively on Enter; a leftover entrance
+          // transform would be the base that press animates from.
+          onComplete: () => {
+            if (panelRef.current) gsap.set(panelRef.current, { clearProps: "opacity,transform" });
+          },
         });
 
         gsap.from("[data-shortcut]", {

@@ -3,22 +3,16 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  Eye,
-  FileText,
-  FolderOpen,
-  FolderTree,
-  Gauge,
-  Link2,
-  RotateCcw,
-  Search,
-} from "lucide-react";
-import { useRef } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight, Eye, FolderTree, Gauge, Link2, RotateCcw, Search } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { SectionHeading } from "@/components/common/section-heading";
-import { FEATURES, PREVIEW_KINDS } from "@/constants/features";
+import { FEATURE_VISUALS } from "@/components/landing/feature-visuals";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
+import { CARD_LIGHT, FEATURES } from "@/constants/features";
 import { EASE } from "@/constants/motion";
-import { PREVIEW_STORAGE } from "@/constants/preview-data";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -32,97 +26,52 @@ const ICONS = {
   preview: Eye,
 };
 
-/* ------------------------------------------------------------------ proof --
-   A single row under each card showing the capability as product rather than
-   as prose. Six cards of icon-title-paragraph is a wall; one line of real
-   interface each is what makes the grid read as software.
-   -------------------------------------------------------------------------- */
-
-const PROOF = {
-  search: (
-    <span className="flex items-center gap-2 text-xs">
-      <FileText className="size-3.5 shrink-0 text-dim" />
-      <span className="truncate text-muted-foreground">
-        Q3 <mark className="rounded-xs bg-brand-tint px-0.5 text-brand">invo</mark>ice —
-        Northline.pdf
-      </span>
-      <span className="ml-auto shrink-0 font-mono text-2xs text-dim">12ms</span>
-    </span>
-  ),
-
-  share: (
-    <span className="flex items-center gap-2 text-xs">
-      <Link2 className="size-3.5 shrink-0 text-brand" />
-      <span className="truncate font-mono text-2xs text-brand">datadock.app/s/9fK2xQ</span>
-      <span className="ml-auto shrink-0 text-2xs text-dim">14 days</span>
-    </span>
-  ),
-
-  organize: (
-    <span className="flex items-center gap-1.5">
-      {["Client work", "Invoices", "Archive"].map((folder, index) => (
-        <span
-          key={folder}
-          className={cn(
-            "inline-flex items-center gap-1.5 truncate rounded-md px-2 py-1 text-2xs",
-            index === 0
-              ? "bg-brand-tint text-foreground ring-1 ring-brand/25 ring-inset"
-              : "border border-line/70 text-dim",
-          )}
-        >
-          <FolderOpen className={cn("size-3 shrink-0", index === 0 ? "text-brand" : "text-dim")} />
-          {folder}
-        </span>
-      ))}
-    </span>
-  ),
-
-  storage: (
-    <span className="flex items-center gap-3">
-      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
-        {/* Rests at its real value and is animated *from* zero, so reduced
-            motion and a failed script both show a full bar rather than an
-            empty one. The hero's meter can start at zero because GSAP always
-            fills it; this one only fills on scroll. */}
-        <span
-          data-feature-bar
-          className="block h-full origin-left rounded-full bg-brand"
-          style={{ transform: `scaleX(${PREVIEW_STORAGE.percent / 100})` }}
-        />
-      </span>
-      <span className="shrink-0 font-mono text-2xs text-brand">{PREVIEW_STORAGE.percent}%</span>
-    </span>
-  ),
-
-  trash: (
-    <span className="flex items-center gap-2 text-xs">
-      <FileText className="size-3.5 shrink-0 text-dim" />
-      <span className="truncate text-muted-foreground">Statement of work.docx</span>
-      <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-2xs text-brand">
-        <RotateCcw className="size-3" />
-        Restore
-      </span>
-    </span>
-  ),
-
-  preview: (
-    <span className="flex flex-wrap items-center gap-1.5">
-      {PREVIEW_KINDS.map((kind) => (
-        <span
-          key={kind}
-          className="rounded-sm border border-line/70 px-1.5 py-0.5 font-mono text-2xs text-dim"
-        >
-          {kind}
-        </span>
-      ))}
-    </span>
-  ),
-};
-
-/* --------------------------------------------------------------- section -- */
-
 export function Features() {
   const scope = useRef(null);
+  const trackRef = useRef(null);
+  const startRef = useRef(null);
+  const endRef = useRef(null);
+
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const reduced = usePrefersReducedMotion();
+
+  // Sentinels at each end of the track rather than a scroll listener: the
+  // arrows only need to know when an edge comes into view, and nothing should
+  // be running on the main thread while the rail is being flicked.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.target === startRef.current) setAtStart(entry.isIntersecting);
+          if (entry.target === endRef.current) setAtEnd(entry.isIntersecting);
+        });
+      },
+      { root: track, threshold: 1 },
+    );
+
+    if (startRef.current) observer.observe(startRef.current);
+    if (endRef.current) observer.observe(endRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // One card plus one gap, measured rather than hard-coded, so the step stays
+  // correct as the card width changes across breakpoints.
+  const slide = (direction) => {
+    const track = trackRef.current;
+    const card = track?.querySelector("[data-feature-card]");
+    if (!track || !card) return;
+
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    track.scrollBy({
+      left: direction * (card.offsetWidth + gap),
+      behavior: reduced ? "auto" : "smooth",
+    });
+  };
 
   useGSAP(
     () => {
@@ -141,29 +90,27 @@ export function Features() {
           scrollTrigger: { trigger: root, start: "top 78%", once: true },
         });
 
-        gsap.from("[data-feature-card]", {
-          opacity: 0,
-          y: 22,
-          duration: 0.75,
-          // Row by row rather than one long sweep: at three columns a flat
-          // stagger makes the last card arrive noticeably late.
-          stagger: { each: 0.06, grid: "auto", from: "start" },
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-feature-grid]", start: "top 85%", once: true },
-        });
+        const cards = gsap.utils.toArray("[data-feature-card]", root);
 
-        gsap.from("[data-feature-bar]", {
-          scaleX: 0,
-          duration: 1.2,
-          ease: EASE.glide,
-          scrollTrigger: { trigger: "[data-feature-grid]", start: "top 70%", once: true },
+        gsap.from(cards, {
+          opacity: 0,
+          y: 26,
+          duration: 0.8,
+          stagger: 0.07,
+          ease: EASE.entrance,
+          scrollTrigger: { trigger: "[data-feature-rail]", start: "top 85%", once: true },
+          // Hand the cards back to the layout once the entrance is done. A
+          // `from` tween leaves its inline transform behind, and a card left
+          // holding one sits at a different height from its neighbours for the
+          // rest of the page's life — which is exactly what a row of cards
+          // must never do. The hero and the preview already do this; these
+          // later sections were the ones that dropped it.
+          onComplete: () => gsap.set(cards, { clearProps: "opacity,transform" }),
         });
       });
 
-      // The light under the cursor is the one interaction here, so it is worth
-      // doing properly: `quickSetter` writes the transform with no tween at
-      // all, and the fade-in is left to CSS. A pointer that has to drag a glow
-      // behind it feels like lag, not polish.
+      // The light under the cursor, written with `quickSetter` so there is no
+      // tween between the pointer and the glow. Only fine pointers pay for it.
       mm.add("(pointer: fine)", () => {
         const offs = [];
 
@@ -194,64 +141,132 @@ export function Features() {
 
   return (
     <section id="features" className="relative scroll-mt-24 pt-12 pb-24 sm:pt-16 sm:pb-32">
-      <div ref={scope} className="mx-auto max-w-page px-5 sm:px-10">
-        <SectionHeading
-          eyebrow="Features"
-          title="The whole product, minus the parts nobody opens."
-          description="Every capability here removes a step from something you already do. None of it is present to fill a row in a comparison table."
-        />
+      <div ref={scope}>
+        <div className="mx-auto max-w-page px-5 sm:px-10">
+          <SectionHeading
+            eyebrow="Features"
+            title="The whole product, minus the parts nobody opens."
+            description="Every capability here removes a step from something you already do. None of it is present to fill a row in a comparison table."
+          />
+        </div>
 
+        {/* The rail breaks the page container on purpose: cards run to the
+            viewport edge so the next one is always half-visible, which is what
+            says "there is more" without a scrollbar having to. */}
         <div
-          data-feature-grid
-          className="mt-14 grid gap-4 sm:grid-cols-2 sm:gap-5 lg:mt-18 lg:grid-cols-3"
+          ref={trackRef}
+          data-feature-rail
+          role="region"
+          aria-label="Product features"
+          tabIndex={0}
+          className={cn(
+            // `items-stretch` is the flex default, but stated here because the
+            // cards depend on it: it is what makes every card the height of the
+            // tallest one and pins their tops to the same line.
+            "dd-rail mt-6 flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto scroll-smooth lg:mt-10",
+            // Vertical padding, not margin: `overflow-x: auto` forces
+            // `overflow-y` to compute as auto too, so a card lifting on hover —
+            // and its shadow — would be clipped and could raise a stray
+            // vertical scrollbar. The margin above is reduced to match.
+            // Horizontal padding is `.dd-rail`'s job: it has to track the page
+            // container's edge, which no static utility can express.
+            "py-8",
+            // The rail is focusable so it can be scrolled from the keyboard;
+            // the ring would otherwise be clipped by its own overflow.
+            "focus-visible:-outline-offset-2",
+          )}
         >
-          {FEATURES.map((feature) => {
+          <span ref={startRef} aria-hidden="true" className="w-px shrink-0" />
+
+          {FEATURES.map((feature, index) => {
             const Icon = ICONS[feature.icon];
+            const Visual = FEATURE_VISUALS[feature.id];
 
             return (
               <article
                 key={feature.id}
                 data-feature-card
+                style={{
+                  backgroundImage: `radial-gradient(ellipse 130% 85% at ${CARD_LIGHT[index]}% 0%, color-mix(in oklab, var(--brand) 20%, transparent) 0%, transparent 62%)`,
+                }}
                 className={cn(
-                  "group relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface p-6",
-                  "shadow-[0_1px_0_var(--lit)_inset]",
+                  "group relative flex w-[84vw] max-w-88 shrink-0 snap-start flex-col overflow-hidden",
+                  "rounded-2xl border border-line-2 bg-bg-deep p-5 sm:w-88 sm:p-6",
                   "transition-[border-color,transform,box-shadow] duration-300 ease-standard",
-                  "hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-elevated",
+                  "hover:-translate-y-1 hover:border-brand/35 hover:shadow-elevated",
                 )}
               >
-                {/* Centred on the card's origin so the tracked offset is the
-                    pointer position, with nothing to subtract. */}
                 <span
                   data-spot
                   aria-hidden="true"
-                  className="pointer-events-none absolute -top-32 -left-32 size-64 rounded-full opacity-0 blur-3xl transition-opacity duration-500 ease-standard group-hover:opacity-100"
+                  className="pointer-events-none absolute -top-40 -left-40 size-80 rounded-full opacity-0 blur-3xl transition-opacity duration-500 ease-standard group-hover:opacity-100"
                   style={{
                     background: "radial-gradient(circle, var(--brand-glow) 0%, transparent 70%)",
                   }}
                 />
 
-                <span className="relative grid size-10 place-items-center rounded-lg bg-surface-2 text-dim transition-colors duration-300 ease-standard group-hover:bg-brand-tint group-hover:text-brand">
-                  <Icon className="size-5" />
-                </span>
+                <header className="relative flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-tint text-brand ring-1 ring-brand/25 ring-inset">
+                    <Icon className="size-4.5" />
+                  </span>
 
-                <h3 className="relative mt-5 text-xl font-medium text-foreground">
+                  <h3 className="min-w-0 flex-1 truncate text-lg font-medium text-foreground">
+                    {feature.name}
+                  </h3>
+
+                  {/* The reference puts a “go to detail” chevron here. There is
+                      no detail page to go to, so the slot carries the thing that
+                      is actually true of every capability: its shortcut. */}
+                  <span className="flex shrink-0 items-center gap-1">
+                    {feature.shortcut.map((key, at) => (
+                      <Kbd key={`${feature.id}-${key}-${at}`} variant="inline">
+                        {key}
+                      </Kbd>
+                    ))}
+                  </span>
+                </header>
+
+                <p className="relative mt-4 text-md leading-normal font-medium text-foreground">
                   {feature.title}
-                </h3>
-
-                {/* The paragraph owns the minimum gap; `mt-auto` below absorbs
-                    whatever is left over. */}
-                <p className="relative mt-2 mb-6 text-md leading-[1.6] text-muted-foreground">
+                </p>
+                <p className="relative mt-1.5 text-sm leading-[1.6] text-muted-foreground">
                   {feature.description}
                 </p>
 
-                {/* Pushed to the bottom so the proof rows line up across a row
-                    of cards whose copy runs to different lengths. */}
-                <div className="relative mt-auto border-t border-line/70 pt-4">
-                  {PROOF[feature.id]}
+                <div className="relative mt-5 border-t border-line/70 pt-5">
+                  <Visual />
                 </div>
               </article>
             );
           })}
+
+          <span ref={endRef} aria-hidden="true" className="w-px shrink-0" />
+        </div>
+
+        <div className="mx-auto mt-6 flex max-w-page items-center justify-between gap-4 px-5 sm:px-10">
+          <Button variant="ghost" size="sm" render={<a href="#pricing" />} className="-ml-3">
+            Compare what each plan includes
+            <ArrowRight />
+          </Button>
+
+          <div className="flex items-center gap-2">
+            {[
+              { direction: -1, label: "Previous features", Icon: ChevronLeft, disabled: atStart },
+              { direction: 1, label: "Next features", Icon: ChevronRight, disabled: atEnd },
+            ].map(({ direction, label, Icon: Chevron, disabled }) => (
+              <Button
+                key={label}
+                variant="secondary"
+                size="icon"
+                aria-label={label}
+                disabled={disabled}
+                onClick={() => slide(direction)}
+                className="rounded-full"
+              >
+                <Chevron />
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -519,6 +519,39 @@
   }
 }
 
+/* A horizontal card rail. The scrollbar is hidden because the rail carries its
+   own affordances — a half-visible next card and a pair of arrows — and a
+   permanent bar under a row of cards reads as chrome the design did not ask
+   for. Scrolling itself stays entirely native, so trackpad, touch and keyboard
+   all keep working. */
+.dd-rail {
+  scrollbar-width: none;
+
+  /* The first and last card line up with the page container rather than the
+     viewport edge, so the rail belongs to the same column as the heading above
+     it and the controls below it. Between those bounds the cards still run
+     edge to edge.
+
+     `scroll-padding` has to match: without it the snap points would sit at the
+     scroll port's edge and a card would land flush against the window,
+     undoing the alignment the moment anyone scrolled. */
+  --dd-rail-gutter: 1.25rem;
+  padding-inline: calc(max(0px, (100% - var(--container-page)) / 2) + var(--dd-rail-gutter));
+  scroll-padding-inline: calc(
+    max(0px, (100% - var(--container-page)) / 2) + var(--dd-rail-gutter)
+  );
+}
+
+@media (min-width: 40rem) {
+  .dd-rail {
+    --dd-rail-gutter: 2.5rem;
+  }
+}
+
+.dd-rail::-webkit-scrollbar {
+  display: none;
+}
+
 /* Tiled fractal noise. Large dark gradients band visibly on 8-bit displays;
    a couple of percent of noise dithers the steps away. */
 .dd-noise::after {
