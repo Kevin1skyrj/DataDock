@@ -34,8 +34,8 @@ import {
   SHORTCUTS,
   SUGGESTIONS,
 } from "@/constants/command-palette";
-import { EASE } from "@/constants/motion";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { revealOnScroll } from "@/lib/reveal";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -174,38 +174,19 @@ export function CommandShowcase() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from("[data-section-heading] > *", {
-          opacity: 0,
-          y: 18,
-          duration: 0.8,
-          stagger: 0.09,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: root, start: "top 78%", once: true },
-        });
+        revealOnScroll("[data-section-heading] > *", "head", { scope: root, trigger: root });
 
         // The panel only — its rows are React-owned and swap on every
         // keystroke, so a stagger over them would be tweening stale nodes.
-        gsap.from("[data-command-panel]", {
-          opacity: 0,
-          y: 26,
-          scale: 0.985,
-          duration: 0.9,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-command-panel]", start: "top 88%", once: true },
-          // The panel is scaled imperatively on Enter; a leftover entrance
-          // transform would be the base that press animates from.
-          onComplete: () => {
-            if (panelRef.current) gsap.set(panelRef.current, { clearProps: "opacity,transform" });
-          },
-        });
+        // Clearing its props also matters here: the panel is scaled
+        // imperatively on Enter, and a leftover entrance transform would be
+        // the base that press animates from.
+        revealOnScroll("[data-command-panel]", "panel", { scope: root });
 
-        gsap.from("[data-shortcut]", {
-          opacity: 0,
-          y: 12,
-          duration: 0.6,
-          stagger: 0.05,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-shortcut-rail]", start: "top 92%", once: true },
+        revealOnScroll("[data-shortcut]", "body", {
+          scope: root,
+          trigger: "[data-shortcut-rail]",
+          start: "top 90%",
         });
       });
 

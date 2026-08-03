@@ -9,8 +9,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { HowItWorksStage } from "@/components/landing/how-it-works-stage";
 import { Badge } from "@/components/ui/badge";
 import { HOW_STEPS, STEP_DWELL } from "@/constants/how-it-works";
-import { EASE } from "@/constants/motion";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { revealOnScroll } from "@/lib/reveal";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -106,32 +106,9 @@ export function HowItWorks() {
         // `from` rather than a CSS initial state: this section is below the
         // fold, so there is nothing to hide before paint, and if the script
         // never runs the content is simply already in place.
-        gsap.from("[data-hiw='lede'] > *", {
-          opacity: 0,
-          y: 18,
-          duration: 0.8,
-          stagger: 0.09,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: root, start: "top 78%", once: true },
-        });
-
-        gsap.from("[data-hiw='step']", {
-          opacity: 0,
-          x: -16,
-          duration: 0.7,
-          stagger: 0.075,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-hiw='body']", start: "top 85%", once: true },
-        });
-
-        gsap.from("[data-hiw='stage']", {
-          opacity: 0,
-          y: 26,
-          scale: 0.985,
-          duration: 0.9,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-hiw='body']", start: "top 85%", once: true },
-        });
+        revealOnScroll("[data-hiw='lede'] > *", "head", { scope: root, trigger: root });
+        revealOnScroll("[data-hiw='step']", "body", { scope: root, trigger: "[data-hiw='body']" });
+        revealOnScroll("[data-hiw='stage']", "panel", { scope: root, trigger: "[data-hiw='body']" });
       });
 
       return () => mm.revert();

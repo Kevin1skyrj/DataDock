@@ -11,8 +11,8 @@ import { FEATURE_VISUALS } from "@/components/landing/feature-visuals";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { CARD_LIGHT, FEATURES } from "@/constants/features";
-import { EASE } from "@/constants/motion";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { revealOnScroll } from "@/lib/reveal";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -81,31 +81,10 @@ export function Features() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from("[data-section-heading] > *", {
-          opacity: 0,
-          y: 18,
-          duration: 0.8,
-          stagger: 0.09,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: root, start: "top 78%", once: true },
-        });
-
-        const cards = gsap.utils.toArray("[data-feature-card]", root);
-
-        gsap.from(cards, {
-          opacity: 0,
-          y: 26,
-          duration: 0.8,
-          stagger: 0.07,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-feature-rail]", start: "top 85%", once: true },
-          // Hand the cards back to the layout once the entrance is done. A
-          // `from` tween leaves its inline transform behind, and a card left
-          // holding one sits at a different height from its neighbours for the
-          // rest of the page's life — which is exactly what a row of cards
-          // must never do. The hero and the preview already do this; these
-          // later sections were the ones that dropped it.
-          onComplete: () => gsap.set(cards, { clearProps: "opacity,transform" }),
+        revealOnScroll("[data-section-heading] > *", "head", { scope: root, trigger: root });
+        revealOnScroll("[data-feature-card]", "body", {
+          scope: root,
+          trigger: "[data-feature-rail]",
         });
       });
 

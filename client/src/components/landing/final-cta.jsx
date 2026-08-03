@@ -8,7 +8,7 @@ import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CTA, CTA_POINTS } from "@/constants/cta";
-import { EASE } from "@/constants/motion";
+import { revealOnScroll } from "@/lib/reveal";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -34,27 +34,13 @@ export function FinalCta() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const panel = root.querySelector("[data-cta-panel]");
-        const items = gsap.utils.toArray("[data-cta='item']", root);
-
-        gsap.from(panel, {
-          opacity: 0,
-          y: 28,
-          scale: 0.99,
-          duration: 0.9,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: panel, start: "top 88%", once: true },
-          onComplete: () => gsap.set(panel, { clearProps: "opacity,transform" }),
-        });
-
-        gsap.from(items, {
-          opacity: 0,
-          y: 16,
-          duration: 0.75,
-          stagger: 0.08,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: panel, start: "top 82%", once: true },
-          onComplete: () => gsap.set(items, { clearProps: "opacity,transform" }),
+        revealOnScroll("[data-cta-panel]", "panel", { scope: root });
+        // The contents follow the panel rather than arriving with it, so the
+        // surface reads as landing first and filling second.
+        revealOnScroll("[data-cta='item']", "head", {
+          scope: root,
+          trigger: "[data-cta-panel]",
+          start: "top 76%",
         });
       });
 

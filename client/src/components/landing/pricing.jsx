@@ -10,9 +10,9 @@ import { useRef, useState } from "react";
 import { SectionHeading } from "@/components/common/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { EASE } from "@/constants/motion";
 import { ANNUAL_SAVING, BILLING, PLANS, PRICING_FOOTNOTE } from "@/constants/pricing";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { revealOnScroll } from "@/lib/reveal";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -120,29 +120,8 @@ export function Pricing() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from("[data-section-heading] > *", {
-          opacity: 0,
-          y: 18,
-          duration: 0.8,
-          stagger: 0.09,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: root, start: "top 78%", once: true },
-        });
-
-        const plans = gsap.utils.toArray("[data-plan]", root);
-
-        gsap.from(plans, {
-          opacity: 0,
-          y: 24,
-          duration: 0.8,
-          stagger: 0.08,
-          ease: EASE.entrance,
-          scrollTrigger: { trigger: "[data-plan-grid]", start: "top 85%", once: true },
-          // Cleared so no card keeps a residual transform — a plan left a few
-          // pixels off its row would read as a broken grid, and the featured
-          // card's hover lift would compose on top of the leftover.
-          onComplete: () => gsap.set(plans, { clearProps: "opacity,transform" }),
-        });
+        revealOnScroll("[data-section-heading] > *", "head", { scope: root, trigger: root });
+        revealOnScroll("[data-plan]", "body", { scope: root, trigger: "[data-plan-grid]" });
       });
 
       return () => mm.revert();

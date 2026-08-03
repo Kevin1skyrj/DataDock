@@ -49,3 +49,26 @@ export const EASE = {
   glide: "power3.out",
   pointer: "power3",
 };
+
+/**
+ * The scroll entrance, shared by every section below the hero.
+ *
+ * These were five near-identical sets of numbers written five times, drifting a
+ * few hundredths apart. Scrolling the page felt marginally uneven because it
+ * was: each section began at a slightly different point in the viewport and
+ * staggered at a slightly different rate. One set of values makes the whole
+ * page arrive with a single rhythm.
+ */
+export const REVEAL = {
+  /** Where a section's entrance begins, as a share of the viewport height. */
+  start: "top 82%",
+
+  /** Eyebrow, title, lead — the section introducing itself. */
+  head: { opacity: 0, y: 18, duration: 0.85, stagger: 0.08 },
+
+  /** Cards, plans, rows — the section's substance. */
+  body: { opacity: 0, y: 24, duration: 0.85, stagger: 0.07 },
+
+  /** A single large surface arriving as one piece rather than in parts. */
+  panel: { opacity: 0, y: 26, scale: 0.99, duration: 0.95 },
+};
