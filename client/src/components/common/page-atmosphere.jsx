@@ -12,22 +12,27 @@ const GLOW = (color, reach = 62) => ({
 });
 
 /**
- * The page's light.
+ * The application's light.
  *
- * The hero always had ambient light; everything below it sat on flat
- * background. That is what made the page read as a hero followed by a
- * document — each section began and ended against nothing, so every boundary
- * was a boundary. This is one field that spans all of them: no section owns
- * its own light, and no section starts on an edge.
+ * Originally the landing page's, now shared with authentication — which is the
+ * point. Signing in should not feel like arriving at a different website, and
+ * the cheapest, most convincing way to say "same product" is for the room to be
+ * lit the same way. Nothing about it is section-specific: it is one field, and
+ * whatever renders on top of it simply sits in it.
  *
  * Fixed rather than page-height on purpose. A tall absolute layer would be an
  * enormous composited surface; a fixed one is exactly a viewport, drifts on
  * scroll instead of scrolling, and costs a single transform per frame.
  *
- * It also stays out of the hero's way: the hero has its own, much stronger
- * light, so this fades up only as the hero leaves. The two never stack at full
- * strength, and the handover happens across a whole viewport of scrolling —
- * long enough that nobody can point at where it occurred.
+ * Both behaviours below are opt-in on what the page actually contains, so this
+ * needs no props to work correctly in either place:
+ *
+ * - The hero has its own, much stronger light, so this fades up only as the
+ *   hero leaves. Where there is no hero — authentication — it simply renders at
+ *   full strength from the start.
+ * - The parallax drift needs a document taller than the viewport to scrub
+ *   against. A single-screen page gets a still field instead of a
+ *   zero-length ScrollTrigger.
  */
 export function PageAtmosphere() {
   const scope = useRef(null);
@@ -61,6 +66,13 @@ export function PageAtmosphere() {
 
         // Each pool drifts at its own rate over the length of the document, so
         // the field has depth rather than being one flat sheet sliding past.
+        // Nothing to scrub against on a page that fits the viewport, and a
+        // ScrollTrigger whose start and end coincide is not a drift, it is a
+        // division by zero waiting to happen.
+        const scrollable =
+          document.documentElement.scrollHeight - window.innerHeight > 1;
+        if (!scrollable) return;
+
         gsap.utils.toArray("[data-atmos]", root).forEach((pool) => {
           gsap.to(pool, {
             yPercent: parseFloat(pool.dataset.atmos) * -100,

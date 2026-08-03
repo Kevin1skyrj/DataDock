@@ -3,6 +3,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { Menu, Search, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { AccentPicker } from "@/components/common/accent-picker";
@@ -166,7 +167,11 @@ export function SiteHeader() {
             <AccentPicker className="hidden sm:inline-flex" />
             <ThemeToggle className="hidden sm:inline-flex" />
 
-            <Button variant="ghost" size="sm" render={<a href="/login" />} className="hidden sm:inline-flex">
+            {/* A real route, so a real Link. An `<a>` here would tear the whole
+                document down and rebuild it — new paint, new fonts, the ambient
+                light restarting — which is precisely the seam the authentication
+                screens are built to avoid. */}
+            <Button variant="ghost" size="sm" render={<Link href="/login" />} className="hidden sm:inline-flex">
               Log in
             </Button>
 
@@ -222,7 +227,7 @@ export function SiteHeader() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  render={<a href="/login" />}
+                  render={<Link href="/login" />}
                   className="flex-1"
                 >
                   Log in

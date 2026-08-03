@@ -1,8 +1,8 @@
+import { PageAtmosphere } from "@/components/common/page-atmosphere";
 import { CommandShowcase } from "@/components/landing/command-showcase";
 import { Features } from "@/components/landing/features";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Hero } from "@/components/landing/hero";
-import { PageAtmosphere } from "@/components/landing/page-atmosphere";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Pricing } from "@/components/landing/pricing";
 import { ProductPreview } from "@/components/landing/product-preview";

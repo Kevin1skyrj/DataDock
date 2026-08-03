@@ -41,7 +41,7 @@ const FILE_ICONS = {
 
 /* -------------------------------------------------------------- sidebar -- */
 
-export function PreviewSidebar() {
+export function PreviewSidebar({ storage }) {
   return (
     <aside className="hidden min-w-0 flex-col justify-between border-r border-line/70 p-3.5 lg:flex xl:p-4">
       <div className="flex flex-col gap-5">
@@ -80,7 +80,7 @@ export function PreviewSidebar() {
         ))}
       </div>
 
-      <StorageMeter />
+      <StorageMeter value={storage} />
     </aside>
   );
 }
@@ -90,8 +90,15 @@ export function PreviewSidebar() {
  * file list below it, where there is no sidebar to hold it. One component, two
  * slots, so the storage beat in the entrance has something to animate at every
  * width rather than playing to an empty room on phones.
+ *
+ * By default it renders empty and waits to be filled: the hero's timeline finds
+ * it through `data-storage-*` and counts it up. Pass `value` where there is no
+ * timeline — the authentication backdrop, say — and it renders at rest instead,
+ * dropping the animator's hooks so nothing can later claim it.
  */
-export function StorageMeter({ className }) {
+export function StorageMeter({ className, value }) {
+  const atRest = value != null;
+
   return (
     <div
       data-preview="item"
@@ -99,8 +106,8 @@ export function StorageMeter({ className }) {
     >
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">Storage</span>
-        <span data-storage-pct className="font-mono text-brand">
-          0%
+        <span data-storage-pct={atRest ? undefined : ""} className="font-mono text-brand">
+          {atRest ? `${Math.round(value)}%` : "0%"}
         </span>
       </div>
 
@@ -108,9 +115,9 @@ export function StorageMeter({ className }) {
         {/* scaleX rather than width: the design animates width for 1.5s, which
             is layout on every frame. This composites on the GPU instead. */}
         <div
-          data-storage-bar
+          data-storage-bar={atRest ? undefined : ""}
           className="h-full origin-left rounded-full bg-brand"
-          style={{ transform: "scaleX(0)" }}
+          style={{ transform: `scaleX(${atRest ? value / 100 : 0})` }}
         />
       </div>
 
