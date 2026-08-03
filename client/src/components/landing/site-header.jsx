@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { AccentPicker } from "@/components/common/accent-picker";
+import { HEADER_GUTTER, HeaderIsland } from "@/components/common/header-island";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
@@ -28,10 +29,25 @@ const NAV_LINK =
 /**
  * The marketing header.
  *
- * At rest it is transparent and borderless so the hero's ambient light reads
- * uninterrupted; the blur and hairline fade in once the page has scrolled. The
- * scroll state comes from an IntersectionObserver on a sentinel rather than a
- * scroll listener, so nothing runs on the main thread while scrolling.
+ * A floating island rather than a bar pinned to the top edge. A full-width bar
+ * cuts the page in two at the very moment the hero is trying to open; an island
+ * sits *in* the page instead of across it, and the ambient light carries on
+ * around and behind it.
+ *
+ * The island is always present rather than materialising on scroll — it reads
+ * as a piece of chrome, and chrome that appears out of nothing is a trick. What
+ * scrolling changes is depth: the surface firms up, the hairline strengthens,
+ * and it lifts onto the elevation shadow, because by then there is content
+ * passing underneath that it needs to be clearly in front of.
+ *
+ * Its outer edge sits exactly on the page container, so it lines up with the
+ * hero below it and with the window on the authentication screens. The inner
+ * padding is deliberately asymmetric: `pl-10` puts the wordmark precisely on
+ * the hero's text column, while the right side tucks in closer because it ends
+ * in a filled button that supplies its own visual mass.
+ *
+ * The scroll state comes from an IntersectionObserver on a sentinel rather than
+ * a scroll listener, so nothing runs on the main thread while scrolling.
  */
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -111,17 +127,8 @@ export function SiteHeader() {
     <>
       <div ref={sentinelRef} aria-hidden="true" className="absolute top-0 h-px w-full" />
 
-      <header
-        ref={scope}
-        className={cn(
-          "sticky top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300 ease-standard",
-          "border-b",
-          scrolled
-            ? "border-line bg-[color-mix(in_oklab,var(--background)_78%,transparent)] backdrop-blur-[14px]"
-            : "border-transparent bg-transparent",
-        )}
-      >
-        <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-8 px-5 sm:px-10">
+      <header ref={scope} className={cn("sticky top-0 z-50", HEADER_GUTTER)}>
+        <HeaderIsland scrolled={scrolled}>
           <div className="flex items-center gap-10">
             <a
               href="#top"
@@ -192,38 +199,42 @@ export function SiteHeader() {
               {menuOpen ? <X /> : <Menu />}
             </Button>
           </div>
-        </div>
+        </HeaderIsland>
 
         {/* Grid-rows collapse animates height without measuring it, so the
             panel adapts to its content at any breakpoint. Because a collapsed
             grid row is not display:none, the panel stays in the accessibility
             tree — `inert` takes it out of both the tab order and the a11y tree,
-            which also stops it duplicating the navigation landmark. */}
+            which also stops it duplicating the navigation landmark.
+
+            A second island under the first, rather than a drawer hanging off
+            its bottom edge: the header no longer has a bottom edge to hang
+            anything from. */}
         <div
           id={menuId}
           inert={!menuOpen}
           className={cn(
-            "grid overflow-hidden transition-[grid-template-rows] duration-300 ease-standard lg:hidden",
+            "mx-auto grid max-w-page overflow-hidden transition-[grid-template-rows] duration-300 ease-standard lg:hidden",
             menuOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
           )}
         >
           <div className="min-h-0">
             <nav
               aria-label="Primary"
-              className="flex flex-col gap-1 border-t border-line bg-[color-mix(in_oklab,var(--background)_92%,transparent)] px-5 py-4 backdrop-blur-[14px] sm:px-10"
+              className="mt-2 flex flex-col gap-1 rounded-2xl border border-line bg-[color-mix(in_oklab,var(--overlay)_92%,transparent)] p-2.5 shadow-[0_1px_0_var(--lit)_inset,var(--elevation)] backdrop-blur-[14px]"
             >
               {MARKETING_NAV.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-md px-2 py-2.5 text-md text-muted-foreground transition-colors duration-200 ease-standard hover:bg-surface hover:text-foreground"
+                  className="rounded-md px-3 py-2.5 text-md text-muted-foreground transition-colors duration-200 ease-standard hover:bg-surface hover:text-foreground"
                 >
                   {item.label}
                 </a>
               ))}
 
-              <div className="mt-3 flex items-center gap-2 sm:hidden">
+              <div className="mt-2 flex items-center gap-2 sm:hidden">
                 <Button
                   variant="secondary"
                   size="sm"

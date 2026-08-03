@@ -2,18 +2,19 @@ import Link from "next/link";
 
 import { AuthWindow } from "@/components/auth/auth-window";
 import { AccentPicker } from "@/components/common/accent-picker";
+import { HEADER_GUTTER, HeaderIsland } from "@/components/common/header-island";
 import { PageAtmosphere } from "@/components/common/page-atmosphere";
 import { ThemeToggle } from "@/components/common/theme-toggle";
+import { cn } from "@/lib/utils";
 
 /**
  * The shell every authentication screen renders into.
  *
- * The header repeats the marketing header's geometry exactly — same height,
- * same container, same padding, same wordmark — so the top of the screen does
- * not move when the route does. What it drops is the navigation, and that
- * absence is the message: you have stopped browsing DataDock and started
- * entering it. The theme and accent controls stay, because they belong to the
- * visitor rather than to the page.
+ * The header is not a copy of the marketing header's shape, it is literally the
+ * same island, so the top of the screen cannot move when the route does. What
+ * it drops is the navigation, and that absence is the message: you have stopped
+ * browsing DataDock and started entering it. The theme and accent controls
+ * stay, because they belong to the visitor rather than to the page.
  *
  * Everything below is the window, and the window is `AuthWindow`'s problem.
  * Screens themselves render nothing but their sheet.
@@ -24,8 +25,8 @@ export default function AuthLayout({ children }) {
       <PageAtmosphere />
 
       <div className="flex min-h-dvh flex-col">
-        <header className="shrink-0">
-          <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-8 px-5 sm:px-10">
+        <header className={cn("shrink-0", HEADER_GUTTER)}>
+          <HeaderIsland>
             <Link
               href="/"
               className="text-xl font-semibold tracking-tight text-foreground"
@@ -37,7 +38,7 @@ export default function AuthLayout({ children }) {
               <AccentPicker />
               <ThemeToggle />
             </div>
-          </div>
+          </HeaderIsland>
         </header>
 
         {/* `items-center` rather than `place-items-center` on a grid: when the

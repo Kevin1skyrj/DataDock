@@ -190,9 +190,10 @@ export function AuthWindow({ children }) {
   );
 
   return (
-    // Deliberately the same container width as the marketing header above it,
-    // so the wordmark does not shift sideways between the landing page and this
-    // one and the window's left edge lands exactly under it.
+    // Deliberately the same container width as the header island above it, so
+    // the two share an outer edge: one floating surface directly beneath
+    // another, each with its own inner padding, rather than two boxes that
+    // happen to be near each other.
     <div ref={scope} className="w-full max-w-page">
       <div data-auth="window" className="relative isolate">
         {/* Light pooling behind the window, so it reads as sitting in the room
