@@ -1,5 +1,6 @@
 import { CommandShowcase } from "@/components/landing/command-showcase";
 import { Features } from "@/components/landing/features";
+import { FinalCta } from "@/components/landing/final-cta";
 import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Pricing } from "@/components/landing/pricing";
@@ -21,6 +22,7 @@ export default function LandingPage() {
         <CommandShowcase />
         <Features />
         <Pricing />
+        <FinalCta />
       </main>
     </>
   );
