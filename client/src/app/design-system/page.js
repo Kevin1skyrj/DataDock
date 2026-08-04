@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
+import { FileRowGallery } from "@/components/workspace/file-row-gallery";
 import { ACCENTS } from "@/constants/accents";
 import { useMounted } from "@/hooks/use-mounted";
 import { useAccent } from "@/providers/accent-provider";
@@ -285,6 +286,14 @@ export default function FoundationPage() {
             </DialogContent>
           </Dialog>
         </div>
+      </section>
+
+      <section
+        id="file-row"
+        className="flex flex-col gap-6 rounded-xl border border-line bg-surface p-6"
+      >
+        <p className="text-display-xs font-semibold tracking-tight">File row</p>
+        <FileRowGallery />
       </section>
 
       <section

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -58,38 +59,42 @@ export function NotificationsMenu() {
       />
 
       <DropdownMenuContent className="w-[min(20rem,calc(100vw-2rem))]">
-        <DropdownMenuLabel>Activity</DropdownMenuLabel>
+        {/* The label lives inside the group: Base UI reads that context to wire
+            `aria-labelledby`, and throws outright without it. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Activity</DropdownMenuLabel>
 
-        {NOTIFICATIONS.map((item) => {
-          const Icon = ICONS[item.icon] ?? Bell;
+          {NOTIFICATIONS.map((item) => {
+            const Icon = ICONS[item.icon] ?? Bell;
 
-          return (
-            <DropdownMenuItem key={item.id} className="items-start gap-3 py-2">
-              <span
-                className={cn(
-                  "mt-0.5 grid size-7 shrink-0 place-items-center rounded-md",
-                  item.unread ? "bg-brand-tint text-brand" : "bg-surface-2 text-dim",
-                )}
-              >
-                <Icon className="size-3.5" />
-              </span>
-
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            return (
+              <DropdownMenuItem key={item.id} className="items-start gap-3 py-2">
                 <span
                   className={cn(
-                    "truncate text-base",
-                    item.unread ? "text-foreground" : "text-muted-foreground",
+                    "mt-0.5 grid size-7 shrink-0 place-items-center rounded-md",
+                    item.unread ? "bg-brand-tint text-brand" : "bg-surface-2 text-dim",
                   )}
                 >
-                  {item.title}
+                  <Icon className="size-3.5" />
                 </span>
-                <span className="truncate text-sm text-dim">{item.body}</span>
-              </span>
 
-              <span className="shrink-0 text-xs text-dim">{item.time}</span>
-            </DropdownMenuItem>
-          );
-        })}
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span
+                    className={cn(
+                      "truncate text-base",
+                      item.unread ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {item.title}
+                  </span>
+                  <span className="truncate text-sm text-dim">{item.body}</span>
+                </span>
+
+                <span className="shrink-0 text-xs text-dim">{item.time}</span>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

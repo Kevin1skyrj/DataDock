@@ -20,7 +20,13 @@ import { cn } from "@/lib/utils";
  * them. Nothing uses it yet; it is here because `PageContainer` is the contract
  * every page in the milestones after this one will be written against.
  */
-export function PageContainer({ toolbar, children, className }) {
+/**
+ * `flush` hands the padding to the child. The file workspace has a toolbar, a
+ * scrolling listing and a status bar that each own their own edges, and a pane
+ * that insets them all would put a gutter between the toolbar and the border it
+ * is supposed to sit against.
+ */
+export function PageContainer({ toolbar, children, className, flush = false }) {
   return (
     <div className="flex min-h-full flex-col p-3 sm:p-4">
       <div
@@ -35,7 +41,9 @@ export function PageContainer({ toolbar, children, className }) {
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 p-4 sm:p-6">{children}</div>
+        <div className={cn("flex min-h-0 flex-1 flex-col", !flush && "p-4 sm:p-6")}>
+          {children}
+        </div>
       </div>
     </div>
   );
