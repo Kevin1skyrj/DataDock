@@ -53,6 +53,10 @@ export const SEGMENT_LABELS = {
   search: "Search",
   storage: "Storage",
   settings: "Settings",
+  appearance: "Appearance",
+  notifications: "Notifications",
+  security: "Security",
+  shortcuts: "Shortcuts",
   billing: "Billing",
 };
 

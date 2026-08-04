@@ -1,12 +1,7 @@
-import { PagePlaceholder } from "@/components/dashboard/page-placeholder";
+import { ProfileSettings } from "@/app/dashboard/settings/profile-settings";
 
-export const metadata = { title: "Settings" };
+export const metadata = { title: "Profile" };
 
-export default function Page() {
-  return (
-    <PagePlaceholder
-      title="Settings"
-      description="Your profile, security and workspace preferences."
-    />
-  );
+export default function SettingsProfilePage() {
+  return <ProfileSettings />;
 }

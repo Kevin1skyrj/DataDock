@@ -1,12 +1,12 @@
-import { PagePlaceholder } from "@/components/dashboard/page-placeholder";
+import { DashboardHome } from "@/app/dashboard/dashboard-home";
+import { PageContainer } from "@/components/dashboard/page-container";
 
 export const metadata = { title: "Dashboard" };
 
-export default function Page() {
+export default function DashboardPage() {
   return (
-    <PagePlaceholder
-      title="Dashboard Home"
-      description="Your workspace overview lands here — storage, recent files, quick upload and activity."
-    />
+    <PageContainer flush>
+      <DashboardHome />
+    </PageContainer>
   );
 }

@@ -1,5 +1,6 @@
 import { ACCENT_IDS, ACCENT_STORAGE_KEY } from "@/constants/accents";
 import { SIDEBAR_STORAGE_KEY } from "@/constants/dashboard";
+import { DENSITY_STORAGE_KEY, MOTION_STORAGE_KEY } from "@/constants/settings";
 import { DETAILS_STORAGE_KEY } from "@/constants/workspace";
 import { ENTRANCE_STORAGE_KEY } from "@/lib/entrance";
 
@@ -12,7 +13,10 @@ import { ENTRANCE_STORAGE_KEY } from "@/lib/entrance";
  *    start hidden, but hiding them in plain CSS would leave the page blank when
  *    JavaScript fails. Gating that initial state behind an attribute only a
  *    script can set means no-JS visitors get the fully composed page instead.
- * 3. Apply the stored sidebar width and details-panel state. Same argument as the accent, and louder:
+ * 3. Apply the stored sidebar width and details-panel state.
+ * 4. Apply the stored density and motion preference. Both change layout or
+ *    animation, so both have to be right in the first frame rather than
+ *    corrected in one that follows. Same argument as the accent, and louder:
  *    a sidebar that paints at 248px and jumps to 68px is 190px of visible
  *    correction on every single load of the application.
  *
@@ -38,4 +42,8 @@ export const bootScript = `(function(){var d=document.documentElement;try{var a=
   SIDEBAR_STORAGE_KEY,
 )})==="1"){d.dataset.sidebar="collapsed"}}catch(e){}try{if(localStorage.getItem(${JSON.stringify(
   DETAILS_STORAGE_KEY,
-)})==="1"){d.dataset.details="open"}}catch(e){}})();`;
+)})==="1"){d.dataset.details="open"}}catch(e){}try{if(localStorage.getItem(${JSON.stringify(
+  DENSITY_STORAGE_KEY,
+)})==="compact"){d.dataset.density="compact"}}catch(e){}try{if(localStorage.getItem(${JSON.stringify(
+  MOTION_STORAGE_KEY,
+)})==="1"){d.dataset.reduceMotion="1"}}catch(e){}})();`;

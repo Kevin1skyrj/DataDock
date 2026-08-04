@@ -47,6 +47,7 @@ export function FileCard({
     <div
       ref={ref}
       role="gridcell"
+      data-workspace="card"
       data-item-id={item.id}
       aria-selected={selected}
       tabIndex={tabIndex}
