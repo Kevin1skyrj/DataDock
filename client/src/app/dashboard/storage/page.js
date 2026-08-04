@@ -1,12 +1,12 @@
-import { PagePlaceholder } from "@/components/dashboard/page-placeholder";
+import { StorageRoute } from "@/app/dashboard/storage/storage-route";
+import { PageContainer } from "@/components/dashboard/page-container";
 
 export const metadata = { title: "Storage" };
 
-export default function Page() {
+export default function StoragePage() {
   return (
-    <PagePlaceholder
-      title="Storage"
-      description="What is using your space, and what you can reclaim."
-    />
+    <PageContainer flush>
+      <StorageRoute />
+    </PageContainer>
   );
 }

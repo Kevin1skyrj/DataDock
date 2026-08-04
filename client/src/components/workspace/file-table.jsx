@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FILE_GRID, FileRow, FileRowSkeleton } from "@/components/workspace/file-row";
 import { useWorkspace } from "@/components/workspace/workspace-context";
 import { resolveListIndex, useGridKeyboard } from "@/components/workspace/use-grid-keyboard";
-import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const COLUMN_LABEL = {
@@ -23,7 +22,7 @@ const COLUMN_SORT = {
   size: "size",
   modified: "updatedAt",
   opened: "openedAt",
-  deleted: "updatedAt",
+  deleted: "trashedAt",
   shared: null,
 };
 
@@ -89,7 +88,7 @@ function SortButton({ field, children, className }) {
 export function FileTable() {
   const {
     view, items, loading, refreshing, sort, selection, activeId, setActiveId,
-    handlers, toggleStar,
+    handlers, toggleStar, drag, paste, path: trail, onNavigate,
   } = useWorkspace();
 
   const scrollRef = useRef(null);
@@ -102,6 +101,12 @@ export function FileTable() {
 
   const onKeyDown = useGridKeyboard({
     items, activeId, setActiveId, selection, handlers, resolve,
+    // Workspace-level shortcuts the listing does not own but is the only thing
+    // focused when they are pressed.
+    shortcuts: {
+      paste,
+      up: () => onNavigate?.(trail.at(-2)?.id ?? null),
+    },
   });
 
   // Keeps the focused row on screen when arrowing past the fold. `scrollTop`
@@ -177,8 +182,14 @@ export function FileTable() {
             <SortButton field={COLUMN_SORT[columns[1]]}>{COLUMN_LABEL[columns[1]]}</SortButton>
           </span>
 
-          <span role="columnheader" className="hidden xl:block">
-            {COLUMN_LABEL[columns[2]] ?? ""}
+          <span
+            role="columnheader"
+            aria-sort={sortState(sort, COLUMN_SORT[columns[2]])}
+            className="hidden xl:block"
+          >
+            <SortButton field={COLUMN_SORT[columns[2]]}>
+              {COLUMN_LABEL[columns[2]] ?? ""}
+            </SortButton>
           </span>
 
           <span role="columnheader" />
@@ -210,14 +221,24 @@ export function FileTable() {
                 }}
                 item={item}
                 selected={selection.isSelected(item.id)}
+                draggable
+                dragging={drag.dragging?.ids.includes(item.id) ?? false}
+                dropActive={drag.dropTarget === item.id}
+                // Only folders take a drop. Highlighting a file would promise
+                // something the drop cannot deliver.
+                dropProps={item.type === "folder" ? drag.dropProps(item.id, { spring: true }) : undefined}
+                onDragStart={(dragged, event) => {
+                  // Dragging something inside a selection carries the whole
+                  // selection; dragging something outside one carries just it.
+                  const payload = selection.isSelected(dragged.id) ? selection.selected : [dragged];
+                  if (!selection.isSelected(dragged.id)) selection.selectOnly(dragged);
+                  drag.startDrag(event, payload);
+                }}
+                onDragEnd={drag.endDrag}
                 active={activeId === item.id}
                 selectionActive={selection.count > 0}
                 tabIndex={activeId === item.id || (!activeId && items[0]?.id === item.id) ? 0 : -1}
-                extraColumn={
-                  columns[2] === "deleted" || columns[2] === "opened"
-                    ? formatDate(item.openedAt)
-                    : undefined
-                }
+                columns={columns}
                 onSelect={(row, event) => {
                   setActiveId(row.id);
                   selection.handleClick(row, event);

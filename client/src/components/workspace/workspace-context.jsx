@@ -2,15 +2,25 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
+import { notify } from "@/components/ui/toast";
+import { useDragDrop } from "@/components/workspace/use-drag-drop";
+import { publishTrail } from "@/lib/breadcrumb-trail";
+import { clearWorkspaceCommands, publishWorkspaceCommands } from "@/lib/workspace-commands";
+import { useUploadsLandedIn } from "@/lib/upload-store";
 import { buildFileActions } from "@/lib/file-actions";
 import { useSelection } from "@/lib/use-selection";
 import {
+  collectDescendants,
+  copyItems,
   createFolder,
+  deleteItems,
+  duplicateItems,
   getDownloadUrl,
   getPath,
-  listItems,
+  moveItems,
   renameItem,
   restoreItems,
+  revokeShare,
   starItems,
   trashItems,
 } from "@/services/files";
@@ -37,7 +47,7 @@ export function useWorkspace() {
  * headless hook, actions are a pure registry, formatting is a pure module. This
  * file is the only place that knows all three exist at the same time.
  */
-export function WorkspaceProvider({ view, folderId = null, onNavigate, children }) {
+export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, children }) {
   const [sort, setSort] = useState(view.sort);
   const [kinds, setKinds] = useState([]);
   const [query, setQuery] = useState("");
@@ -47,6 +57,24 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
   const [activeId, setActiveId] = useState(null);
   const [renaming, setRenaming] = useState(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
+  /** The import provider whose dialog is open, if any. */
+  const [importing, setImporting] = useState(null);
+  /** Which item the Quick Look is showing, by index into the listing. */
+  const [previewIndex, setPreviewIndex] = useState(null);
+  const [sharing, setSharing] = useState(null);
+  /** `{ items }` while permanent deletion is being confirmed. */
+  const [confirmingDelete, setConfirmingDelete] = useState(null);
+  /** `{ mode: "move" | "copy", items }` while a destination is being chosen. */
+  const [destination, setDestination] = useState(null);
+  /**
+   * Cut or copied, waiting to be pasted.
+   *
+   * A real clipboard rather than a dialog-only Move, because ⌘X ⌘V is how
+   * people actually reorganise a drive — pick things up here, walk to where
+   * they belong, put them down. A dialog cannot express "somewhere I will
+   * recognise when I see it".
+   */
+  const [clipboard, setClipboard] = useState(null);
 
   /**
    * The listing, tagged with the request it answers.
@@ -58,27 +86,39 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
    * landing after a fast second one and overwriting it. Here a stale response
    * simply carries the wrong key and is ignored.
    */
-  const [data, setData] = useState({ key: null, items: [], total: 0, error: null });
+  const [data, setData] = useState({ key: null, items: [], total: 0, facets: null, error: null });
+
+  // Uploads that landed in *this* folder are part of what the listing is a
+  // view of, so they belong in the key rather than in an effect watching for
+  // them. A file finishing elsewhere changes nothing here and refetches
+  // nothing — which an effect on "did any upload complete" could not manage.
+  const landed = useUploadsLandedIn(folderId);
 
   const requestKey = useMemo(
-    () => JSON.stringify({ view: view.id, folderId, sort, kinds, query, nonce }),
-    [view.id, folderId, sort, kinds, query, nonce],
+    () => JSON.stringify({ view: view.id, folderId, scope, sort, kinds, query, nonce, landed }),
+    [view.id, folderId, scope, sort, kinds, query, nonce, landed],
   );
 
   const stale = data.key !== requestKey;
   const loading = stale && data.items.length === 0;
   const refreshing = stale && data.items.length > 0;
 
-  const { items, total, error } = data;
+  const { items, total, facets, error } = data;
 
   useEffect(() => {
     let cancelled = false;
-    const base = view.query({ folderId });
 
-    listItems({ ...base, sort, filter: { ...base.filter, kinds, query } })
+    view
+      .fetch({ folderId, ...scope }, { sort, kinds, query })
       .then((page) => {
         if (!cancelled) {
-          setData({ key: requestKey, items: page.items, total: page.total, error: null });
+          setData({
+            key: requestKey,
+            items: page.items,
+            total: page.total,
+            facets: page.facets ?? null,
+            error: null,
+          });
         }
       })
       .catch((failure) => {
@@ -87,6 +127,7 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
             key: requestKey,
             items: [],
             total: 0,
+            facets: null,
             error: failure.message ?? "That listing could not be loaded.",
           });
         }
@@ -95,19 +136,33 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
     return () => {
       cancelled = true;
     };
-  }, [requestKey, view, folderId, sort, kinds, query]);
+  }, [requestKey, view, folderId, scope, sort, kinds, query]);
 
   const [path, setPath] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     getPath(folderId).then((trail) => {
-      if (!cancelled) setPath(trail);
+      if (cancelled) return;
+      setPath(trail);
+      // The shell draws the breadcrumb; only this side knows what the folders
+      // are called. See lib/breadcrumb-trail.js.
+      publishTrail(
+        trail.map((rung) => ({
+          id: rung.id,
+          name: rung.name,
+          href: `/dashboard/files?folder=${encodeURIComponent(rung.id)}`,
+        })),
+      );
     });
     return () => {
       cancelled = true;
     };
   }, [folderId]);
+
+  // Leaving the workspace has to retract the trail, or Settings inherits
+  // "Home / All files / Brand refresh".
+  useEffect(() => () => publishTrail([]), []);
 
   const reload = useCallback(() => setNonce((current) => current + 1), []);
 
@@ -136,10 +191,10 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
             ),
           }));
         }
-        if (message) setStatus(message);
+        if (message) notify(message);
         return updated;
       } catch (failure) {
-        setStatus({ tone: "error", text: failure.message ?? "That did not work." });
+        notify({ title: failure.message ?? "That did not work.", type: "error" });
         reload();
         return null;
       }
@@ -150,18 +205,56 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
   const handlers = useMemo(
     () => ({
       open: (item) => {
+        // A folder is somewhere to go; a file is something to look at. Enter
+        // means "open" for both, and this is what that means for each.
         if (item.type === "folder") onNavigate?.(item.id);
-        else setStatus({ text: `Preview for ${item.name} arrives with File Preview.` });
+        else setPreviewIndex(items.findIndex((candidate) => candidate.id === item.id));
       },
-      preview: (item) => setStatus({ text: `Preview for ${item.name} arrives with File Preview.` }),
+      preview: (item) =>
+        setPreviewIndex(items.findIndex((candidate) => candidate.id === item.id)),
       rename: (item) => setRenaming(item),
-      move: (selected) =>
-        setStatus({
-          text: `Moving ${selected.length === 1 ? selected[0].name : `${selected.length} items`} arrives with its own milestone.`,
-        }),
-      share: (item) => setStatus({ text: `Sharing ${item.name} arrives with Sharing.` }),
-      copyLink: (item) => setStatus({ text: `Link to ${item.name} copied.` }),
-      revokeShare: (item) => setStatus({ text: `Stopped sharing ${item.name}.` }),
+      move: (selected) => setDestination({ mode: "move", items: selected }),
+      copy: (selected) => setDestination({ mode: "copy", items: selected }),
+
+      duplicate: async (selected) => {
+        const created = await duplicateItems(selected.map((item) => item.id));
+        reload();
+        notify({
+          title:
+            created.length === 1
+              ? `Duplicated as ${created[0].name}.`
+              : `Duplicated ${created.length} items.`,
+          undo: async () => {
+            await trashItems(created.map((item) => item.id));
+            reload();
+          },
+        });
+      },
+
+      cut: (selected) => setClipboard({ mode: "move", items: selected }),
+      copyToClipboard: (selected) => setClipboard({ mode: "copy", items: selected }),
+      share: (item) => setSharing(item),
+
+      copyLink: async (item) => {
+        const url = `https://datadock.app/s/${item.share?.token ?? item.share?.id}`;
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch {
+          /* refused — the share dialog shows the link either way */
+        }
+        notify({ title: "Link copied", description: url });
+      },
+
+      revokeShare: (item) =>
+        mutate(
+          (current) => ({
+            items: current.items.map((row) =>
+              row.id === item.id ? { ...row, share: null } : row,
+            ),
+          }),
+          () => revokeShare(item.id).then(() => []),
+          { title: `Stopped sharing ${item.name}` },
+        ),
 
       download: async (selected) => {
         const [first] = selected;
@@ -192,14 +285,15 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
           }),
           () => trashItems(ids),
           {
-            text:
+            title:
               selected.length === 1
-                ? `${selected[0].name} moved to trash.`
-                : `${selected.length} items moved to trash.`,
+                ? `${selected[0].name} moved to trash`
+                : `${selected.length} items moved to trash`,
             // Trash is reversible by design, so this is an undo rather than a
             // confirmation. Asking "are you sure?" before a recoverable action
             // interrupts the case that always happens in order to guard the one
-            // that almost never does.
+            // that almost never does. Nothing in this milestone is irreversible,
+            // so nothing in it asks.
             undo: async () => {
               await restoreItems(ids);
               reload();
@@ -211,15 +305,94 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
       restore: async (selected) => {
         const ids = selected.map((item) => item.id);
         selection.clear();
-        await mutate(null, () => restoreItems(ids), { text: `Restored ${ids.length}.` });
+        await mutate(null, () => restoreItems(ids), { title: `Restored ${ids.length}.` });
         reload();
       },
 
-      deleteForever: (selected) =>
-        setStatus({ text: `Permanent delete arrives with the Trash view. (${selected.length})` }),
+      newFolder: () => setCreatingFolder(true),
+
+      // The one action in the product with no undo to offer, so the only place
+      // left to ask is before. Everything else does the thing and offers a way
+      // back — see the note in ui/confirm-dialog.
+      deleteForever: (selected) => setConfirmingDelete({ items: selected }),
     }),
-    [mutate, reload, onNavigate, selection],
+    [items, mutate, reload, onNavigate, selection],
   );
+
+  /* -------------------------------------------------- move, copy, paste -- */
+
+  /**
+   * The one path every relocation takes.
+   *
+   * Dragging, the Move dialog and ⌘V all end up here, so "moved 3 items" reads
+   * the same and undoes the same however it was started. The undo is the
+   * inverse move rather than a snapshot, which is the only version that stays
+   * correct when the folder has changed underneath in the meantime.
+   */
+  const relocate = useCallback(
+    async (ids, targetId, mode = "move") => {
+      const moving = items.filter((item) => ids.includes(item.id));
+      const origins = new Map(moving.map((item) => [item.id, item.parentId]));
+      const label = moving.length === 1 ? moving[0]?.name : `${ids.length} items`;
+
+      selection.clear();
+
+      if (mode === "copy") {
+        try {
+          await copyItems(ids, targetId);
+          reload();
+          notify({ title: `Copied ${label}.` });
+        } catch (failure) {
+          notify({ title: failure.message, type: "error" });
+        }
+        return;
+      }
+
+      await mutate(
+        (current) => ({
+          items: current.items.filter((item) => !ids.includes(item.id)),
+          total: current.total - ids.length,
+        }),
+        () => moveItems(ids, targetId),
+        {
+          title: `Moved ${label}`,
+          undo: async () => {
+            // Each item goes back where it came from, which is not necessarily
+            // one folder — a multi-selection can span a listing that a filter
+            // assembled from several.
+            for (const [id, parentId] of origins) {
+              await moveItems([id], parentId);
+            }
+            reload();
+          },
+        },
+      );
+    },
+    [items, selection, mutate, reload],
+  );
+
+  const paste = useCallback(() => {
+    if (!clipboard) return;
+    relocate(
+      clipboard.items.map((item) => item.id),
+      folderId,
+      clipboard.mode,
+    );
+    // A cut is consumed; a copy can be pasted into several places.
+    if (clipboard.mode === "move") setClipboard(null);
+  }, [clipboard, folderId, relocate]);
+
+  /* --------------------------------------------------------- dragging -- */
+
+  const drag = useDragDrop({
+    onMove: (ids, targetId) => relocate(ids, targetId, "move"),
+    onSpringOpen: (targetId) => onNavigate?.(targetId),
+    // A folder may not land inside itself or anything it contains. The service
+    // refuses too, but by then it has already appeared to move.
+    isForbidden: (targetId, ids) =>
+      ids.some((id) => targetId !== null && collectDescendants(id).has(targetId)) ||
+      items.some((item) => ids.includes(item.id) && item.parentId === targetId),
+  });
 
   const toggleStar = useCallback(
     (item) =>
@@ -242,7 +415,13 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
           items: current.items.map((row) => (row.id === item.id ? { ...row, name } : row)),
         }),
         () => renameItem(item.id, name),
-        { text: `Renamed to ${name}.` },
+        {
+          title: `Renamed to ${name}`,
+          undo: async () => {
+            await renameItem(item.id, item.name);
+            reload();
+          },
+        },
       );
       // Name is the default sort key, so the row may belong somewhere else now.
       // Re-asking is the only way to find out where.
@@ -251,15 +430,37 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
     [mutate, sort.field, reload],
   );
 
+  const commitDelete = useCallback(async () => {
+    const target = confirmingDelete?.items ?? [];
+    const ids = target.map((item) => item.id);
+    setConfirmingDelete(null);
+    selection.clear();
+
+    try {
+      await deleteItems(ids);
+      reload();
+      notify({ title: `Deleted ${ids.length} ${ids.length === 1 ? "item" : "items"} for good` });
+    } catch (failure) {
+      notify({ title: failure.message, type: "error" });
+      reload();
+    }
+  }, [confirmingDelete, selection, reload]);
+
   const commitNewFolder = useCallback(
     async (name) => {
       setCreatingFolder(false);
       try {
         const folder = await createFolder({ parentId: folderId, name });
-        setStatus({ text: `Created ${folder.name}.` });
         reload();
+        notify({
+          title: `Created ${folder.name}`,
+          undo: async () => {
+            await trashItems([folder.id]);
+            reload();
+          },
+        });
       } catch (failure) {
-        setStatus({ tone: "error", text: failure.message });
+        notify({ title: failure.message, type: "error" });
       }
     },
     [folderId, reload],
@@ -290,24 +491,46 @@ export function WorkspaceProvider({ view, folderId = null, onNavigate, children 
     [view, scopeFor],
   );
 
+  // Published for the command palette, which lives in the shell and cannot
+  // reach this context. See lib/workspace-commands.js.
+  useEffect(() => {
+    publishWorkspaceCommands({
+      selection: selection.selected,
+      actions,
+      handlers,
+      folderId,
+    });
+  }, [selection.selected, actions, handlers, folderId]);
+
+  useEffect(() => () => clearWorkspaceCommands(), []);
+
   const filtered = kinds.length > 0 || query.length > 0;
 
   const value = useMemo(
     () => ({
-      view, folderId, path, items, total, loading, refreshing, error,
+      view, folderId, path, items, total, facets, loading, refreshing, error,
       status, setStatus,
       sort, setSort, kinds, setKinds, query, setQuery, filtered,
       selection, activeId, setActiveId,
       actions, actionsFor, scopeFor, handlers, toggleStar,
       renaming, setRenaming, commitRename,
       creatingFolder, setCreatingFolder, commitNewFolder,
+      importing, setImporting,
+      previewIndex, setPreviewIndex,
+      sharing, setSharing,
+      confirmingDelete, setConfirmingDelete, commitDelete,
+      destination, setDestination, relocate,
+      clipboard, setClipboard, paste,
+      drag,
       reload, onNavigate,
     }),
     [
-      view, folderId, path, items, total, loading, refreshing, error, status,
+      view, folderId, path, items, total, facets, loading, refreshing, error, status,
       sort, kinds, query, filtered, selection, activeId, actions, actionsFor,
       scopeFor, handlers, toggleStar, renaming, commitRename, creatingFolder,
-      commitNewFolder, reload, onNavigate,
+      commitNewFolder, importing, previewIndex, sharing, confirmingDelete,
+      commitDelete, destination, relocate, clipboard, paste, drag,
+      reload, onNavigate,
     ],
   );
 

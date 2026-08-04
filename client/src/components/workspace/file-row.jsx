@@ -26,6 +26,23 @@ export const FILE_GRID = cn(
 );
 
 /**
+ * What each optional column shows.
+ *
+ * Exported so the header, the row and the details panel all read the same
+ * definition. Recent shows when you opened something, Trash shows when you
+ * deleted it, All files shows whether it is shared — one row component, three
+ * views, no branching inside it.
+ */
+export const COLUMN_RENDER = {
+  size: (item) => (item.type === "folder" ? "—" : formatBytes(item.size)),
+  modified: (item) => formatDate(item.updatedAt),
+  opened: (item) => formatDate(item.openedAt),
+  deleted: (item) => formatDate(item.trashedAt),
+  shared: (item) =>
+    item.share ? <span className="text-brand">Link</span> : <span className="text-dim">—</span>,
+};
+
+/**
  * Splits a filename so the extension can be protected from truncation.
  *
  * `truncate` on the whole name gives you `very-long-quarterly-repor…`, which
@@ -71,7 +88,13 @@ export function FileRow({
   active = false,
   selectionActive = false,
   tabIndex = -1,
-  extraColumn,
+  columns = ["size", "modified", "shared"],
+  draggable = false,
+  dropActive = false,
+  dragging = false,
+  dropProps,
+  onDragStart,
+  onDragEnd,
   onSelect,
   onToggleSelect,
   onOpen,
@@ -99,18 +122,28 @@ export function FileRow({
       data-file-row
       data-item-id={item.id}
       data-active={active || undefined}
+      draggable={draggable}
+      onDragStart={(event) => onDragStart?.(item, event)}
+      onDragEnd={onDragEnd}
       onClick={(event) => onSelect?.(item, event)}
       onDoubleClick={() => onOpen?.(item)}
       onContextMenu={(event) => onContextMenu?.(item, event)}
+      {...dropProps}
       className={cn(
         FILE_GRID,
         "group relative min-h-10 cursor-default rounded-md px-2 select-none",
-        "transition-[background-color,box-shadow] duration-150 ease-standard",
+        "transition-[background-color,box-shadow,opacity] duration-150 ease-standard",
         // Inset, because an outward ring in a dense list draws on the row above.
         "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand",
         selected
           ? "bg-brand-tint ring-1 ring-brand/25 ring-inset hover:bg-brand-tint"
           : "hover:bg-surface",
+        // A live drop target reads louder than a selection, because during a
+        // drag it is the only thing being asked about.
+        dropActive && "bg-brand-tint ring-2 ring-brand ring-inset",
+        // What is in flight fades where it was, so the row does not look like it
+        // is both here and being carried away.
+        dragging && "opacity-40",
       )}
     >
       {/* Reads in the accent, the same rail the sidebar and the preview use, so
@@ -198,31 +231,30 @@ export function FileRow({
         </span>
       </div>
 
-      {/* ---------------------------------------------------------- size -- */}
-      {/* Right-aligned and tabular: sizes are read by comparing them down the
-          column, and ragged left edges make that impossible. */}
+      {/* ------------------------------------------------------- columns -- */}
+      {/* Right-aligned and tabular where it is a size: those are read by
+          comparing down the column, and ragged left edges make that
+          impossible. Everything else reads left. */}
       <div
         role="gridcell"
-        className="truncate text-right font-mono text-xs text-dim tabular-nums"
+        className={cn(
+          "truncate text-xs text-dim",
+          columns[0] === "size" ? "text-right font-mono tabular-nums" : "text-sm",
+        )}
       >
-        {isFolder ? "—" : formatBytes(item.size)}
+        {COLUMN_RENDER[columns[0]]?.(item)}
       </div>
 
-      {/* ------------------------------------------------------ modified -- */}
       <div
         role="gridcell"
-        title={formatDateFull(item.updatedAt)}
+        title={columns[1] === "modified" ? formatDateFull(item.updatedAt) : undefined}
         className="hidden truncate text-sm text-dim sm:block"
       >
-        {formatDate(item.updatedAt)}
+        {COLUMN_RENDER[columns[1]]?.(item)}
       </div>
 
-      {/* --------------------------------------------------------- extra -- */}
-      {/* The per-view column. All files uses it for share state; Trash will use
-          it for when something was deleted, Recent for when it was opened. The
-          row does not know or care which. */}
       <div role="gridcell" className="hidden truncate text-sm text-dim xl:block">
-        {extraColumn ?? (shared ? <span className="text-brand">Link</span> : "—")}
+        {COLUMN_RENDER[columns[2]]?.(item)}
       </div>
 
       {/* ------------------------------------------------------- actions -- */}

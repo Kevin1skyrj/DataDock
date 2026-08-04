@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CommandPalette } from "@/components/dashboard/command-palette";
+import { ToastProvider } from "@/components/ui/toast";
+import { UploadManager } from "@/components/upload/upload-manager";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import { SHELL } from "@/constants/dashboard";
@@ -126,9 +128,15 @@ export function DashboardShell({ children }) {
         </main>
       </div>
 
-      {/* Mounted once, for the whole application. It answers ⌘K from anywhere,
-          so it cannot belong to any one page. */}
+      {/* Both mounted once, for the whole application. The palette answers ⌘K
+          from anywhere; the toast viewport receives results from anywhere,
+          including from work that finishes after you have navigated away. */}
       <CommandPalette />
+      <ToastProvider />
+
+      {/* Mounted here, not in the workspace: a folder of two hundred photos has
+          to keep uploading while you browse into Settings. */}
+      <UploadManager />
     </div>
   );
 }

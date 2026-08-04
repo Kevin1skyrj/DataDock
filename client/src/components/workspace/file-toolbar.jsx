@@ -1,18 +1,19 @@
 "use client";
 
 import {
-  ArrowLeft,
+  ArrowUp,
   Check,
   ChevronDown,
+  ClipboardPaste,
   FolderPlus,
   Info,
   LayoutGrid,
   ListFilter,
   Rows3,
-  Upload,
   X,
 } from "lucide-react";
 
+import { UploadMenu } from "@/components/upload/upload-menu";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -58,37 +59,36 @@ export function FileToolbar() {
 /* --------------------------------------------------------------- browse -- */
 
 function BrowseBar() {
-  const { view, path, onNavigate, setCreatingFolder, setStatus } = useWorkspace();
+  const { view, path, folderId, onNavigate, setCreatingFolder, setImporting, drag, clipboard, paste } =
+    useWorkspace();
+
+  const parentId = path.at(-2)?.id ?? null;
 
   return (
     <>
       {/* Folder navigation lives here rather than in the shell's breadcrumb,
           because the breadcrumb is derived from the route and a folder is not
           one yet. When Folder Navigation lands this becomes the same trail. */}
+      {/* Up, not Back. Back is the browser's word and means "the previous
+          page", which after a sort change or a filter is not the parent folder.
+          It is also a drop target: dragging something onto it is how you move a
+          file out of where it is without leaving. */}
       {path.length > 0 ? (
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={WORKSPACE.back}
-          onClick={() => onNavigate?.(path.at(-2)?.id ?? null)}
+          aria-label={`${WORKSPACE.up} to ${path.at(-2)?.name ?? "All files"}`}
+          onClick={() => onNavigate?.(parentId)}
+          {...drag.dropProps(parentId)}
+          className={cn(drag.dropTarget === parentId && "bg-brand-tint text-brand ring-1 ring-brand")}
         >
-          <ArrowLeft />
+          <ArrowUp />
         </Button>
       ) : null}
 
-      {path.length > 0 ? (
-        <span className="mr-1 truncate text-md font-medium text-foreground">
-          {path.at(-1).name}
-        </span>
+      {view.canUpload !== false ? (
+        <UploadMenu parentId={folderId} onImport={setImporting} />
       ) : null}
-
-      <Button
-        size="sm"
-        onClick={() => setStatus({ text: "Uploading arrives with the Upload Flow." })}
-      >
-        <Upload />
-        {WORKSPACE.upload}
-      </Button>
 
       {view.canCreate ? (
         <Button variant="secondary" size="sm" onClick={() => setCreatingFolder(true)}>
@@ -97,9 +97,21 @@ function BrowseBar() {
         </Button>
       ) : null}
 
+      {/* Paste only exists when there is something to paste — the same rule the
+          selection bar follows. A permanently greyed Paste teaches people to
+          stop looking at that corner. */}
+      {clipboard ? (
+        <Button variant="ghost" size="sm" onClick={paste}>
+          <ClipboardPaste />
+          <span className="hidden sm:inline">
+            Paste {clipboard.items.length > 1 ? `${clipboard.items.length} items` : ""}
+          </span>
+        </Button>
+      ) : null}
+
       <div className="ml-auto flex items-center gap-1.5">
         <SortMenu />
-        <FilterMenu />
+        {view.canFilter !== false ? <FilterMenu /> : null}
         <ViewToggle />
         <DetailsToggle />
       </div>

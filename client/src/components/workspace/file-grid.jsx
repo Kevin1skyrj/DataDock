@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 export function FileGrid() {
   const {
     view, items, loading, refreshing, selection, activeId, setActiveId,
-    handlers, toggleStar,
+    handlers, toggleStar, drag, paste, path: trail, onNavigate,
   } = useWorkspace();
 
   const scrollRef = useRef(null);
@@ -40,6 +40,12 @@ export function FileGrid() {
 
   const onKeyDown = useGridKeyboard({
     items, activeId, setActiveId, selection, handlers, resolve,
+    // Workspace-level shortcuts the listing does not own but is the only thing
+    // focused when they are pressed.
+    shortcuts: {
+      paste,
+      up: () => onNavigate?.(trail.at(-2)?.id ?? null),
+    },
   });
 
   useEffect(() => {
@@ -91,6 +97,20 @@ export function FileGrid() {
                 }}
                 item={item}
                 selected={selection.isSelected(item.id)}
+                draggable
+                dragging={drag.dragging?.ids.includes(item.id) ?? false}
+                dropActive={drag.dropTarget === item.id}
+                // Only folders take a drop. Highlighting a file would promise
+                // something the drop cannot deliver.
+                dropProps={item.type === "folder" ? drag.dropProps(item.id, { spring: true }) : undefined}
+                onDragStart={(dragged, event) => {
+                  // Dragging something inside a selection carries the whole
+                  // selection; dragging something outside one carries just it.
+                  const payload = selection.isSelected(dragged.id) ? selection.selected : [dragged];
+                  if (!selection.isSelected(dragged.id)) selection.selectOnly(dragged);
+                  drag.startDrag(event, payload);
+                }}
+                onDragEnd={drag.endDrag}
                 active={activeId === item.id}
                 selectionActive={selection.count > 0}
                 tabIndex={activeId === item.id || (!activeId && items[0]?.id === item.id) ? 0 : -1}

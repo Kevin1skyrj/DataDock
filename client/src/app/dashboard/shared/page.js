@@ -1,12 +1,12 @@
-import { PagePlaceholder } from "@/components/dashboard/page-placeholder";
+import { SharedRoute } from "@/app/dashboard/shared/shared-route";
+import { PageContainer } from "@/components/dashboard/page-container";
 
 export const metadata = { title: "Shared" };
 
 export default function Page() {
   return (
-    <PagePlaceholder
-      title="Shared"
-      description="Links you have created and files shared with you."
-    />
+    <PageContainer flush>
+      <SharedRoute />
+    </PageContainer>
   );
 }

@@ -78,7 +78,7 @@ function compare(a, b, sort) {
   return sort.direction === "desc" ? -result : result;
 }
 
-function matches(item, { parentId, kinds, query, starred, trashed }) {
+function matches(item, { parentId, kinds, query, starred, trashed, shared, recent }) {
   // Trash is a view over the whole drive, not a folder — an item in the bin
   // keeps the parent it will be restored to, so trashed items must be excluded
   // from their own folder's listing.
@@ -90,6 +90,13 @@ function matches(item, { parentId, kinds, query, starred, trashed }) {
   }
 
   if (starred && !item.starred) return false;
+  // Shared and Recent are drive-wide views, not folders. Neither passes a
+  // `parentId`, so the parent check above is skipped for both.
+  if (shared && !item.share) return false;
+  // Folders are not "opened" in the sense Recent means — they are walked
+  // through. A recent list full of folders is a list of where you have been,
+  // which is what the breadcrumb is for.
+  if (recent && item.type !== "file") return false;
   if (kinds?.length && !kinds.includes(item.kind)) return false;
   if (query && !item.name.toLowerCase().includes(query.trim().toLowerCase())) return false;
 
@@ -283,6 +290,134 @@ export async function moveItems(ids, parentId) {
   return patch(ids, () => ({ parentId, updatedAt: new Date().toISOString() }));
 }
 
+/**
+ * Copies items into a folder, deeply.
+ *
+ * A folder's copy has to bring its contents, and the contents' contents — which
+ * is why this walks rather than mapping. On a real backend this is the one
+ * operation here that is genuinely expensive: Mongo gets a recursive insert and
+ * S3 gets a server-side object copy per file, neither of which the browser
+ * should ever be asked to orchestrate. The signature is what matters, and it
+ * already returns only the top-level results.
+ */
+async function copyTree(id, parentId, renamer) {
+  const source = byId(id);
+  if (!source) return [];
+
+  const now = new Date().toISOString();
+  const copy = {
+    ...source,
+    id: nextId(source.type === "folder" ? "fld" : "fil"),
+    name: renamer ? renamer(source.name) : source.name,
+    parentId,
+    createdAt: now,
+    updatedAt: now,
+    openedAt: now,
+    // A copy is nobody's favourite and nobody's shared link yet. Carrying those
+    // over is the kind of detail that quietly leaks a private file.
+    starred: false,
+    share: null,
+    trashedAt: null,
+  };
+
+  drive = [...drive, copy];
+
+  if (source.type === "folder") {
+    const children = drive.filter((item) => item.parentId === id && !item.trashedAt);
+    for (const child of children) {
+      // Sequential on purpose: each level needs its parent's new id.
+      await copyTree(child.id, copy.id, null);
+    }
+  }
+
+  return [copy];
+}
+
+/** Makes a unique name in a folder — "Report copy", then "Report copy 2". */
+function uniqueName(name, parentId, type) {
+  const dot = type === "folder" ? -1 : name.lastIndexOf(".");
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const extension = dot > 0 ? name.slice(dot) : "";
+
+  const taken = (candidate) =>
+    drive.some(
+      (item) =>
+        item.parentId === parentId &&
+        !item.trashedAt &&
+        item.name.toLowerCase() === candidate.toLowerCase(),
+    );
+
+  let candidate = `${stem} copy${extension}`;
+  let counter = 2;
+  while (taken(candidate)) {
+    candidate = `${stem} copy ${counter}${extension}`;
+    counter += 1;
+  }
+
+  return candidate;
+}
+
+export async function copyItems(ids, parentId) {
+  await wait(WRITE_LATENCY);
+
+  const created = [];
+  for (const id of ids) {
+    const source = byId(id);
+    if (!source) continue;
+    // Copying into the same folder needs a new name; copying elsewhere does not.
+    const renamer =
+      source.parentId === parentId
+        ? (name) => uniqueName(name, parentId, source.type)
+        : null;
+    created.push(...(await copyTree(id, parentId, renamer)));
+  }
+
+  return created.map(clone);
+}
+
+/** Copy, into the folder the original already lives in. */
+export async function duplicateItems(ids) {
+  await wait(WRITE_LATENCY);
+
+  const created = [];
+  for (const id of ids) {
+    const source = byId(id);
+    if (!source) continue;
+    created.push(
+      ...(await copyTree(id, source.parentId, (name) =>
+        uniqueName(name, source.parentId, source.type),
+      )),
+    );
+  }
+
+  return created.map(clone);
+}
+
+/** Every folder in the drive, for a destination picker. */
+export async function listFolders(parentId = null) {
+  await wait(120);
+  return drive
+    .filter((item) => item.type === "folder" && item.parentId === parentId && !item.trashedAt)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(clone);
+}
+
+/** Ids of `id` and everything beneath it — what a move may not land inside. */
+export function collectDescendants(id) {
+  const found = new Set([id]);
+  let frontier = [id];
+
+  while (frontier.length) {
+    const next = drive
+      .filter((item) => frontier.includes(item.parentId))
+      .map((item) => item.id);
+    frontier = next.filter((candidate) => !found.has(candidate));
+    for (const candidate of frontier) found.add(candidate);
+  }
+
+  return found;
+}
+
 export async function starItems(ids, starred) {
   await wait(200);
   return patch(ids, () => ({ starred }));
@@ -320,13 +455,57 @@ export async function createShare(id) {
 
   const share = {
     id: nextId("shr"),
+    // `link` is anyone with the URL; `private` is named people only. Both are
+    // shares — the difference is who the token is checked against.
     scope: "link",
+    access: "view",
     expiresAt: null,
     viewCount: 0,
+    // Opaque and short. The real one is signed; nothing in the UI reads it.
+    token: nextId("tok").slice(4),
   };
 
   patch([id], () => ({ share }));
   return share;
+}
+
+/** Mock collaborators, so the share dialog has something honest to draw. */
+const RECIPIENTS = [
+  { id: "usr_dana", name: "Dana Okafor", email: "dana@northline.co", access: "view" },
+  { id: "usr_sam", name: "Sam Patel", email: "sam@datadock.app", access: "edit" },
+  { id: "usr_priya", name: "Priya Raman", email: "priya@datadock.app", access: "comment" },
+];
+
+export async function listShareRecipients(id) {
+  await wait(180);
+  const item = byId(id);
+  if (!item?.share) return [];
+  // Deterministic from the id, so the same file always shows the same people.
+  const count = (item.id.length % 3) + 1;
+  return RECIPIENTS.slice(0, count);
+}
+
+/**
+ * Changes an existing link's terms.
+ *
+ * Separate from `createShare` because the two are different operations on a
+ * real backend — one mints a token and writes a row, the other updates a row
+ * that already has a token people may already be holding. Collapsing them
+ * would mean every permission change silently invalidated every link.
+ *
+ * @param {string} id
+ * @param {{access?: "view"|"comment"|"edit", expiresAt?: string|null, scope?: "link"|"private"}} changes
+ */
+export async function updateShare(id, changes) {
+  await wait(260);
+
+  const item = byId(id);
+  if (!item?.share) {
+    throw new FileServiceError("This file is not shared.", { code: "not-shared", id });
+  }
+
+  const [updated] = patch([id], (current) => ({ share: { ...current.share, ...changes } }));
+  return updated.share;
 }
 
 export async function revokeShare(id) {
@@ -354,6 +533,83 @@ export async function getDownloadUrl(id) {
     expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
   };
 }
+
+/**
+ * Adds an entity the upload flow has just finished putting in storage.
+ *
+ * Separate from `createFolder` because it is not a creation the user performed
+ * — the bytes already exist in S3 by the time this runs, and the API's job is
+ * only to record where. Name collisions resolve by numbering rather than by
+ * throwing: an upload that fails at the last step, after the transfer, is the
+ * worst possible moment to refuse.
+ */
+export function attachUploaded({ name, size, mimeType, kind, parentId, storageKey }) {
+  const now = new Date().toISOString();
+  const taken = (candidate) =>
+    drive.some(
+      (item) =>
+        item.parentId === parentId &&
+        !item.trashedAt &&
+        item.name.toLowerCase() === candidate.toLowerCase(),
+    );
+
+  let finalName = name;
+  if (taken(finalName)) {
+    const dot = name.lastIndexOf(".");
+    const stem = dot > 0 ? name.slice(0, dot) : name;
+    const extension = dot > 0 ? name.slice(dot) : "";
+    let counter = 2;
+    while (taken(`${stem} (${counter})${extension}`)) counter += 1;
+    finalName = `${stem} (${counter})${extension}`;
+  }
+
+  const entity = {
+    id: nextId("fil"),
+    type: "file",
+    name: finalName,
+    parentId,
+    kind,
+    mimeType,
+    size,
+    itemCount: null,
+    storageKey,
+    thumbnailKey: null,
+    ownerId: "usr_mock",
+    createdAt: now,
+    updatedAt: now,
+    openedAt: now,
+    starred: false,
+    trashedAt: null,
+    share: null,
+  };
+
+  drive = [...drive, entity];
+  return clone(entity);
+}
+
+/**
+ * Finds a folder by name inside a parent, or makes it.
+ *
+ * What a folder upload needs: the browser hands over a flat list of files with
+ * paths like `Photos/2026/June/img.jpg`, and every segment has to become a real
+ * folder exactly once however many files mention it.
+ */
+export async function ensureFolder({ parentId, name }) {
+  await wait(60);
+
+  const existing = drive.find(
+    (item) =>
+      item.type === "folder" &&
+      item.parentId === parentId &&
+      !item.trashedAt &&
+      item.name.toLowerCase() === name.toLowerCase(),
+  );
+  if (existing) return clone(existing);
+
+  return createFolder({ parentId, name });
+}
+
+export const __driveSnapshot = () => drive;
 
 /** Test seam — restores the drive to its seeded state. */
 export function __resetDrive() {

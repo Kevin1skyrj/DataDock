@@ -50,6 +50,7 @@ export const SEGMENT_LABELS = {
   starred: "Starred",
   shared: "Shared",
   trash: "Trash",
+  search: "Search",
   storage: "Storage",
   settings: "Settings",
   billing: "Billing",

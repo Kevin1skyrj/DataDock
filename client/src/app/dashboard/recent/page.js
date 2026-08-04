@@ -1,12 +1,12 @@
-import { PagePlaceholder } from "@/components/dashboard/page-placeholder";
+import { RecentRoute } from "@/app/dashboard/recent/recent-route";
+import { PageContainer } from "@/components/dashboard/page-container";
 
 export const metadata = { title: "Recent" };
 
 export default function Page() {
   return (
-    <PagePlaceholder
-      title="Recent"
-      description="Everything you have opened or changed lately, newest first."
-    />
+    <PageContainer flush>
+      <RecentRoute />
+    </PageContainer>
   );
 }

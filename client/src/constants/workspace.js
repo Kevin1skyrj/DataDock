@@ -23,6 +23,6 @@ export const WORKSPACE = {
   tableView: "Table view",
   gridView: "Grid view",
   clearSelection: "Clear selection",
-  back: "Back",
+  up: "Up",
   selectAll: "Select all",
 };

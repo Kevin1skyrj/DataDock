@@ -16,16 +16,48 @@ import { useCallback } from "react";
  * count changes with the viewport and any number stored in JavaScript is a
  * number that can be wrong. Asking the DOM where things actually are cannot be.
  */
-export function useGridKeyboard({ items, activeId, setActiveId, selection, handlers, resolve }) {
+export function useGridKeyboard({ items, activeId, setActiveId, selection, handlers, resolve, shortcuts }) {
   return useCallback(
     (event) => {
       const index = items.findIndex((item) => item.id === activeId);
       const current = index === -1 ? null : items[index];
 
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
-        event.preventDefault();
-        selection.selectAll();
-        return;
+      const mod = event.metaKey || event.ctrlKey;
+
+      if (mod) {
+        // The desktop clipboard, because ⌘X ⌘V is how a drive actually gets
+        // reorganised: pick things up here, walk to where they belong, put them
+        // down. No dialog expresses "somewhere I will recognise when I see it".
+        switch (event.key.toLowerCase()) {
+          case "a":
+            event.preventDefault();
+            selection.selectAll();
+            return;
+          case "x":
+            if (!selection.count) return;
+            event.preventDefault();
+            handlers.cut(selection.selected);
+            return;
+          case "c":
+            if (!selection.count) return;
+            event.preventDefault();
+            handlers.copyToClipboard(selection.selected);
+            return;
+          case "v":
+            event.preventDefault();
+            shortcuts?.paste?.();
+            return;
+          case "d":
+            if (!selection.count) return;
+            event.preventDefault();
+            handlers.duplicate(selection.selected);
+            return;
+          case "arrowup":
+            event.preventDefault();
+            shortcuts?.up?.();
+            return;
+          default:
+        }
       }
 
       switch (event.key) {
@@ -90,7 +122,7 @@ export function useGridKeyboard({ items, activeId, setActiveId, selection, handl
         default:
       }
     },
-    [items, activeId, setActiveId, selection, handlers, resolve],
+    [items, activeId, setActiveId, selection, handlers, resolve, shortcuts],
   );
 }
 

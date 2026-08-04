@@ -413,6 +413,26 @@ export const FILE_SEED = [
     openedAt: "2026-08-01T13:55:00.000Z",
   },
 
+  /* ------------------------------------------------------- Invoices -- */
+  {
+    ...base,
+    id: "fil_contract_copy",
+    type: "file",
+    name: "Northline contract.pdf",
+    parentId: "fld_invoices",
+    kind: "pdf",
+    mimeType: "application/pdf",
+    // Byte-identical to the one in Client work. That pair is what makes the
+    // duplicate suggestion reachable without the visitor first creating one.
+    size: 223_232,
+    itemCount: null,
+    storageKey: "usr_mock/2026/04/fil_contract_copy",
+    thumbnailKey: null,
+    createdAt: "2026-04-04T16:20:00.000Z",
+    updatedAt: "2026-04-04T16:20:00.000Z",
+    openedAt: "2026-04-04T16:20:00.000Z",
+  },
+
   /* ------------------------------------------------------------ trash -- */
   {
     ...base,
@@ -429,7 +449,7 @@ export const FILE_SEED = [
     createdAt: "2026-05-12T09:00:00.000Z",
     updatedAt: "2026-05-12T09:00:00.000Z",
     openedAt: "2026-06-01T11:20:00.000Z",
-    trashedAt: "2026-07-30T10:15:00.000Z",
+    trashedAt: "2026-06-12T10:15:00.000Z",
   },
   {
     ...base,

@@ -2,8 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { PreviewDialog } from "@/components/preview/preview-dialog";
+import { ShareDialog } from "@/components/sharing/share-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ImportDialog } from "@/components/upload/import-dialog";
+import { UploadDropZone } from "@/components/upload/upload-drop-zone";
 import { DetailsPanel } from "@/components/workspace/details-panel";
 import { EmptyState } from "@/components/workspace/empty-state";
+import { FolderPickerDialog } from "@/components/workspace/folder-picker-dialog";
 import { FileContextMenu } from "@/components/workspace/file-context-menu";
 import { FileGrid } from "@/components/workspace/file-grid";
 import { FileTable } from "@/components/workspace/file-table";
@@ -25,18 +31,23 @@ import { cn } from "@/lib/utils";
  * Starred, Shared and Trash will not need a second implementation. Each is this
  * component with a different object.
  */
-export function FileWorkspace({ view, folderId, onNavigate }) {
+export function FileWorkspace({ view, folderId, scope, onNavigate, header }) {
   return (
-    <WorkspaceProvider view={view} folderId={folderId} onNavigate={onNavigate}>
-      <WorkspaceFrame />
+    <WorkspaceProvider view={view} folderId={folderId} scope={scope} onNavigate={onNavigate}>
+      <WorkspaceFrame header={header} />
     </WorkspaceProvider>
   );
 }
 
-function WorkspaceFrame() {
+function WorkspaceFrame({ header }) {
   const {
     items, loading, error, selection, setActiveId, renaming, setRenaming,
     commitRename, creatingFolder, setCreatingFolder, commitNewFolder, reload,
+    folderId, destination, setDestination, relocate, drag,
+    importing, setImporting, reload: refresh,
+    previewIndex, setPreviewIndex, sharing, setSharing,
+    confirmingDelete, setConfirmingDelete, commitDelete,
+    view, handlers, actionsFor,
   } = useWorkspace();
 
   const mode = useViewMode();
@@ -64,7 +75,11 @@ function WorkspaceFrame() {
   const empty = !loading && items.length === 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col" onDragEnd={drag.endDrag} onDrop={drag.endDrag}>
+      {/* Whatever the page wants above the toolbar. Search puts its field and
+          facets here so results render through the same table, selection and
+          preview as every other listing. */}
+      {header}
       <FileToolbar />
 
       {/* Grid rather than flex, because the details column animates from `0fr`
@@ -124,13 +139,29 @@ function WorkspaceFrame() {
                 }}
                 className="flex min-h-0 flex-1 flex-col"
               >
-                {mode === "grid" ? <FileGrid /> : <FileTable />}
+                {/* Keyed on the folder so entering one replays the entrance
+                    rather than mutating the old listing in place. It is the
+                    only motion in the workspace that is about navigation
+                    rather than feedback, and it is 140ms — long enough to say
+                    "somewhere else", short enough not to be a transition you
+                    wait through. */}
+                <div
+                  key={folderId ?? "root"}
+                  className="flex min-h-0 flex-1 flex-col motion-safe:animate-[dd-detail_140ms_var(--ease-standard)]"
+                >
+                  {mode === "grid" ? <FileGrid /> : <FileTable />}
+                </div>
               </div>
             </FileContextMenu>
           )}
         </div>
 
         <DetailsPanel />
+
+        {/* Listens on the window, draws inside the workspace. It only ever
+            reacts to drags from outside the browser — an internal move carries
+            our own MIME type and is rejected outright. */}
+        <UploadDropZone parentId={folderId} />
       </div>
 
       <StatusBar />
@@ -144,6 +175,66 @@ function WorkspaceFrame() {
         initialValue={renaming?.name ?? ""}
         onSubmit={(name) => commitRename(renaming, name)}
         onClose={() => setRenaming(null)}
+      />
+
+      <FolderPickerDialog
+        key={destination ? `${destination.mode}-${destination.items[0]?.id}` : "destination"}
+        open={Boolean(destination)}
+        title={destination?.mode === "copy" ? "Copy to" : "Move to"}
+        action={destination?.mode === "copy" ? "Copy" : "Move"}
+        items={destination?.items ?? []}
+        onSubmit={(targetId) =>
+          relocate(destination.items.map((item) => item.id), targetId, destination.mode)
+        }
+        onClose={() => setDestination(null)}
+      />
+
+      {/* Quick Look. It is handed the listing so Previous and Next follow the
+          order on screen — the sort you chose, the filter you applied. */}
+      <PreviewDialog
+        open={previewIndex != null}
+        items={items}
+        index={previewIndex ?? 0}
+        actions={
+          previewIndex != null && items[previewIndex]
+            ? actionsFor(items[previewIndex])
+                .filter((action) => action.id !== "preview" && action.id !== "open")
+                .map((action) => ({
+                  ...action,
+                  run: () => action.run([items[previewIndex]], handlers),
+                }))
+            : []
+        }
+        onClose={() => setPreviewIndex(null)}
+        onIndex={setPreviewIndex}
+      />
+
+      <ShareDialog
+        item={sharing}
+        open={Boolean(sharing)}
+        onClose={() => setSharing(null)}
+        onChanged={refresh}
+      />
+
+      <ConfirmDialog
+        open={Boolean(confirmingDelete)}
+        title={
+          confirmingDelete?.items.length === 1
+            ? `Delete “${confirmingDelete.items[0].name}” for good?`
+            : `Delete ${confirmingDelete?.items.length ?? 0} items for good?`
+        }
+        body="This cannot be undone. The files are removed from storage immediately."
+        confirmLabel="Delete forever"
+        onConfirm={commitDelete}
+        onClose={() => setConfirmingDelete(null)}
+      />
+
+      <ImportDialog
+        provider={importing}
+        parentId={folderId}
+        open={Boolean(importing)}
+        onClose={() => setImporting(null)}
+        onImported={refresh}
       />
 
       <NameDialog

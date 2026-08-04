@@ -1,12 +1,12 @@
-import { PagePlaceholder } from "@/components/dashboard/page-placeholder";
+import { TrashRoute } from "@/app/dashboard/trash/trash-route";
+import { PageContainer } from "@/components/dashboard/page-container";
 
 export const metadata = { title: "Trash" };
 
 export default function Page() {
   return (
-    <PagePlaceholder
-      title="Trash"
-      description="Deleted files, restorable until they are purged."
-    />
+    <PageContainer flush>
+      <TrashRoute />
+    </PageContainer>
   );
 }

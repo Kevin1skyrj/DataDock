@@ -27,6 +27,12 @@ export function FileCard({
   active = false,
   selectionActive = false,
   tabIndex = -1,
+  draggable = false,
+  dropActive = false,
+  dragging = false,
+  dropProps,
+  onDragStart,
+  onDragEnd,
   onSelect,
   onToggleSelect,
   onOpen,
@@ -45,16 +51,22 @@ export function FileCard({
       aria-selected={selected}
       tabIndex={tabIndex}
       data-active={active || undefined}
+      draggable={draggable}
+      onDragStart={(event) => onDragStart?.(item, event)}
+      onDragEnd={onDragEnd}
       onClick={(event) => onSelect?.(item, event)}
       onDoubleClick={() => onOpen?.(item)}
       onContextMenu={(event) => onContextMenu?.(item, event)}
+      {...dropProps}
       className={cn(
         "group relative flex cursor-default flex-col gap-2 rounded-lg border p-2.5 select-none",
-        "transition-[background-color,border-color,box-shadow] duration-150 ease-standard",
+        "transition-[background-color,border-color,box-shadow,opacity] duration-150 ease-standard",
         "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand",
         selected
           ? "border-brand/40 bg-brand-tint"
           : "border-line bg-surface hover:border-line-2 hover:bg-surface-2",
+        dropActive && "border-brand bg-brand-tint ring-2 ring-brand",
+        dragging && "opacity-40",
       )}
     >
       {/* The well. Folders get the accent, files stay neutral — the same rule

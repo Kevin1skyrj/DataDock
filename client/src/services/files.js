@@ -22,19 +22,40 @@
  */
 export {
   FileServiceError,
+  attachUploaded,
+  collectDescendants,
+  copyItems,
   createFolder,
   createShare,
   deleteItems,
+  duplicateItems,
+  ensureFolder,
   getDownloadUrl,
   getDriveUsage,
   getFolderSummary,
   getItem,
   getPath,
+  listFolders,
   listItems,
+  listShareRecipients,
   moveItems,
   renameItem,
   restoreItems,
   revokeShare,
   starItems,
   trashItems,
+  updateShare,
 } from "@/services/mock/files";
+
+export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/mock/uploads";
+export { getPreview } from "@/services/mock/preview";
+
+export {
+  getCleanupSuggestions,
+  getLargestFiles,
+  getStorageActivity,
+  getStorageBreakdown,
+  getStorageSummary,
+} from "@/services/mock/insights";
+
+export { DATE_RANGES, SIZE_RANGES, quickSearch, searchDrive } from "@/services/mock/search";
