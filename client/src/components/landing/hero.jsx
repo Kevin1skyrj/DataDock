@@ -7,11 +7,13 @@ import { ArrowRight } from "lucide-react";
 import { useRef } from "react";
 
 import { AmbientBackdrop } from "@/components/landing/ambient-backdrop";
+import { HeroScene } from "@/components/landing/hero-scene";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { BEAT, EASE } from "@/constants/motion";
 import { hasSeenEntrance, markEntranceSeen } from "@/lib/entrance";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -241,17 +243,46 @@ export function Hero({ children }) {
     <section ref={scope} id="top" className="relative isolate overflow-hidden pb-16 sm:pb-24">
       <AmbientBackdrop />
 
+      {/*
+        One row, two columns, from `lg` up.
+
+        Stacked, the dock became a second hero: the copy ended, the section
+        appeared to end with it, and the object began again underneath. Side by
+        side there is one composition, the section keeps the height it had
+        before the scene existed, and — the part that matters most visually —
+        the dock finally gets a frame close to square. It is a *tall* object,
+        three platters and a column inside a cage, and every version of it in a
+        wide shallow band was the wrong shape for the thing being drawn.
+
+        The copy takes the larger share (1.12 : 1). That ratio exists to protect
+        the headline: it has two authored lines and a mask reveal built around
+        them, so it must not be allowed to wrap to three.
+
+        Below `lg` this collapses back to one centred column — a phone has no
+        room for two, and stacking there reads as ordinary vertical rhythm
+        rather than as two competing sections.
+      */}
       <div
         data-hero-copy
-        className="relative mx-auto flex max-w-page flex-col items-center px-5 pt-20 text-center sm:px-10 sm:pt-28 lg:pt-32"
+        className={cn(
+          "relative mx-auto grid max-w-page items-center gap-8 px-5 pt-20 sm:px-10 sm:pt-28",
+          "lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] lg:gap-12 lg:pt-24",
+        )}
       >
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
         <div data-animate="rise" data-step="badge">
           <Badge variant="brand" pill size="md">
             Now in early access — 5 GB free
           </Badge>
         </div>
 
-        <h1 className="mt-7 max-w-225 text-display-lg leading-[1.02] font-semibold tracking-hero text-balance sm:text-display-2xl lg:text-[3.625rem] xl:text-display-hero">
+        {/* The centred hero ran to 76px because it had the whole page. In a
+            column a little over half that width, 76px breaks "Organize
+            beautifully." onto a third line and the mask reveal — which animates
+            two authored lines — comes apart. These are the largest steps that
+            still fit on two. `text-balance` is dropped from `lg`: the lines are
+            authored, so balancing is the browser second-guessing them. */}
+        <h1 className="mt-7 max-w-225 text-display-lg leading-[1.02] font-semibold tracking-hero text-balance sm:text-display-2xl lg:max-w-none lg:text-[3.25rem] lg:text-wrap xl:text-[3.75rem]">
           {HEADLINE.map((line, index) => (
             <span
               key={line.join(" ")}
@@ -337,6 +368,24 @@ export function Hero({ children }) {
           Or press
           <Kbd variant="inline">⌘K</Kbd>— search works right here.
         </p>
+        </div>
+
+        {/*
+          The dock's column. Nothing is written over it at any width, so the
+          overlap this replaced cannot come back by tuning a number.
+
+          The height is expressed twice on purpose. On a phone it is a band
+          under the copy, sized in `vh` so it takes a predictable slice of the
+          screen. From `lg` it is a column beside the copy, clamped in `rem` so
+          it holds a near-square frame instead of stretching to whatever the
+          copy happens to measure that breakpoint.
+        */}
+        <div
+          data-animate="glow"
+          className="relative h-[34vh] max-h-96 min-h-56 lg:h-[clamp(24rem,44vh,32rem)] lg:max-h-none"
+        >
+          <HeroScene className="absolute inset-0" />
+        </div>
       </div>
 
       {/* The product preview mounts here, inside the hero's light and parallax
