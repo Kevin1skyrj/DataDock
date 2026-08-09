@@ -28,7 +28,7 @@ export function useGridKeyboard({ items, activeId, setActiveId, selection, handl
         // The desktop clipboard, because ⌘X ⌘V is how a drive actually gets
         // reorganised: pick things up here, walk to where they belong, put them
         // down. No dialog expresses "somewhere I will recognise when I see it".
-        switch (event.key.toLowerCase()) {
+        switch (event.key?.toLowerCase()) {
           case "a":
             event.preventDefault();
             selection.selectAll();

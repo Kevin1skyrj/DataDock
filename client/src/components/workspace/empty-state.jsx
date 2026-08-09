@@ -1,8 +1,9 @@
 "use client";
 
-import { FolderOpen, SearchX, Upload } from "lucide-react";
+import { FolderOpen, SearchX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { UploadMenu } from "@/components/upload/upload-menu";
 import { useWorkspace } from "@/components/workspace/workspace-context";
 
 /**
@@ -14,7 +15,7 @@ import { useWorkspace } from "@/components/workspace/workspace-context";
  * simply typed a query that matches nothing is both useless and slightly rude.
  */
 export function EmptyState() {
-  const { view, filtered, setKinds, setQuery, setStatus } = useWorkspace();
+  const { view, filtered, setKinds, setQuery, folderId, setImporting } = useWorkspace();
 
   const copy = filtered ? (view.emptySearch ?? view.empty) : view.empty;
   const Glyph = filtered ? SearchX : FolderOpen;
@@ -41,14 +42,12 @@ export function EmptyState() {
         >
           Clear filters
         </Button>
-      ) : copy.action === "upload" ? (
-        <Button
-          size="sm"
-          onClick={() => setStatus({ text: "Uploading arrives with the Upload Flow." })}
-        >
-          <Upload />
-          Upload files
-        </Button>
+      ) : copy.action === "upload" && view.canUpload !== false ? (
+        // The toolbar's control, not a copy of it. An empty folder is where
+        // someone is most likely to want folder upload or an import, and a
+        // second button that only did plain files would be the weaker half of
+        // the same affordance sitting two inches below the stronger one.
+        <UploadMenu parentId={folderId} onImport={setImporting} />
       ) : null}
     </div>
   );

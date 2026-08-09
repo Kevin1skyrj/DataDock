@@ -31,9 +31,15 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useAccent } from "@/providers/accent-provider";
 
 /**
- * Temporary foundation harness. It exists only to prove the token layer,
- * theme switching and accent switching work end to end, and is replaced by
- * the landing page in build step 4.
+ * The component gallery.
+ *
+ * Every primitive rendered against both themes and all three accents on one
+ * page, which is the cheapest way to catch the class of bug that only appears
+ * in a combination nobody navigates to — teal on light, a disabled button on
+ * dark, a badge whose contrast fails in exactly one of six permutations.
+ *
+ * It is a development surface rather than a product one. Nothing links to it
+ * and it takes no part in the application's navigation.
  */
 export default function FoundationPage() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -281,7 +287,8 @@ export default function FoundationPage() {
                 <Kbd>ESC</Kbd>
               </div>
               <DialogBody className="py-4 text-base text-muted-foreground">
-                Palette results will live here in step 4.
+                The shape the command palette is built on — top-anchored, no close
+                button, its own search field in the header.
               </DialogBody>
             </DialogContent>
           </Dialog>

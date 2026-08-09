@@ -23,9 +23,9 @@ import { listItems, searchDrive } from "@/services/files";
  * results render through the same table, selection, context menu and preview
  * without the workspace knowing which kind of question was asked.
  *
- * Only `files` is wired up in this milestone. The rest are here because writing
- * them down is what proves the shape holds — and because adding Trash later
- * should be a route and an object, not a second file browser.
+ * All six are wired up, and every one of them renders through the same
+ * `FileWorkspace`. Adding a seventh is a route and an object, not a second file
+ * browser — which is the property this shape existed to prove.
  */
 
 const FULL_ACTIONS = [
@@ -62,8 +62,6 @@ export const WORKSPACE_VIEWS = {
       action: "clear",
     },
   },
-
-  /* ------------------------------------------- described, not yet wired -- */
 
   recent: {
     id: "recent",

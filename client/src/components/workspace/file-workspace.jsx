@@ -44,10 +44,10 @@ function WorkspaceFrame({ header }) {
     items, loading, error, selection, setActiveId, renaming, setRenaming,
     commitRename, creatingFolder, setCreatingFolder, commitNewFolder, reload,
     folderId, destination, setDestination, relocate, drag,
-    importing, setImporting, reload: refresh,
+    importing, setImporting,
     previewIndex, setPreviewIndex, sharing, setSharing,
     confirmingDelete, setConfirmingDelete, commitDelete,
-    view, handlers, actionsFor,
+    handlers, actionsFor,
   } = useWorkspace();
 
   const mode = useViewMode();
@@ -62,7 +62,10 @@ function WorkspaceFrame({ header }) {
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "i") {
+      // `key` is optional: autofill and IME composition both dispatch keydown
+      // events without one, and an unguarded `.toLowerCase()` throws inside a
+      // window listener — which takes the whole workspace down with it.
+      if ((event.metaKey || event.ctrlKey) && event.key?.toLowerCase() === "i") {
         event.preventDefault();
         setDetailsOpen(!detailsOpen);
       }
@@ -213,7 +216,7 @@ function WorkspaceFrame({ header }) {
         item={sharing}
         open={Boolean(sharing)}
         onClose={() => setSharing(null)}
-        onChanged={refresh}
+        onChanged={reload}
       />
 
       <ConfirmDialog
@@ -234,7 +237,7 @@ function WorkspaceFrame({ header }) {
         parentId={folderId}
         open={Boolean(importing)}
         onClose={() => setImporting(null)}
-        onImported={refresh}
+        onImported={reload}
       />
 
       <NameDialog

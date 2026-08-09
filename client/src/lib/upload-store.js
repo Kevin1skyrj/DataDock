@@ -31,7 +31,6 @@ const CONCURRENCY = 3;
 const SPEED_WINDOW = 2000;
 
 let items = [];
-let completions = 0;
 const listeners = new Set();
 
 /** `id -> { file, controller }`. Never part of the snapshot. */
@@ -291,7 +290,6 @@ async function start(id) {
       },
     });
 
-    completions += 1;
     patch(id, { status: "done", loaded: item.size, speed: 0 });
   } catch (failure) {
     if (controller.signal.aborted) patch(id, { status: "cancelled", speed: 0 });
@@ -307,7 +305,6 @@ export const __peek = () => items;
 
 export function __resetUploads() {
   items = [];
-  completions = 0;
   payloads.clear();
   folderCache.clear();
 }
