@@ -60,9 +60,18 @@ export function UploadMenu({ parentId, onImport }) {
         directory=""
       />
 
-      <Button size="sm" className="rounded-r-none" onClick={() => filesRef.current?.click()}>
+      {/* The label goes below `sm`, the glyph does not. An upward arrow on a
+          filled primary button is unambiguous at phone widths, and the 40px it
+          returns is what lets the sort, filter, layout and details controls stay
+          on the bar instead of being cut off by the pane's edge. */}
+      <Button
+        size="sm"
+        aria-label="Upload files"
+        className="rounded-r-none max-sm:px-2.5"
+        onClick={() => filesRef.current?.click()}
+      >
         <Upload />
-        Upload
+        <span className="hidden sm:inline">Upload</span>
       </Button>
 
       <DropdownMenu>

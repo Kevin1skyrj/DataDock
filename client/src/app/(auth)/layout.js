@@ -43,8 +43,19 @@ export default function AuthLayout({ children }) {
 
         {/* `items-center` rather than `place-items-center` on a grid: when the
             window is taller than the viewport this still lets the page scroll
-            instead of clipping the top of it. */}
-        <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-10 sm:py-10">
+            instead of clipping the top of it.
+
+            `overflow-x-clip` contains the light pooling behind the window. That
+            glow is deliberately larger than the sheet it sits behind, and once
+            the sheet approaches the width of the screen the bleed lands outside
+            the viewport and every authentication screen scrolls sideways — 8px
+            at 768, 28px at 320. Clipping is what the layer wants anyway: it
+            still bleeds into the gutter, it just cannot reach past the page.
+
+            `clip` and not `hidden`: `hidden` would make this a scroll container,
+            which forces `overflow-y` to compute as `auto` and would give the
+            window its own inner scrollbar instead of letting the page scroll. */}
+        <main className="flex flex-1 items-center justify-center overflow-x-clip px-5 py-8 sm:px-10 sm:py-10">
           <AuthWindow>{children}</AuthWindow>
         </main>
       </div>

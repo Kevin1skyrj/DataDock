@@ -47,7 +47,7 @@ function WorkspaceFrame({ header }) {
     importing, setImporting,
     previewIndex, setPreviewIndex, sharing, setSharing,
     confirmingDelete, setConfirmingDelete, commitDelete,
-    handlers, actionsFor,
+    handlers, actionsFor, view, path,
   } = useWorkspace();
 
   const mode = useViewMode();
@@ -79,6 +79,20 @@ function WorkspaceFrame({ header }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" onDragEnd={drag.endDrag} onDrop={drag.endDrag}>
+      {/*
+        Every workspace route rendered without a level-one heading, so screen
+        reader users arriving on Files, Recent, Starred, Shared, Trash or a
+        search had nothing to orient by — heading navigation is how that
+        journey usually starts, and it began at nothing.
+
+        Hidden rather than drawn, because the design already answers the
+        question visually: the top bar carries the breadcrumb and the current
+        folder. This says the same thing to the people that trail does not
+        reach, and says the folder's name when there is one — "Brand refresh"
+        is the honest title of a page listing that folder, not "All files".
+      */}
+      <h1 className="sr-only">{path.at(-1)?.name ?? view.label}</h1>
+
       {/* Whatever the page wants above the toolbar. Search puts its field and
           facets here so results render through the same table, selection and
           preview as every other listing. */}

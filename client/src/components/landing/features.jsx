@@ -222,13 +222,25 @@ export function Features() {
           <span ref={endRef} aria-hidden="true" className="w-px shrink-0" />
         </div>
 
-        <div className="mx-auto mt-6 flex max-w-page items-center justify-between gap-4 px-5 sm:px-10">
-          <Button variant="ghost" size="sm" render={<a href="#pricing" />} className="-ml-3">
+        {/* Stacked below `sm`. Buttons are `whitespace-nowrap` by design, so on a
+            320px screen this row cannot shrink: the link alone measures ~239px
+            of the 280px available and the two arrows need another 96. Side by
+            side they push the page 23px wider than the viewport. Given one axis
+            has to give, it is the arrangement rather than the content — both
+            controls survive at every width, which a `hidden sm:flex` on the
+            arrows would not have managed. */}
+        <div className="mx-auto mt-6 flex max-w-page flex-col gap-3 px-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<a href="#pricing" />}
+            className="-ml-3 self-start"
+          >
             Compare what each plan includes
             <ArrowRight />
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             {[
               { direction: -1, label: "Previous features", Icon: ChevronLeft, disabled: atStart },
               { direction: 1, label: "Next features", Icon: ChevronRight, disabled: atEnd },

@@ -125,7 +125,10 @@
   --surface-2: rgba(10, 12, 16, 0.045);
   --line: rgba(10, 12, 16, 0.09);
   --line-2: rgba(10, 12, 16, 0.16);
-  --dim: #6e727b;
+  /* Measured, not chosen. At #6e727b this fell to 4.38:1 on `surface-2` and
+     4.12:1 on a tinted chip — under AA for the 10–12px text it is mostly used
+     for. Two steps darker clears 4.5:1 everywhere it appears. */
+  --dim: #5e626b;
   --lit: rgba(255, 255, 255, 0.9);
   --sheen: rgba(255, 255, 255, 0.5);
   /* The hot core of the revolving border beam. Lifted towards white so the
@@ -152,10 +155,14 @@
   --border: rgba(10, 12, 16, 0.09);
   --input: rgba(10, 12, 16, 0.09);
 
-  --destructive: #dc2626;
-  --success: #059669;
-  --warning: #d97706;
-  --error: #dc2626;
+  /* Status inks are darkened from the design's values because each is used as
+     text on a 12% wash of itself — a "Active" pill, a warning row — and that
+     wash lightens the background far more than the ink. At the original values
+     success measured 3.25:1 and warning 2.81:1 on their own chips. */
+  --destructive: #c81e1e;
+  --success: #047857;
+  --warning: #a94a08;
+  --error: #c81e1e;
 
   --elevation: 0 24px 60px -24px rgba(12, 16, 24, 0.16);
   --elevation-hover: 0 30px 70px -28px rgba(12, 16, 24, 0.22);
@@ -180,14 +187,25 @@
   --surface-2: rgba(255, 255, 255, 0.06);
   --line: rgba(255, 255, 255, 0.075);
   --line-2: rgba(255, 255, 255, 0.14);
-  --dim: #8a8f9c;
+  /* Lifted one step from #8a8f9c, which cleared 4.5:1 on the plain panel but
+     fell to 4.39:1 once the panel carried an accent tint — and the tint is
+     exactly where the smallest text in the product sits. */
+  --dim: #969ba8;
   --lit: rgba(255, 255, 255, 0.07);
   --sheen: rgba(255, 255, 255, 0.26);
   --beam-core: color-mix(in oklab, var(--brand) 52%, #ffffff);
-  /* On a near-black panel the accent has to be lifted towards white *before*
-     the alpha is applied, otherwise the wash reads as a darker blue rather
-     than a lighter one. */
-  --brand-tint: color-mix(in oklab, color-mix(in oklab, var(--brand) 58%, #ffffff) 24%, transparent);
+  /* The wash is the accent itself, not the accent lifted towards white.
+     Lifting it produced a *pale* chip on a dark panel, and `text-brand` is what
+     sits on these chips — the avatar badge, the storage figure, the settings
+     glyphs. Against a pale chip the accent had nowhere left to go: dark purple
+     measured 2.33:1 on its own tint. Dropping the lift darkens the chip and
+     hands the contrast back to the text, which is the thing being read.
+
+     12% rather than 16% because these chips do not sit on the card, they sit on
+     `surface` on the card — a backdrop two steps lighter than the one the
+     figure is easy to compute against. 12% is the alpha at which all three
+     accents clear 4.5:1 on the chip they actually appear on. */
+  --brand-tint: color-mix(in oklab, var(--brand) 12%, transparent);
 
   --card: #0d0f12;
   --card-foreground: #f2f3f5;
@@ -225,22 +243,50 @@
    `brand-contrast` is the legible foreground on a filled brand surface.
    --------------------------------------------------------------------------- */
 
+/*
+ * One rule governs the whole ramp, and it falls out of the two jobs the accent
+ * has to do at once: it is the ink for `text-brand` *and* the fill under
+ * `text-brand-contrast`. Those pull in opposite directions, and on a dark page
+ * they pull far enough apart that a single mid-tone satisfies neither — dark
+ * purple at #6d5cf5 measured 3.89:1 as text on the panel and 2.33:1 on its own
+ * chip, while white on it measured 4.86:1. There is no shade of purple that
+ * fixes the first two without breaking the third.
+ *
+ * So the label moves instead of the hue:
+ *
+ *   dark  — a light accent, labelled in near-black
+ *   light — a deep accent, labelled in white
+ *
+ * Teal already worked this way; extending it to all three is what lets four of
+ * the six shades stay exactly as the design specified. Only three move, and two
+ * of those by an amount that is not visible side by side.
+ *
+ * Every pair below is measured against the panel, the page, the tinted chip and
+ * the filled surface. The lowest of the four is noted; AA wants 4.5:1.
+ */
+
+/* text 6.28 · chip 4.72 · fill 6.50 — deepened from #2f6fe0. The binding
+   constraint is the accent reading as text on its own tint: on a pale page no
+   alpha makes that chip light enough, because it is already nearly white, so
+   the ink is the only side of the pair with anywhere to go. */
 :root,
 :root[data-accent="blue"] {
-  --brand: #2f6fe0;
-  --brand-soft: rgba(47, 111, 224, 0.09);
-  --brand-glow: rgba(47, 111, 224, 0.4);
+  --brand: #2860c2;
+  --brand-soft: rgba(40, 96, 194, 0.09);
+  --brand-glow: rgba(40, 96, 194, 0.4);
   --brand-contrast: #ffffff;
 }
 
+/* text 6.00 · fill 6.22 — the design's own blue, unchanged. */
 .dark,
 .dark[data-accent="blue"] {
   --brand: #4c8dff;
   --brand-soft: rgba(76, 141, 255, 0.14);
   --brand-glow: rgba(76, 141, 255, 0.55);
-  --brand-contrast: #ffffff;
+  --brand-contrast: #08090b;
 }
 
+/* text 7.04 · fill 7.04 — unchanged. */
 :root[data-accent="purple"] {
   --brand: #553bd6;
   --brand-soft: rgba(85, 59, 214, 0.09);
@@ -248,23 +294,27 @@
   --brand-contrast: #ffffff;
 }
 
+/* text 5.34 · chip 4.54 · fill 6.09 — lifted from #6d5cf5, which could not
+   reach 4.5:1 as text on *any* background, including pure black. */
 .dark[data-accent="purple"] {
-  --brand: #6d5cf5;
-  --brand-soft: rgba(109, 92, 245, 0.14);
-  --brand-glow: rgba(109, 92, 245, 0.55);
-  --brand-contrast: #ffffff;
-}
-
-/* Teal is light enough that white text on it measures 2.30:1 (dark) and
-   3.22:1 (light) — both illegible. Near-black lifts those to 8.65:1 and
-   6.20:1 while keeping the hue the design specified. */
-:root[data-accent="teal"] {
-  --brand: #00a289;
-  --brand-soft: rgba(0, 162, 137, 0.09);
-  --brand-glow: rgba(0, 162, 137, 0.4);
+  --brand: #8b7ef7;
+  --brand-soft: rgba(139, 126, 247, 0.14);
+  --brand-glow: rgba(139, 126, 247, 0.55);
   --brand-contrast: #08090b;
 }
 
+/* text 5.42 · fill 5.42 — deepened from #00a289, which measured 2.81:1 as text
+   on a light page. That shade only ever worked as a fill, and it is used for
+   both, so it had to come down far enough to be readable as ink. Deep enough
+   now that white is the legible label rather than near-black. */
+:root[data-accent="teal"] {
+  --brand: #00705c;
+  --brand-soft: rgba(0, 112, 92, 0.09);
+  --brand-glow: rgba(0, 112, 92, 0.4);
+  --brand-contrast: #ffffff;
+}
+
+/* text 8.33 · fill 8.65 — unchanged, and the pair the rule above was drawn from. */
 .dark[data-accent="teal"] {
   --brand: #2fbfa5;
   --brand-soft: rgba(47, 191, 165, 0.14);
@@ -389,6 +439,22 @@
   }
   to {
     transform: scaleX(1);
+  }
+}
+
+/* Rows arriving inside a sheet that has just opened.
+   The stagger is a per-item `animation-delay`, not a timeline: the sheet's
+   children mount with it, so the delay is all the sequencing that is needed and
+   no JavaScript has to run to produce it. The global reduced-motion rules above
+   collapse it to nothing on their own. */
+@keyframes dd-sheet-item {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -667,7 +733,13 @@
 [data-reduce-motion="1"] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
+  /* Delays have to go too, not just durations. A staggered entrance whose
+     animation is instant but whose delay survives leaves each item invisible
+     until its turn — the motion is gone and the waiting is all that is left,
+     which is worse than the animation it was meant to spare. */
+  animation-delay: 0ms !important;
   transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
   scroll-behavior: auto !important;
 }
 
@@ -682,7 +754,9 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
 

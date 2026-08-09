@@ -2,6 +2,7 @@
 
 import {
   ArrowUp,
+  ArrowUpDown,
   Check,
   ChevronDown,
   ClipboardPaste,
@@ -50,7 +51,18 @@ export function FileToolbar() {
   const selecting = useWorkspace().selection.count > 0;
 
   return (
-    <div className="flex h-13 shrink-0 items-center gap-2 border-b border-line px-3">
+    // The trims above make the full set fit from 360px up. This is the floor
+    // beneath them: below that, or whenever a view adds a control, the bar
+    // scrolls instead of posting its right-hand end off the edge of the pane —
+    // which is silent, because the pane clips rather than scrolls. The bar is
+    // never the thing that scrolls in practice; it is what guarantees no
+    // control can become unreachable.
+    <div
+      className={cn(
+        "flex h-13 shrink-0 items-center gap-2 border-b border-line px-3",
+        "overflow-x-auto scrollbar-none",
+      )}
+    >
       {selecting ? <SelectionBar /> : <BrowseBar />}
     </div>
   );
@@ -127,10 +139,15 @@ function SortMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="sm" className="gap-1.5">
+          // Below `sm` the field name and the chevron give way to a single
+          // glyph. The control is the widest thing in the bar at 83px, and on a
+          // 360px screen that is a quarter of the toolbar spent telling you what
+          // you are already looking at — the column headers say it too.
+          <Button variant="ghost" size="sm" aria-label={WORKSPACE.sort} className="gap-1.5 max-sm:px-2">
+            <ArrowUpDown className="size-3.5 text-dim sm:hidden" />
             <span className="hidden text-dim sm:inline">{WORKSPACE.sort}</span>
-            <span className="text-foreground">{current?.label}</span>
-            <ChevronDown className="size-3.5 text-dim" />
+            <span className="hidden text-foreground sm:inline">{current?.label}</span>
+            <ChevronDown className="hidden size-3.5 text-dim sm:block" />
           </Button>
         }
       />

@@ -247,7 +247,15 @@ export function AuthWindow({ children }) {
                   survive, because `Button` carries `relative` of its own. This
                   puts the sheet in the positioned layer, in front of the glass
                   for good rather than only while a transform happens to be on it. */}
-              <div className="relative z-10 col-start-1 row-start-1 grid place-items-center px-5 py-11 sm:px-10 sm:py-14">
+              {/* `min-w-0` is the other load-bearing part. A grid item defaults
+                  to `min-width: auto`, which refuses to shrink below its
+                  min-content — and the sheet inside contains buttons that are
+                  `whitespace-nowrap` by design. At 360px that floor computed to
+                  360 inside a 313px window, so the sheet was 47px wider than the
+                  frame and the frame's `overflow-hidden` simply cut it off:
+                  no scrollbar, no warning, just a login form with its right edge
+                  missing. Releasing the floor lets it size to the window. */}
+              <div className="relative z-10 col-start-1 row-start-1 grid min-w-0 place-items-center px-4 py-11 sm:px-10 sm:py-14">
                 {children}
               </div>
             </div>

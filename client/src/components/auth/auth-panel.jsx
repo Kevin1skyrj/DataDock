@@ -22,7 +22,11 @@ export function AuthPanel({ title, description, icon, children, footer, classNam
     <section
       data-auth="sheet"
       className={cn(
-        "w-full max-w-100 rounded-xl border border-line-2 bg-overlay p-6 shadow-elevated sm:p-8",
+        // `min-w-0` for the same reason the window's grid cell carries it: the
+        // sheet is a grid item, so its default `min-width: auto` would hold it
+        // at the min-content width of the widest `whitespace-nowrap` control
+        // inside it and push it out through the window frame on a phone.
+        "w-full min-w-0 max-w-100 rounded-xl border border-line-2 bg-overlay p-6 shadow-elevated sm:p-8",
         className,
       )}
     >

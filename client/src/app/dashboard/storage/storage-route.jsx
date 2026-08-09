@@ -86,6 +86,12 @@ export function StorageRoute() {
   return (
     <div className="min-h-full overflow-y-auto p-3 sm:p-4">
       <div className="mx-auto flex max-w-6xl flex-col gap-4">
+        {/* The page opened on an `h2` with no `h1` above it — a heading outline
+            starting at level two, which reads to a screen reader as a section
+            of a document that is not there. The panels keep their own `h2`s;
+            this supplies the level they hang from. */}
+        <h1 className="sr-only">Storage</h1>
+
         <Panel title="Storage">
           {summary ? <StorageOverview summary={summary} /> : <PanelSkeleton rows={3} />}
         </Panel>

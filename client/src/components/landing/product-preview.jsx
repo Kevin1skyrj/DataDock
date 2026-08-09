@@ -297,7 +297,31 @@ export function ProductPreview() {
   );
 
   return (
-    <div ref={scope} id="preview" className="relative mt-16 px-5 sm:mt-20 sm:px-10">
+    /*
+     * Decorative, and marked as such.
+     *
+     * This is a picture of the application, not the application — the files in
+     * it are invented and belong to nobody. Read aloud it becomes a list of
+     * fictional documents and byte counts presented as though they were the
+     * visitor's own, which is noise at best and misleading at worst; the hero's
+     * copy beside it is what actually explains the product, and that stays.
+     *
+     * It also runs a looping demonstration in which a command palette opens
+     * over the drive and dims it. Text behind a scrim is text nobody is being
+     * asked to read, exactly as with a real modal — so measuring it as though
+     * it were body copy reports a problem that is not one.
+     */
+    <div
+      ref={scope}
+      id="preview"
+      // `inert` as well as `aria-hidden`, because the mockup contains real
+      // buttons. `aria-hidden` alone over focusable content is itself a failure:
+      // the control stays in the tab order while being unreachable to the
+      // screen reader describing it. `inert` takes both away together.
+      inert
+      aria-hidden="true"
+      className="relative mt-16 px-5 sm:mt-20 sm:px-10"
+    >
       <div className="mx-auto max-w-7xl perspective-[1600px]">
         <div data-tilt data-preview="frame" className="relative isolate transform-3d">
           {/* The same revolving light, blurred, spilling past the frame. It is

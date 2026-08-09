@@ -18,9 +18,20 @@ import { cn } from "@/lib/utils";
  * column first, then Modified, leaving name and size — the two facts you cannot
  * identify a file without.
  */
+/**
+ * The columns, and how much of a narrow screen the name is allowed to keep.
+ *
+ * The name is the only column anyone scans, so on a phone every other track is
+ * cut to what it actually needs. At 360px the original ladder spent 188 of the
+ * 306 available pixels on the checkbox, the size and the overflow button and
+ * left the name 118 — enough for "Archive" and not for "Design system", which
+ * is the width at which a file list stops being usable. Tightening the gap and
+ * the three fixed tracks returns 44px to the name without dropping a column, so
+ * nothing on a phone is missing, it is only narrower.
+ */
 export const FILE_GRID = cn(
-  "grid items-center gap-3",
-  "grid-cols-[2.25rem_minmax(0,1fr)_5rem_2.25rem]",
+  "grid items-center gap-2 sm:gap-3",
+  "grid-cols-[2rem_minmax(0,1fr)_3.5rem_2rem]",
   "sm:grid-cols-[2.25rem_minmax(0,1fr)_5.5rem_8.5rem_2.25rem]",
   "xl:grid-cols-[2.25rem_minmax(0,1fr)_5.5rem_8.5rem_6.5rem_2.25rem]",
 );
