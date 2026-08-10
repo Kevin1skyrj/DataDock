@@ -1,9 +1,9 @@
-Client/node_modules/
-Client/.env
+client/node_modules/
+client/.env
 
 docs/CLAUDE.md
-Server/.env
-Server/node_modules/
-Server/storage/
-Server/profilePictures
+server/.env
+server/node_modules/
+server/storage/
+server/profilePictures
 CLAUDE.md
