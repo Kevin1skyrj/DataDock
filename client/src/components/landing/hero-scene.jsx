@@ -448,12 +448,19 @@ export function HeroScene({ className }) {
         );
         io.observe(host);
 
-        const clock = new THREE.Clock();
+        // `Timer`, not `Clock` — the latter is deprecated as of r180 and warns
+        // on every construction. `connect` is the reason to prefer it beyond
+        // the deprecation: it watches page visibility and resets itself when
+        // the tab comes back, so returning to a backgrounded tab does not
+        // deliver one enormous delta and jump every card across its orbit.
+        const timer = new THREE.Timer();
+        timer.connect(document);
+
         const v = new THREE.Vector3();
         let nextDock = 1.2;
 
         const update = (dt) => {
-          const t = clock.elapsedTime;
+          const t = timer.getElapsed();
 
           platters.forEach((g) => {
             g.rotation.y += g.userData.spin * dt;
@@ -554,7 +561,10 @@ export function HeroScene({ className }) {
         let raf = 0;
         const loop = () => {
           raf = requestAnimationFrame(loop);
-          const dt = Math.min(clock.getDelta(), 0.05);
+          timer.update();
+          // Still clamped. `connect` covers the tab-switch case; this covers
+          // the rest — a blocked main thread, a dragged window, a laptop lid.
+          const dt = Math.min(timer.getDelta(), 0.05);
           if (!onscreen || document.hidden) return;
           update(dt);
           renderer.render(scene, camera);
@@ -571,6 +581,8 @@ export function HeroScene({ className }) {
         teardown = () => {
           cancelAnimationFrame(raf);
           window.removeEventListener("pointermove", onMove);
+          // Releases the visibilitychange listener `connect` installed.
+          timer.dispose();
           ro.disconnect();
           io.disconnect();
           for (const d of disposables) d.dispose?.();
