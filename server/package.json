@@ -15,8 +15,5 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "mongodb": "^7.5.0"
-  },
-  "devDependencies": {
-    "prettier": "3.9.6"
   }
 }
