@@ -2,10 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "nodemon --exec \"node --env-file=.env\" app.js",
-    "start": "node --env-file=.env app.js"
+    "dev": "nodemon --exec \"node --env-file=.env\" server.js",
+    "start": "node --env-file=.env server.js"
   },
   "keywords": [],
   "author": "Rajat Pandey",
