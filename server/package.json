@@ -4,8 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon app.js",
-    "start": "node app.js"
+    "dev": "nodemon --exec \"node --env-file=.env\" app.js",
+    "start": "node --env-file=.env app.js"
   },
   "keywords": [],
   "author": "Rajat Pandey",

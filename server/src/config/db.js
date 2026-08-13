@@ -18,14 +18,14 @@ export async function connectToDatabase() {
   return database;
 }
 
-export function getDatabase(){
-    if(!database){
-        throw new Error('Database is not Connected');
-    }
-    return database;
+export function getDatabase() {
+  if (!database) {
+    throw new Error("Database is not Connected");
+  }
+  return database;
 }
 export async function closeDatabaseConnection() {
-    await client.close();
-    database = undefined;
-    console.log('MongoDB connection closed');
+  await client.close();
+  database = undefined;
+  console.log("MongoDB connection closed");
 }
