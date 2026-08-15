@@ -379,9 +379,23 @@
 
 [data-motion="ready"] [data-animate="word"] {
   /* Deliberately no opacity: Chrome discounts zero-opacity elements when
-     measuring LCP, and the headline is this page's LCP element. */
-  transform: translateY(110%);
-  filter: blur(10px);
+     measuring LCP, and the headline is this page's LCP element.
+
+     No blur. It used to start at `blur(10px)` as motion blur, but a blurred
+     white word on a near-black page is a soft white glow, and a filter spreads
+     pixels well past the element's own box — so that glow leaked up through the
+     mask and sat over the headline as two pale smears before a single letter
+     was readable. It looked like the page failing to load rather than the page
+     arriving.
+
+     A blur is also the one property here that cannot be composited cheaply: it
+     re-rasterises its layer on every frame of the animation. Removing it costs
+     nothing visually at this speed and gives the reveal back to the GPU.
+
+     125% is then all the travel needed — enough to clear the line's padding
+     box, which `pb-[0.14em]` extends about 10px below the text so descenders
+     survive the mask. */
+  transform: translateY(125%);
 }
 
 [data-motion="ready"] [data-animate="rise"] {

@@ -83,7 +83,10 @@ export function Hero({ children }) {
               HEADLINE.forEach((_, line) => {
                 timeline.to(
                   `[data-line='${line}'] [data-animate='word']`,
-                  { y: 0, filter: "blur(0px)", duration: 0.95, stagger: 0.07 },
+                  // Transform only. Animating a filter alongside it would
+                  // re-rasterise the word every frame for an effect the mask
+                  // already sells.
+                  { y: 0, duration: 0.95, stagger: 0.07 },
                   BEAT.headline + line * BEAT.headlineLine,
                 );
               });

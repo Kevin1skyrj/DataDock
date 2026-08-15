@@ -120,6 +120,7 @@ export function HeroScene({ className }) {
 
     let disposed = false;
     let teardown = () => {};
+    let idleHandle = null;
 
     // The application's own motion switch counts as much as the system's; a
     // visitor who turned motion down here should not get a WebGL animation.
@@ -127,7 +128,31 @@ export function HeroScene({ className }) {
     const isReduced = () =>
       reducedQuery.matches || document.documentElement.dataset.reduceMotion === "1";
 
-    import("three")
+    /**
+     * Waits for the main thread to be free before building anything.
+     *
+     * Importing three, constructing the scene and compiling its shaders is
+     * roughly half a second of unbroken JavaScript. Started immediately it runs
+     * alongside hydration and the hero's entrance, and the headline cannot paint
+     * until it yields — which is the stutter. It is a *background* object, so it
+     * has no claim on the first frame.
+     *
+     * The timeout is the floor: if the page never goes idle the scene still
+     * arrives, just after everything that matters has drawn.
+     */
+    const whenIdle = (run) => {
+      if (typeof requestIdleCallback === "function") {
+        idleHandle = requestIdleCallback(run, { timeout: 2000 });
+        return () => cancelIdleCallback(idleHandle);
+      }
+      idleHandle = setTimeout(run, 300);
+      return () => clearTimeout(idleHandle);
+    };
+
+    let cancelIdle = whenIdle(() => {
+      if (disposed) return;
+
+      import("three")
       .then((THREE) => {
         if (disposed) return;
 
@@ -140,7 +165,12 @@ export function HeroScene({ className }) {
           alpha: true,
           powerPreference: "high-performance",
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // 1.5, not 2. At devicePixelRatio 2 this shades four times as many
+        // pixels as at 1, every frame, for a soft-focus background object whose
+        // edges are already feathered — the extra sharpness lands on almost
+        // nothing while the cost is paid continuously. Capping here also
+        // shrinks every framebuffer the compositor has to carry.
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.15;
@@ -285,6 +315,27 @@ export function HeroScene({ className }) {
 
         const cards = [];
         const cardGeo = track(new THREE.BoxGeometry(0.34, 0.44, 0.016));
+
+        /**
+         * Four card faces, shared by eighteen cards.
+         *
+         * Each card used to build its own 160×208 canvas, draw it, and upload
+         * it as a separate GPU texture — eighteen canvas allocations and
+         * eighteen uploads during the scene build, which is a large part of why
+         * the hero stuttered. The faces are randomised line-work seen at
+         * thumbnail size from a moving camera; four is well past the point
+         * where anyone could tell.
+         *
+         * The *textures* are shared. The materials are not — the docking
+         * animation writes `opacity` per card, so one material across eighteen
+         * meshes would fade them all together.
+         */
+        const cardFaces = Array.from({ length: 4 }, () =>
+          track(cardTexture(THREE, accent, dark)),
+        );
+
+        let faceIndex = 0;
+
         rings.forEach((ring, ri) => {
           const q = new THREE.Quaternion().setFromEuler(
             new THREE.Euler(ring.tilt, ring.yaw, 0),
@@ -292,7 +343,7 @@ export function HeroScene({ className }) {
           for (let i = 0; i < ring.n; i++) {
             const mat = track(
               new THREE.MeshStandardMaterial({
-                map: track(cardTexture(THREE, accent, dark)),
+                map: cardFaces[faceIndex++ % cardFaces.length],
                 // Neutral rather than the design's mint-tinted grey, which was
                 // chosen for one fixed accent and turns green cards blue-green
                 // under a blue one.
@@ -593,9 +644,13 @@ export function HeroScene({ className }) {
       .catch(() => {
         // No WebGL, or the chunk failed. The hero is complete without it.
       });
+    });
 
     return () => {
       disposed = true;
+      // Unmounting before the idle slot arrives must cancel it, or a scene is
+      // built into a host that has already left the document.
+      cancelIdle?.();
       teardown();
     };
     // Rebuilt whenever the accent or the theme changes: the colours are baked
