@@ -15,8 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IMPORT_PROVIDERS } from "@/constants/import-providers";
-import { readPicked } from "@/lib/dropped-entries";
-import { enqueue } from "@/lib/upload-store";
+import { useFilePicker } from "@/hooks/use-file-picker";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,22 +37,16 @@ import { cn } from "@/lib/utils";
 export function UploadMenu({ parentId, onImport }) {
   const filesRef = useRef(null);
   const folderRef = useRef(null);
-
-  const take = (event) => {
-    const entries = readPicked(event.target.files);
-    if (entries.length) enqueue(entries, parentId);
-    // Cleared so choosing the same file twice in a row still fires a change.
-    event.target.value = "";
-  };
+  const onPick = useFilePicker(parentId);
 
   return (
     <div className="flex items-stretch">
-      <input ref={filesRef} type="file" multiple hidden onChange={take} />
+      <input ref={filesRef} type="file" multiple hidden onChange={onPick} />
       <input
         ref={folderRef}
         type="file"
         hidden
-        onChange={take}
+        onChange={onPick}
         // Non-standard, but it is what every browser implements and the only way
         // to pick a directory. React passes unknown attributes straight through.
         webkitdirectory=""

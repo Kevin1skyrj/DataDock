@@ -1,10 +1,10 @@
 "use client";
 
-import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import { TriangleAlert } from "lucide-react";
 
 import { Notice } from "@/components/common/notice";
 import { Button } from "@/components/ui/button";
+import { fontVariables } from "@/lib/fonts";
 
 import "./globals.css";
 
@@ -29,24 +29,9 @@ import "./globals.css";
  *   that just failed; a real document load is what actually recovers.
  */
 
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
 export default function GlobalError({ error, reset }) {
   return (
-    <html
-      lang="en"
-      className={`dark ${instrumentSans.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="en" className={`dark ${fontVariables}`}>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <main className="flex min-h-dvh items-center justify-center px-5 py-16">
           <Notice

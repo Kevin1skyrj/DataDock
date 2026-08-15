@@ -1,21 +1,8 @@
-import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
-
 import { bootScript } from "@/lib/boot-script";
+import { fontVariables } from "@/lib/fonts";
 import { AppProviders } from "@/providers/app-providers";
 
 import "./globals.css";
-
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata = {
   title: {
@@ -38,7 +25,7 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${jetbrainsMono.variable}`}
+      className={fontVariables}
     >
       {/* Extensions edit `<body>` before React hydrates — ClickUp adds
           `clickup-chrome-ext_installed`, password managers and Grammarly add

@@ -14,15 +14,17 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
-import { useId } from "react";
+import { useId, useRef } from "react";
 
 import { StorageMeter } from "@/components/common/storage-meter";
 import { SidebarNavItem } from "@/components/dashboard/sidebar-nav-item";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_NAV, SHELL } from "@/constants/dashboard";
 import { PREVIEW_STORAGE } from "@/constants/preview-data";
+import { useFilePicker } from "@/hooks/use-file-picker";
 import { useShortcut } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
+import { useWorkspaceCommands } from "@/lib/workspace-commands";
 
 const NAV_ICONS = {
   layout: LayoutGrid,
@@ -60,6 +62,20 @@ export function DashboardSidebar({
   const Panel = collapsed ? PanelLeftOpen : PanelLeftClose;
   const shortcut = useShortcut("B");
   const sidebarId = useId();
+
+  /**
+   * Uploads land in the folder currently on screen, not always at the root.
+   *
+   * The sidebar sits in the shell and the workspace sits in the page, so no
+   * context reaches between them — but the workspace already publishes the
+   * folder it is showing for the command palette to read, and this reads the
+   * same store. On Settings or Storage, where there is no workspace, `folderId`
+   * is null and the files land at the root, which is the only honest answer
+   * when there is no folder in view.
+   */
+  const { folderId } = useWorkspaceCommands();
+  const uploadRef = useRef(null);
+  const onPick = useFilePicker(folderId);
 
   return (
     <aside
@@ -111,10 +127,27 @@ export function DashboardSidebar({
       </div>
 
       <div className="px-3 pb-3">
+        {/* A real file input, hidden. It is the only way to raise the native
+            picker, and it is what makes this button do the thing its label
+            promises rather than merely look like it might. */}
+        <input
+          ref={uploadRef}
+          type="file"
+          multiple
+          hidden
+          onChange={onPick}
+        />
+
         {/* No `dd-shine`. That sweep is a marketing gesture and this is a
             control someone presses fifty times a day — the gloss stops being
-            delightful the second time and is noise by the tenth. */}
-        <Button size="md" className="w-full">
+            delightful the second time and is noise by the tenth.
+
+            A plain picker rather than the workspace's split button: folder
+            upload and the import providers need a menu, and a menu hanging off
+            a control that collapses to a 40px rail is a menu nobody can aim at.
+            The primary verb belongs here; its variations live in the toolbar,
+            where there is room for them. */}
+        <Button size="md" className="w-full" onClick={() => uploadRef.current?.click()}>
           <Upload />
           <span data-shell="rail-hide">{SHELL.upload}</span>
         </Button>
