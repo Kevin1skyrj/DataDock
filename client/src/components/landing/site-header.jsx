@@ -129,7 +129,13 @@ export function SiteHeader() {
     <Sheet open={sheetOpen} onOpenChange={setMenuOpen}>
       <div ref={sentinelRef} aria-hidden="true" className="absolute top-0 h-px w-full" />
 
-      <header ref={scope} className={cn("sticky top-0 z-50", HEADER_GUTTER)}>
+      {/* `fixed`, not `sticky`. Sticky needs the element to sit in the flow it
+          sticks within, and this header is now rendered outside the scrolling
+          content — ScrollSmoother transforms that content, and a transformed
+          ancestor would make the header scroll away with it. Out here it holds
+          the viewport for real. The hero carries matching top padding, since a
+          fixed header no longer occupies space of its own. */}
+      <header ref={scope} className={cn("fixed inset-x-0 top-0 z-50", HEADER_GUTTER)}>
         <HeaderIsland scrolled={scrolled}>
           <div className="flex items-center gap-10">
             <a

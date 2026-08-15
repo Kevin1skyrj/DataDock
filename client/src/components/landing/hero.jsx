@@ -268,8 +268,11 @@ export function Hero({ children }) {
       <div
         data-hero-copy
         className={cn(
-          "relative mx-auto grid max-w-page items-center gap-8 px-5 pt-20 sm:px-10 sm:pt-28",
-          "lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] lg:gap-12 lg:pt-24",
+          // Top padding carries the header's height as well as its own. The
+          // header is `fixed` now, so it occupies no space — 76px at base,
+          // 80px from `sm`, being its 64px island plus the gutter above it.
+          "relative mx-auto grid max-w-page items-center gap-8 px-5 pt-39 sm:px-10 sm:pt-48",
+          "lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] lg:gap-12 lg:pt-44",
         )}
       >
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
