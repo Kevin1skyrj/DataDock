@@ -29,3 +29,21 @@ export async function moveItemsToTrash({ ownerId, itemIds }) {
     })
     .toArray();
 }
+
+export async function findTrashedItems({ ownerId }) {
+  const database = getDatabase();
+
+  return database
+    .collection(ITEMS_COLLECTION)
+    .find({
+      ownerId,
+      trashedAt: {
+        $exists: true,
+        $ne: null,
+      },
+    })
+    .sort({
+      trashedAt: -1,
+    })
+    .toArray();
+}

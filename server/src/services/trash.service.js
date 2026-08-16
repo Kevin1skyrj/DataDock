@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { AppError } from "../errors/app-error.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
 import { findItemsByIds } from "../models/item.model.js";
-import { moveItemsToTrash } from "../models/trash.model.js";
+import { moveItemsToTrash, findTrashedItems } from "../models/trash.model.js";
 
 export async function trashItems({ ownerId, itemIds }) {
   if (!Array.isArray(itemIds) || itemIds.length === 0) {
@@ -40,4 +40,16 @@ export async function trashItems({ ownerId, itemIds }) {
   });
 
   return trashedItems.map(toPublicItem);
+}
+
+export async function listTrashedItems({ ownerId }) {
+  const items = await findTrashedItems({
+    ownerId,
+  });
+
+  return {
+    items: items.map(toPublicItem),
+    nextCursor: null,
+    total: items.length,
+  };
 }

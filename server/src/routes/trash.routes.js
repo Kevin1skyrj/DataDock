@@ -1,10 +1,14 @@
 import { Router } from "express";
-import { trashItems } from "../controllers/trash.controller.js";
+import {
+  trashItems,
+  getTrashedItems,
+} from "../controllers/trash.controller.js";
 import { attachDevelopmentUser } from "../middleware/development-user.middleware.js";
 
 const trashRouter = Router();
 
 trashRouter.use(attachDevelopmentUser);
+trashRouter.get("/", getTrashedItems);
 trashRouter.patch("/", trashItems);
 
 export default trashRouter;
