@@ -1,5 +1,6 @@
 import {
   createFolder as createFolderService,
+  getFolderPath as getFolderPathService,
   getItem as getItemService,
   listItems as listItemsService,
 } from "../services/item.service.js";
@@ -47,6 +48,21 @@ export async function getItem(req, res, next) {
       data: item,
     });
   } catch(error){
+    next(error);
+  }
+}
+
+export async function getFolderPath(req, res, next) {
+  try{
+    const path = await getFolderPathService({
+      ownerId: req.user.id,
+      folderId: req.params.folderId,
+    });
+    res.status(200).json({
+      success: true,
+      data: path,
+    });
+  }catch(error){
     next(error);
   }
 }

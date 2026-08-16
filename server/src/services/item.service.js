@@ -20,6 +20,7 @@ function toPublicItem(item) {
     updatedAt: item.updatedAt,
   };
 }
+
 async function resolveParentId({ ownerId, parentId }) {
   if (parentId === null || parentId === undefined) {
     return null;
@@ -50,9 +51,9 @@ export async function listItems({ ownerId, parentId = null }) {
     throw new Error("ownerId is required to list the items");
   }
   const resolvedParentId = await resolveParentId({
-     ownerId,
+    ownerId,
     parentId,
-})
+  });
   const items = await findItemsByParent({
     ownerId,
     parentId: resolvedParentId,
@@ -65,9 +66,9 @@ export async function listItems({ ownerId, parentId = null }) {
   };
 }
 
-export async function getItem({ownerId, itemId}) {
-  if(!ObjectId.isValid(itemId)){
-    throw new AppError("Invalid item ID",{
+export async function getItem({ ownerId, itemId }) {
+  if (!ObjectId.isValid(itemId)) {
+    throw new AppError("Invalid item ID", {
       statusCode: 400,
       code: "invalid-item-id",
     });
@@ -75,8 +76,8 @@ export async function getItem({ownerId, itemId}) {
   const item = await findItemById({
     ownerId,
     itemId: new ObjectId(itemId),
-  })
-  if(!item){
+  });
+  if (!item) {
     throw new AppError("Item not found", {
       statusCode: 404,
       code: "item-not-found",
@@ -120,4 +121,31 @@ export async function createFolder({ ownerId, name, parentId = null }) {
   });
 
   return toPublicItem(folder);
+}
+
+export async function getFolderPath({ ownerId, folderId }) {
+  if (!ObjectId.isValid(folderId)) {
+    throw new AppError("Invalid folder ID", {
+      statusCode: 400,
+      code: "invalid-folder-id",
+    });
+  }
+  const path = [];
+  let currentFolderId = new ObjectId(folderId);
+  while (currentFolderId) {
+    const folder = await findFolderById({
+      ownerId,
+      folderId: currentFolderId,
+    });
+
+    if (!folder) {
+      throw new AppError("Folder not found", {
+        statusCode: 404,
+        code: "folder-not-found",
+      });
+    }
+    path.unshift(toPublicItem(folder));
+    currentFolderId = folder.parentId;
+  }
+  return path;
 }
