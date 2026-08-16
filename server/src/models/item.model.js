@@ -67,3 +67,10 @@ export async function findFolderById({ ownerId, folderId }) {
     trashedAt: null,
   });
 }
+export async function findItemById({ ownerId, itemId}) {
+  const database = getDatabase();
+  return database.collection(ITEMS_COLLECTION).findOne({
+    _id: itemId,
+    ownerId,
+  });
+}

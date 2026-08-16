@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import {
+  findItemById,
   findFolderById,
   findItemByName,
   findItemsByParent,
@@ -62,6 +63,26 @@ export async function listItems({ ownerId, parentId = null }) {
     nextCursor: null,
     total: items.length,
   };
+}
+
+export async function getItem({ownerId, itemId}) {
+  if(!ObjectId.isValid(itemId)){
+    throw new AppError("Invalid item ID",{
+      statusCode: 400,
+      code: "invalid-item-id",
+    });
+  }
+  const item = await findItemById({
+    ownerId,
+    itemId: new ObjectId(itemId),
+  })
+  if(!item){
+    throw new AppError("Item not found", {
+      statusCode: 404,
+      code: "item-not-found",
+    });
+  }
+  return toPublicItem(item);
 }
 
 export async function createFolder({ ownerId, name, parentId = null }) {
