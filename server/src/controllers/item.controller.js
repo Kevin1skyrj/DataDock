@@ -7,7 +7,7 @@ export async function getItems(req, res, next) {
   try {
     const result = await listItemsService({
       ownerId: req.user.id,
-      parentId: null,
+      parentId: req.query.parentId,
     });
     res.status(200).json({
       success: true,
@@ -23,7 +23,7 @@ export async function createFolder(req, res, next) {
     const folder = await createFolderService({
       ownerId: req.user.id,
       name: req.body.name,
-      parentId: null,
+      parentId: req.body.parentId,
     });
 
     res.status(201).json({

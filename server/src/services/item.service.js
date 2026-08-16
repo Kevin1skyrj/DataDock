@@ -48,10 +48,13 @@ export async function listItems({ ownerId, parentId = null }) {
   if (!ownerId) {
     throw new Error("ownerId is required to list the items");
   }
-
+  const resolvedParentId = await resolveParentId({
+     ownerId,
+    parentId,
+})
   const items = await findItemsByParent({
     ownerId,
-    parentId,
+    parentId: resolvedParentId,
   });
 
   return {
