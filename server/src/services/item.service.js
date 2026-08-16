@@ -3,6 +3,7 @@ import {
   findItemsByParent,
   insertFolder,
 } from "../models/item.model.js";
+import { AppError } from "../errors/app-error.js";
 
 function toPublicItem(item) {
   return {
@@ -40,7 +41,10 @@ export async function createFolder({ ownerId, name, parentId = null }) {
   }
 
   if (typeof name !== "string" || !name.trim()) {
-    throw new Error("Folder name is required");
+    throw new AppError("Folder name is required", {
+      statusCode: 400,
+      code: "invalid-name",
+    });
   }
 
   const trimmedName = name.trim();
@@ -51,7 +55,13 @@ export async function createFolder({ ownerId, name, parentId = null }) {
   });
 
   if (existingItem) {
-    throw new Error("An item with this name already exists in this folder");
+    throw new AppError(
+      "An item with this name already exists in this folder",
+      {
+        statusCode: 409,
+        code: "name-conflict",
+      },
+    );
   }
 
   const folder = await insertFolder({
