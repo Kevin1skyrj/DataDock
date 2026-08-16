@@ -5,7 +5,8 @@ import {
   listItems as listItemsService,
   renameItem as renameItemService,
   starItems as starItemsService,
-  listStarredItems as listStarredItemsService
+  listStarredItems as listStarredItemsService,
+  moveItems as moveItemsService,
 } from "../services/item.service.js";
 
 export async function getItems(req, res, next) {
@@ -41,7 +42,7 @@ export async function createFolder(req, res, next) {
 }
 
 export async function getItem(req, res, next) {
-  try{
+  try {
     const item = await getItemService({
       ownerId: req.user.id,
       itemId: req.params.itemId,
@@ -50,13 +51,13 @@ export async function getItem(req, res, next) {
       success: true,
       data: item,
     });
-  } catch(error){
+  } catch (error) {
     next(error);
   }
 }
 
 export async function getFolderPath(req, res, next) {
-  try{
+  try {
     const path = await getFolderPathService({
       ownerId: req.user.id,
       folderId: req.params.folderId,
@@ -65,13 +66,13 @@ export async function getFolderPath(req, res, next) {
       success: true,
       data: path,
     });
-  }catch(error){
+  } catch (error) {
     next(error);
   }
 }
 
 export async function renameItem(req, res, next) {
-  try{
+  try {
     const item = await renameItemService({
       ownerId: req.user.id,
       itemId: req.params.itemId,
@@ -81,7 +82,7 @@ export async function renameItem(req, res, next) {
       success: true,
       data: item,
     });
-  }catch(error){
+  } catch (error) {
     next(error);
   }
 }
@@ -112,6 +113,23 @@ export async function getStarredItems(req, res, next) {
     res.status(200).json({
       success: true,
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function moveItems(req, res, next) {
+  try {
+    const items = await moveItemsService({
+      ownerId: req.user.id,
+      itemIds: req.body.itemIds,
+      parentId: req.body.parentId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: items,
     });
   } catch (error) {
     next(error);

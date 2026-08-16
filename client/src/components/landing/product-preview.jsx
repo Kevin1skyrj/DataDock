@@ -2,6 +2,7 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CornerDownLeft, Grid2x2, Rows3, Search, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,7 +23,7 @@ import { hasSeenEntrance } from "@/lib/entrance";
 import { OPEN_PALETTE_EVENT } from "@/lib/palette-event";
 import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollSmoother, ScrollTrigger);
 
 /**
  * The living product preview.
@@ -107,7 +108,27 @@ export function ProductPreview() {
   // ⌘K brings the palette forward wherever you are on the page.
   useEffect(() => {
     const reveal = () => {
-      scope.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const target = scope.current;
+      if (!target) return;
+
+      /*
+       * Through the smoother, not through the browser.
+       *
+       * `scrollIntoView` moves the document, but ScrollSmoother owns the
+       * document's scroll: it normalises the wheel and drives the content's
+       * transform from its own loop. A native scroll request lands in the
+       * middle of that and the two stop agreeing — the page either refuses to
+       * move at all or ends up at a position the smoother will not let you
+       * leave in one direction.
+       *
+       * `get()` returns nothing when there is no smoother, which is the case
+       * for anyone who asked for reduced motion. There the native call is
+       * correct and is what runs.
+       */
+      const smoother = ScrollSmoother.get();
+      if (smoother) smoother.scrollTo(target, true, "center center");
+      else target.scrollIntoView({ behavior: "smooth", block: "center" });
+
       openPalette();
     };
 

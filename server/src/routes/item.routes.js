@@ -7,6 +7,7 @@ import {
   renameItem,
   starItems,
   getStarredItems,
+  moveItems,
 } from "../controllers/item.controller.js";
 import { attachDevelopmentUser } from "../middleware/development-user.middleware.js";
 
@@ -18,6 +19,7 @@ itemRouter.get("/starred", getStarredItems);
 itemRouter.get("/:itemId", getItem);
 itemRouter.post("/folders", createFolder);
 itemRouter.patch("/starred", starItems);
+itemRouter.patch("/move", moveItems);
 itemRouter.patch("/:itemId", renameItem);
 
 export default itemRouter;

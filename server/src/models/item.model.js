@@ -143,3 +143,39 @@ export async function findStarredItems({ ownerId }) {
     })
     .toArray();
 }
+
+export async function findItemsByIds({ ownerId, itemIds }) {
+  const database = getDatabase();
+
+  return database
+    .collection(ITEMS_COLLECTION)
+    .find({
+      _id: { $in: itemIds },
+      ownerId,
+      trashedAt: null,
+    })
+    .toArray();
+}
+
+export async function updateItemsParent({ ownerId, itemIds, parentId }) {
+  const database = getDatabase();
+
+  await database.collection(ITEMS_COLLECTION).updateMany(
+    {
+      _id: { $in: itemIds },
+      ownerId,
+      trashedAt: null,
+    },
+    {
+      $set: {
+        parentId,
+        updatedAt: new Date(),
+      },
+    },
+  );
+
+  return findItemsByIds({
+    ownerId,
+    itemIds,
+  });
+}

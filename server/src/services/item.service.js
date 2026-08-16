@@ -8,6 +8,8 @@ import {
   updateItemName,
   updateItemsStarred,
   findStarredItems,
+  findItemsByIds,
+  updateItemsParent,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 
@@ -245,7 +247,6 @@ export async function starItems({ ownerId, itemIds, starred }) {
   return items.map(toPublicItem);
 }
 
-
 export async function listStarredItems({ ownerId }) {
   const items = await findStarredItems({
     ownerId,
@@ -256,4 +257,105 @@ export async function listStarredItems({ ownerId }) {
     nextCursor: null,
     total: items.length,
   };
+}
+
+export async function moveItems({ ownerId, itemIds, parentId = null }) {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    throw new AppError("At least one item ID is required", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  if (!itemIds.every((itemId) => ObjectId.isValid(itemId))) {
+    throw new AppError("One or more item IDs are invalid", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  const uniqueItemIds = [...new Set(itemIds)];
+  const objectIds = uniqueItemIds.map((itemId) => new ObjectId(itemId));
+
+  const items = await findItemsByIds({
+    ownerId,
+    itemIds: objectIds,
+  });
+
+  if (items.length !== objectIds.length) {
+    throw new AppError("One or more items were not found", {
+      statusCode: 404,
+      code: "items-not-found",
+    });
+  }
+
+  const resolvedParentId = await resolveParentId({
+    ownerId,
+    parentId,
+  });
+
+  const selectedFolderIds = new Set(
+    items
+      .filter((item) => item.type === "folder")
+      .map((item) => item._id.toHexString()),
+  );
+
+  let ancestorId = resolvedParentId;
+
+  while (ancestorId) {
+    if (selectedFolderIds.has(ancestorId.toHexString())) {
+      throw new AppError("A folder cannot be moved inside itself", {
+        statusCode: 400,
+        code: "invalid-move",
+      });
+    }
+
+    const ancestor = await findFolderById({
+      ownerId,
+      folderId: ancestorId,
+    });
+
+    ancestorId = ancestor?.parentId ?? null;
+  }
+
+  const selectedNames = new Set();
+
+  for (const item of items) {
+    if (selectedNames.has(item.normalizedName)) {
+      throw new AppError("Selected items contain duplicate names", {
+        statusCode: 409,
+        code: "name-conflict",
+      });
+    }
+
+    selectedNames.add(item.normalizedName);
+
+    const existingItem = await findItemByName({
+      ownerId,
+      parentId: resolvedParentId,
+      normalizedName: item.normalizedName,
+    });
+
+    const existingItemIsSelected = objectIds.some((itemId) =>
+      existingItem?._id.equals(itemId),
+    );
+
+    if (existingItem && !existingItemIsSelected) {
+      throw new AppError(
+        "An item with this name already exists in the destination folder",
+        {
+          statusCode: 409,
+          code: "name-conflict",
+        },
+      );
+    }
+  }
+
+  const movedItems = await updateItemsParent({
+    ownerId,
+    itemIds: objectIds,
+    parentId: resolvedParentId,
+  });
+
+  return movedItems.map(toPublicItem);
 }
