@@ -10,6 +10,7 @@ import {
   findStarredItems,
   findItemsByIds,
   updateItemsParent,
+  findFoldersByParent,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 
@@ -358,4 +359,19 @@ export async function moveItems({ ownerId, itemIds, parentId = null }) {
   });
 
   return movedItems.map(toPublicItem);
+}
+
+
+export async function listFolders({ ownerId, parentId = null }) {
+  const resolvedParentId = await resolveParentId({
+    ownerId,
+    parentId,
+  });
+
+  const folders = await findFoldersByParent({
+    ownerId,
+    parentId: resolvedParentId,
+  });
+
+  return folders.map(toPublicItem);
 }

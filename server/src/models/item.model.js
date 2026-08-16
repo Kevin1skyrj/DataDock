@@ -179,3 +179,23 @@ export async function updateItemsParent({ ownerId, itemIds, parentId }) {
     itemIds,
   });
 }
+
+export async function findFoldersByParent({
+  ownerId,
+  parentId = null,
+}) {
+  const database = getDatabase();
+
+  return database
+    .collection(ITEMS_COLLECTION)
+    .find({
+      ownerId,
+      parentId,
+      type: "folder",
+      trashedAt: null,
+    })
+    .sort({
+      name: 1,
+    })
+    .toArray();
+}

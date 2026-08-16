@@ -7,6 +7,7 @@ import {
   starItems as starItemsService,
   listStarredItems as listStarredItemsService,
   moveItems as moveItemsService,
+  listFolders as listFoldersService,
 } from "../services/item.service.js";
 
 export async function getItems(req, res, next) {
@@ -130,6 +131,22 @@ export async function moveItems(req, res, next) {
     res.status(200).json({
       success: true,
       data: items,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getFolders(req, res, next) {
+  try {
+    const folders = await listFoldersService({
+      ownerId: req.user.id,
+      parentId: req.query.parentId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: folders,
     });
   } catch (error) {
     next(error);
