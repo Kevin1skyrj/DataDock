@@ -68,7 +68,7 @@ export async function findFolderById({ ownerId, folderId }) {
   });
 }
 
-export async function findItemById({ ownerId, itemId}) {
+export async function findItemById({ ownerId, itemId }) {
   const database = getDatabase();
   return database.collection(ITEMS_COLLECTION).findOne({
     _id: itemId,
@@ -97,7 +97,33 @@ export async function updateItemName({
       },
     },
     {
-      returnDocument: 'after',
+      returnDocument: "after",
     },
   );
+}
+
+export async function updateItemsStarred({ ownerId, itemIds, starred }) {
+  const database = getDatabase();
+  const itemsCollection = database.collection(ITEMS_COLLECTION);
+  const updatedAt = new Date();
+  await itemsCollection.updateMany(
+    {
+      _id: { $in: itemIds },
+      ownerId,
+      trashedAt: null,
+    },
+    {
+      $set: {
+        starred,
+        updatedAt,
+      },
+    },
+  );
+  return itemsCollection
+    .find({
+      _id: { $in: itemIds },
+      ownerId,
+      trashedAt: null,
+    })
+    .toArray();
 }

@@ -6,6 +6,7 @@ import {
   findItemsByParent,
   insertFolder,
   updateItemName,
+  updateItemsStarred,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 
@@ -201,4 +202,44 @@ export async function renameItem({ ownerId, itemId, name }) {
   });
 
   return toPublicItem(updatedItem);
+}
+
+export async function starItems({ ownerId, itemIds, starred }) {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    throw new AppError("At least one item ID is required", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  if (!itemIds.every((itemId) => ObjectId.isValid(itemId))) {
+    throw new AppError("One or more item IDs are invalid", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  if (typeof starred !== "boolean") {
+    throw new AppError("Starred must be true or false", {
+      statusCode: 400,
+      code: "invalid-starred-value",
+    });
+  }
+
+  const objectIds = itemIds.map((itemId) => new ObjectId(itemId));
+
+  const items = await updateItemsStarred({
+    ownerId,
+    itemIds: objectIds,
+    starred,
+  });
+
+  if (items.length === 0) {
+    throw new AppError("Items not found", {
+      statusCode: 404,
+      code: "items-not-found",
+    });
+  }
+
+  return items.map(toPublicItem);
 }

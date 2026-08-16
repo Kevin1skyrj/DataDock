@@ -4,6 +4,7 @@ import {
   getItem as getItemService,
   listItems as listItemsService,
   renameItem as renameItemService,
+  starItems as starItemsService,
 } from "../services/item.service.js";
 
 export async function getItems(req, res, next) {
@@ -80,6 +81,23 @@ export async function renameItem(req, res, next) {
       data: item,
     });
   }catch(error){
+    next(error);
+  }
+}
+
+export async function starItems(req, res, next) {
+  try {
+    const items = await starItemsService({
+      ownerId: req.user.id,
+      itemIds: req.body.itemIds,
+      starred: req.body.starred,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: items,
+    });
+  } catch (error) {
     next(error);
   }
 }
