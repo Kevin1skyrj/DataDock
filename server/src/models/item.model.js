@@ -20,6 +20,18 @@ export async function findItemsByParent({ ownerId, parentId = null }) {
 
   return items;
 }
+
+export async function findItemByName({ ownerId, parentId = null, normalizedName }) {
+  const database = getDatabase();
+
+  return database.collection(ITEMS_COLLECTION).findOne({
+    ownerId,
+    parentId,
+    normalizedName,
+    trashedAt: null,
+  });
+}
+
 export async function insertFolder({ ownerId, name, parentId = null }) {
   const database = getDatabase();
   const itemsCollection = database.collection(ITEMS_COLLECTION);
@@ -28,6 +40,7 @@ export async function insertFolder({ ownerId, name, parentId = null }) {
     ownerId,
     type: "folder",
     name,
+    normalizedName: name.toLowerCase(),
     parentId,
     starred: false,
     trashedAt: null,
@@ -35,7 +48,7 @@ export async function insertFolder({ ownerId, name, parentId = null }) {
     updatedAt: now,
   };
   const result = await itemsCollection.insertOne(folder);
-  return{
+  return {
     ...folder,
     _id: result.insertedId,
   };
