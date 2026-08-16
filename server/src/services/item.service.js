@@ -14,19 +14,7 @@ import {
   getFolderSummaryData,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
-
-function toPublicItem(item) {
-  return {
-    id: item._id.toHexString(),
-    type: item.type,
-    name: item.name,
-    parentId: item.parentId?.toHexString() ?? null,
-    starred: item.starred,
-    trashedAt: item.trashedAt,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-  };
-}
+import { toPublicItem } from "../mappers/item.mapper.js";
 
 async function resolveParentId({ ownerId, parentId }) {
   if (parentId === null || parentId === undefined) {
