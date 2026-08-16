@@ -21,7 +21,11 @@ export async function findItemsByParent({ ownerId, parentId = null }) {
   return items;
 }
 
-export async function findItemByName({ ownerId, parentId = null, normalizedName }) {
+export async function findItemByName({
+  ownerId,
+  parentId = null,
+  normalizedName,
+}) {
   const database = getDatabase();
 
   return database.collection(ITEMS_COLLECTION).findOne({
@@ -52,4 +56,14 @@ export async function insertFolder({ ownerId, name, parentId = null }) {
     ...folder,
     _id: result.insertedId,
   };
+}
+
+export async function findFolderById({ ownerId, folderId }) {
+  const database = getDatabase();
+  return database.collection(ITEMS_COLLECTION).findOne({
+    _id: folderId,
+    ownerId,
+    type: "folder",
+    trashedAt: null,
+  });
 }

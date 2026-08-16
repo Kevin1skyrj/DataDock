@@ -1,4 +1,6 @@
+import { ObjectId } from "mongodb";
 import {
+  findFolderById,
   findItemByName,
   findItemsByParent,
   insertFolder,
@@ -16,6 +18,30 @@ function toPublicItem(item) {
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
+}
+async function resolveParentId({ ownerId, parentId }) {
+  if (parentId === null || parentId === undefined) {
+    return null;
+  }
+  if (typeof parentId !== "string" || !ObjectId.isValid(parentId)) {
+    throw new AppError("Invalid parent folder ID", {
+      statusCode: 400,
+      code: "invalid-parent-id",
+    });
+  }
+  const folderId = new ObjectId(parentId);
+  const parentFolder = await findFolderById({
+    ownerId,
+    folderId,
+  });
+
+  if (!parentFolder) {
+    throw new AppError("Parent folder not found", {
+      statusCode: 404,
+      code: "parent-folder-not-found",
+    });
+  }
+  return folderId;
 }
 
 export async function listItems({ ownerId, parentId = null }) {
@@ -48,26 +74,25 @@ export async function createFolder({ ownerId, name, parentId = null }) {
   }
 
   const trimmedName = name.trim();
+  const resolvedParentId = await resolveParentId({ ownerId, parentId });
+
   const existingItem = await findItemByName({
     ownerId,
-    parentId,
+    parentId: resolvedParentId,
     normalizedName: trimmedName.toLowerCase(),
   });
 
   if (existingItem) {
-    throw new AppError(
-      "An item with this name already exists in this folder",
-      {
-        statusCode: 409,
-        code: "name-conflict",
-      },
-    );
+    throw new AppError("An item with this name already exists in this folder", {
+      statusCode: 409,
+      code: "name-conflict",
+    });
   }
 
   const folder = await insertFolder({
     ownerId,
     name: trimmedName,
-    parentId,
+    parentId: resolvedParentId,
   });
 
   return toPublicItem(folder);
