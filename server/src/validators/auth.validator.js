@@ -38,3 +38,27 @@ export function validateRegistrationInput({ name, email, password } = {}) {
     password,
   };
 }
+
+export function validateLoginInput({ email, password } = {}) {
+  const normalizedEmail =
+    typeof email === "string" ? email.trim().toLowerCase() : "";
+
+  if (!EMAIL_PATTERN.test(normalizedEmail)) {
+    throw new AppError("Enter a valid email address", {
+      statusCode: 400,
+      code: "invalid-email",
+    });
+  }
+
+  if (typeof password !== "string" || password.length === 0) {
+    throw new AppError("Enter your password", {
+      statusCode: 400,
+      code: "invalid-password",
+    });
+  }
+
+  return {
+    email: normalizedEmail,
+    password,
+  };
+}

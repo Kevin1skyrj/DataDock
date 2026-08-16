@@ -2,8 +2,19 @@ import express from "express";
 import cors from "cors";
 import apiRouter from "./routes/index.js";
 import { errorHandler } from "./middleware/error.middleware.js";
+import cookieParser from "cookie-parser";
 const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN;
+const cookieSecret = process.env.COOKIE_SECRET;
+const otpSecret = process.env.OTP_SECRET;
+if (!cookieSecret) {
+  throw new Error("COOKIE_SECRET is missing from environment variables");
+}
+
+if (!otpSecret) {
+  throw new Error("OTP_SECRET is missing from environment variables");
+}
+
 if (!clientOrigin) {
   throw new Error("CLIENT_ORIGIN is missing from environment variables");
 }
@@ -16,7 +27,7 @@ app.use(
 );
 
 app.use(express.json());
-
+app.use(cookieParser(cookieSecret));
 app.use("/api/v1", apiRouter);
 
 app.get("/", (req, res) => {
