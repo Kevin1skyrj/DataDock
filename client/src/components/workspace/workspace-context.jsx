@@ -142,19 +142,25 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
 
   useEffect(() => {
     let cancelled = false;
-    getPath(folderId).then((trail) => {
-      if (cancelled) return;
-      setPath(trail);
-      // The shell draws the breadcrumb; only this side knows what the folders
-      // are called. See lib/breadcrumb-trail.js.
-      publishTrail(
-        trail.map((rung) => ({
-          id: rung.id,
-          name: rung.name,
-          href: `/dashboard/files?folder=${encodeURIComponent(rung.id)}`,
-        })),
-      );
-    });
+    getPath(folderId)
+      .then((trail) => {
+        if (cancelled) return;
+        setPath(trail);
+        // The shell draws the breadcrumb; only this side knows what the folders
+        // are called. See lib/breadcrumb-trail.js.
+        publishTrail(
+          trail.map((rung) => ({
+            id: rung.id,
+            name: rung.name,
+            href: `/dashboard/files?folder=${encodeURIComponent(rung.id)}`,
+          })),
+        );
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPath([]);
+        publishTrail([]);
+      });
     return () => {
       cancelled = true;
     };

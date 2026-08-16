@@ -1,0 +1,123 @@
+import { apiRequest } from "@/services/api/api-client";
+
+export async function listItems({
+  parentId = null,
+  filter = {},
+} = {}) {
+  if (filter.starred) {
+    return apiRequest("/items/starred");
+  }
+
+  if (filter.trashed) {
+    return apiRequest("/trash");
+  }
+
+  const query = new URLSearchParams();
+
+  if (parentId) {
+    query.set("parentId", parentId);
+  }
+
+  const queryString = query.toString();
+
+  return apiRequest(`/items${queryString ? `?${queryString}` : ""}`);
+}
+
+export async function getItem(itemId) {
+  return apiRequest(`/items/${encodeURIComponent(itemId)}`);
+}
+
+export async function getPath(folderId) {
+  if (!folderId) {
+    return [];
+  }
+
+  return apiRequest(`/items/folders/${encodeURIComponent(folderId)}/path`);
+}
+
+export async function getFolderSummary(parentId = null) {
+  const query = new URLSearchParams();
+
+  if (parentId) {
+    query.set("parentId", parentId);
+  }
+
+  const queryString = query.toString();
+
+  return apiRequest(`/items/summary${queryString ? `?${queryString}` : ""}`);
+}
+
+export async function listFolders(parentId = null) {
+  const query = new URLSearchParams();
+
+  if (parentId) {
+    query.set("parentId", parentId);
+  }
+
+  const queryString = query.toString();
+
+  return apiRequest(`/items/folders${queryString ? `?${queryString}` : ""}`);
+}
+
+export async function createFolder({
+  parentId = null,
+  name,
+}) {
+  return apiRequest("/items/folders", {
+    method: "POST",
+    body: {
+      parentId,
+      name,
+    },
+  });
+}
+
+export async function renameItem(itemId, name) {
+  return apiRequest(
+    `/items/${encodeURIComponent(itemId)}`,
+    {
+      method: "PATCH",
+      body: {
+        name,
+      },
+    },
+  );
+}
+
+export async function moveItems(itemIds, parentId) {
+  return apiRequest("/items/move", {
+    method: "PATCH",
+    body: {
+      itemIds,
+      parentId,
+    },
+  });
+}
+
+export async function starItems(itemIds, starred) {
+  return apiRequest("/items/starred", {
+    method: "PATCH",
+    body: {
+      itemIds,
+      starred,
+    },
+  });
+}
+
+export async function trashItems(itemIds) {
+  return apiRequest("/trash", {
+    method: "PATCH",
+    body: {
+      itemIds,
+    },
+  });
+}
+
+export async function restoreItems(itemIds) {
+  return apiRequest("/trash/restore", {
+    method: "PATCH",
+    body: {
+      itemIds,
+    },
+  });
+}
