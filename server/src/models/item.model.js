@@ -127,3 +127,19 @@ export async function updateItemsStarred({ ownerId, itemIds, starred }) {
     })
     .toArray();
 }
+
+export async function findStarredItems({ ownerId }) {
+  const database = getDatabase();
+
+  return database
+    .collection(ITEMS_COLLECTION)
+    .find({
+      ownerId,
+      starred: true,
+      trashedAt: null,
+    })
+    .sort({
+      updatedAt: -1,
+    })
+    .toArray();
+}

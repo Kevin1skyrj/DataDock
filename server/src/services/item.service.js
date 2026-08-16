@@ -7,6 +7,7 @@ import {
   insertFolder,
   updateItemName,
   updateItemsStarred,
+  findStarredItems,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 
@@ -242,4 +243,17 @@ export async function starItems({ ownerId, itemIds, starred }) {
   }
 
   return items.map(toPublicItem);
+}
+
+
+export async function listStarredItems({ ownerId }) {
+  const items = await findStarredItems({
+    ownerId,
+  });
+
+  return {
+    items: items.map(toPublicItem),
+    nextCursor: null,
+    total: items.length,
+  };
 }
