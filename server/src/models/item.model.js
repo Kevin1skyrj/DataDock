@@ -199,3 +199,49 @@ export async function findFoldersByParent({
     })
     .toArray();
 }
+
+export async function getFolderSummaryData({
+  ownerId,
+  parentId = null,
+}) {
+  const database = getDatabase();
+
+  const [summary] = await database
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      {
+        $match: {
+          ownerId,
+          parentId,
+          trashedAt: null,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          folderCount: {
+            $sum: {
+              $cond: [{ $eq: ["$type", "folder"] }, 1, 0],
+            },
+          },
+          size: {
+            $sum: {
+              $ifNull: ["$size", 0],
+            },
+          },
+          updatedAt: {
+            $max: "$updatedAt",
+          },
+        },
+      },
+    ])
+    .toArray();
+
+  return summary ?? {
+    count: 0,
+    folderCount: 0,
+    size: 0,
+    updatedAt: null,
+  };
+}

@@ -9,6 +9,7 @@ import {
   getStarredItems,
   moveItems,
   getFolders,
+  getFolderSummary,
 } from "../controllers/item.controller.js";
 import { attachDevelopmentUser } from "../middleware/development-user.middleware.js";
 
@@ -19,6 +20,7 @@ itemRouter.get("/", getItems);
 itemRouter.get("/folders", getFolders);
 itemRouter.get("/folders/:folderId/path", getFolderPath);
 itemRouter.get("/starred", getStarredItems);
+itemRouter.get("/summary", getFolderSummary);
 itemRouter.get("/:itemId", getItem);
 itemRouter.post("/folders", createFolder);
 itemRouter.patch("/starred", starItems);

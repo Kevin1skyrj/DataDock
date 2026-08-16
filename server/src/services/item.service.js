@@ -11,6 +11,7 @@ import {
   findItemsByIds,
   updateItemsParent,
   findFoldersByParent,
+  getFolderSummaryData,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 
@@ -361,7 +362,6 @@ export async function moveItems({ ownerId, itemIds, parentId = null }) {
   return movedItems.map(toPublicItem);
 }
 
-
 export async function listFolders({ ownerId, parentId = null }) {
   const resolvedParentId = await resolveParentId({
     ownerId,
@@ -374,4 +374,23 @@ export async function listFolders({ ownerId, parentId = null }) {
   });
 
   return folders.map(toPublicItem);
+}
+
+export async function getFolderSummary({ ownerId, parentId = null }) {
+  const resolvedParentId = await resolveParentId({
+    ownerId,
+    parentId,
+  });
+
+  const summary = await getFolderSummaryData({
+    ownerId,
+    parentId: resolvedParentId,
+  });
+
+  return {
+    count: summary.count,
+    folderCount: summary.folderCount,
+    size: summary.size,
+    updatedAt: summary.updatedAt,
+  };
 }

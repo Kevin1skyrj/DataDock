@@ -8,6 +8,7 @@ import {
   listStarredItems as listStarredItemsService,
   moveItems as moveItemsService,
   listFolders as listFoldersService,
+  getFolderSummary as getFolderSummaryService,
 } from "../services/item.service.js";
 
 export async function getItems(req, res, next) {
@@ -147,6 +148,22 @@ export async function getFolders(req, res, next) {
     res.status(200).json({
       success: true,
       data: folders,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getFolderSummary(req, res, next) {
+  try {
+    const summary = await getFolderSummaryService({
+      ownerId: req.user.id,
+      parentId: req.query.parentId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: summary,
     });
   } catch (error) {
     next(error);
