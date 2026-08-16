@@ -197,6 +197,11 @@ export function ProductPreview() {
               delay: replay ? 0 : BEAT.frame,
               defaults: { ease: EASE.entrance },
               onComplete: () => {
+                // Nothing to clean up when nothing was hidden. Returning to
+                // this page from another leaves `parts` empty — an earlier run
+                // already stripped the attributes — and `gsap.set` on an empty
+                // array is what prints "GSAP target not found" once per visit.
+                if (!parts.length) return;
                 parts.forEach((element) => element.removeAttribute("data-preview"));
                 gsap.set(parts, { clearProps: "opacity,transform" });
               },
