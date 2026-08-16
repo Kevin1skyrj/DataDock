@@ -3,6 +3,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -36,6 +37,7 @@ const GLOW = (color, reach = 62) => ({
  */
 export function PageAtmosphere() {
   const scope = useRef(null);
+  const pathname = usePathname();
 
   useGSAP(
     () => {
@@ -89,7 +91,22 @@ export function PageAtmosphere() {
 
       return () => mm.revert();
     },
-    { scope },
+    /**
+     * Rebuilt on every navigation, and reverted first.
+     *
+     * This layer belongs to the layout, so it survives a move between marketing
+     * pages while the thing it is keyed to does not: the fade is driven by a
+     * ScrollTrigger on `#top`, the hero. Leaving the landing page removes that
+     * element, which strands the tween at its end value — full strength — and
+     * coming back builds a *new* hero the old trigger has never heard of. The
+     * result was a page that opened at 0.12 the first time and 1 every time
+     * after, which reads as the whole hero having fogged over.
+     *
+     * `revertOnUpdate` is the half that matters most: without it the rebuild
+     * would add correct triggers on top of an opacity someone else already set,
+     * and the stale value would simply win.
+     */
+    { scope, dependencies: [pathname], revertOnUpdate: true },
   );
 
   return (

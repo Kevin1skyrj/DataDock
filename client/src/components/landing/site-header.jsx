@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { AccentPicker } from "@/components/common/accent-picker";
@@ -61,6 +62,21 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const scope = useRef(null);
   const sentinelRef = useRef(null);
+  const pathname = usePathname();
+
+  /**
+   * A section on *this* page is an anchor; anything else is a navigation.
+   *
+   * `next/link` attaches its own click handler through React, which runs before
+   * a listener on `document` — so routing a same-page hash through `Link` means
+   * the router acts first and the smooth scroller's `preventDefault` arrives
+   * too late to matter. A plain anchor leaves the click for the scroller, which
+   * is the one that knows how to move this page.
+   */
+  const linkFor = (href) => {
+    const samePage = href.startsWith("/#") && pathname === "/";
+    return samePage ? { Tag: "a", href: href.slice(1) } : { Tag: Link, href };
+  };
 
   // Openness is derived rather than stored, the same way the dashboard shell
   // derives its drawer. Growing past `lg` restores the real navigation, so the
@@ -138,20 +154,36 @@ export function SiteHeader() {
       <header ref={scope} className={cn("fixed inset-x-0 top-0 z-50", HEADER_GUTTER)}>
         <HeaderIsland scrolled={scrolled}>
           <div className="flex items-center gap-10">
-            <a
-              href="#top"
-              data-animate="nav"
-              className="text-xl font-semibold tracking-tight text-foreground hover:text-foreground"
-            >
-              DataDock
-            </a>
+            {/* Home, wherever you are. As a bare `#top` it resolved against the
+                current page, so from `/about` the wordmark pointed at
+                `/about#top` and clicking it did nothing at all. */}
+            {(() => {
+              const { Tag, href } = linkFor("/#top");
+              return (
+                <Tag
+                  href={href}
+                  data-animate="nav"
+                  className="text-xl font-semibold tracking-tight text-foreground hover:text-foreground"
+                >
+                  DataDock
+                </Tag>
+              );
+            })()}
 
             <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
-              {MARKETING_NAV.map((item) => (
-                <a key={item.href} href={item.href} data-animate="nav" className={NAV_LINK}>
-                  {item.label}
-                </a>
-              ))}
+              {/* All `Link`, because every href now names a page. The smooth
+                  scroller intercepts the ones that point at the page you are
+                  already on; the rest are real navigations. A plain `<a>` would
+                  tear the document down and rebuild it — new paint, new fonts,
+                  the scroller and the ambient light starting over. */}
+              {MARKETING_NAV.map((item) => {
+                const { Tag, href } = linkFor(item.href);
+                return (
+                  <Tag key={item.href} href={href} data-animate="nav" className={NAV_LINK}>
+                    {item.label}
+                  </Tag>
+                );
+              })}
             </nav>
           </div>
 
@@ -220,10 +252,12 @@ export function SiteHeader() {
           aria-label="Primary"
           className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-5 py-6 sm:px-10"
         >
-          {MARKETING_NAV.map((item, index) => (
-            <a
+          {MARKETING_NAV.map((item, index) => {
+            const { Tag, href } = linkFor(item.href);
+            return (
+            <Tag
               key={item.href}
-              href={item.href}
+              href={href}
               onClick={() => setMenuOpen(false)}
               style={{ animationDelay: `${70 + index * 55}ms` }}
               className={cn(
@@ -238,8 +272,9 @@ export function SiteHeader() {
                 className="size-4 text-dim transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5 group-hover:text-brand"
                 aria-hidden="true"
               />
-            </a>
-          ))}
+            </Tag>
+            );
+          })}
         </nav>
 
         {/* Pinned to the bottom edge, where a thumb actually reaches. The

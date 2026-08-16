@@ -5,7 +5,8 @@ import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useRef } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 gsap.registerPlugin(useGSAP, ScrollSmoother, ScrollToPlugin, ScrollTrigger);
 
@@ -33,6 +34,63 @@ gsap.registerPlugin(useGSAP, ScrollSmoother, ScrollToPlugin, ScrollTrigger);
 export function SmoothScroll({ children }) {
   const wrapper = useRef(null);
   const content = useRef(null);
+  const pathname = usePathname();
+
+  /**
+   * Where a new page starts.
+   *
+   * This component belongs to the layout, so moving between marketing pages
+   * never remounts it and never resets anything by itself. The smoother keeps
+   * its own scroll position across the navigation, which produces the wrong
+   * answer in both directions: arriving at `/#pricing` did nothing, and
+   * arriving at `/about` from halfway down the landing page opened it halfway
+   * down too — or, because About is the shorter document, clamped to its very
+   * bottom.
+   *
+   * So the rule is stated here rather than left to the browser. A hash means
+   * the section it names; no hash means the top, immediately, the way opening a
+   * page is supposed to feel.
+   *
+   * The first run is skipped deliberately. On a fresh load the browser has
+   * already restored a position, or honoured a hash in the address bar, and
+   * overriding that would throw away a reload's place in the page.
+   */
+  const navigated = useRef(false);
+
+  useEffect(() => {
+    const firstRender = !navigated.current;
+    navigated.current = true;
+
+    const hash = window.location.hash;
+    if (firstRender && !hash) return undefined;
+
+    // The delay is not decoration: the new page has to lay out and
+    // ScrollTrigger has to remeasure against its height before any position
+    // here means anything.
+    const id = window.setTimeout(() => {
+      const smoother = ScrollSmoother.get();
+      ScrollTrigger.refresh();
+
+      const target = hash ? document.querySelector(hash) : null;
+
+      if (target) {
+        const offset = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+        if (smoother) smoother.scrollTo(target, true, `top ${offset}px`);
+        else target.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      if (firstRender) return;
+
+      // A new page opens at its beginning, and does so instantly — animating
+      // the scroll would look like the previous page sliding away rather than
+      // a different one arriving.
+      if (smoother) smoother.scrollTo(0, false);
+      else window.scrollTo(0, 0);
+    }, 260);
+
+    return () => window.clearTimeout(id);
+  }, [pathname]);
 
   useGSAP(
     () => {
@@ -79,27 +137,39 @@ export function SmoothScroll({ children }) {
        * The offset matches the `scroll-mt-24` the sections already carry, so a
        * heading never lands underneath the fixed header.
        */
+      const scrollToHash = (hash) => {
+        const target = hash && hash !== "#" ? document.querySelector(hash) : null;
+        if (!target) return false;
+        const offset = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+        smoother.scrollTo(target, true, `top ${offset}px`);
+        return true;
+      };
+
       const onClick = (event) => {
         if (event.defaultPrevented || event.button !== 0) return;
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-        const link = event.target.closest?.('a[href^="#"]');
-        if (!link) return;
+        const link = event.target.closest?.("a[href]");
+        if (!link || link.target === "_blank") return;
 
-        const id = link.getAttribute("href");
-        if (!id || id === "#") return;
+        // Resolved against the current document, so `#how`, `/#how` and a full
+        // URL are all judged the same way.
+        const url = new URL(link.href, window.location.href);
+        if (url.origin !== window.location.origin) return;
 
-        const target = document.querySelector(id);
-        if (!target) return;
+        // A link to a *different* page is a navigation, even when it carries a
+        // hash. Intercepting those was the bug: from `/about`, "Pricing" was
+        // handled here, found no `#pricing` in the document, and left the
+        // visitor exactly where they were.
+        if (url.pathname !== window.location.pathname) return;
+        if (!url.hash) return;
 
+        if (!scrollToHash(url.hash)) return;
         event.preventDefault();
-
-        const offset = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
-        smoother.scrollTo(target, true, `top ${offset}px`);
 
         // The URL should still change — the link is a link, and a visitor
         // should be able to copy it or use the back button afterwards.
-        window.history.pushState(null, "", id);
+        window.history.pushState(null, "", url.hash);
       };
 
       document.addEventListener("click", onClick);
