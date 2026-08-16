@@ -67,10 +67,37 @@ export async function findFolderById({ ownerId, folderId }) {
     trashedAt: null,
   });
 }
+
 export async function findItemById({ ownerId, itemId}) {
   const database = getDatabase();
   return database.collection(ITEMS_COLLECTION).findOne({
     _id: itemId,
     ownerId,
   });
+}
+
+export async function updateItemName({
+  ownerId,
+  itemId,
+  name,
+  normalizedName,
+}) {
+  const database = getDatabase();
+  return database.collection(ITEMS_COLLECTION).findOneAndUpdate(
+    {
+      _id: itemId,
+      ownerId,
+      trashedAt: null,
+    },
+    {
+      $set: {
+        name,
+        normalizedName,
+        updatedAt: new Date(),
+      },
+    },
+    {
+      returnDocument: 'after',
+    },
+  );
 }

@@ -5,6 +5,7 @@ import {
   findItemByName,
   findItemsByParent,
   insertFolder,
+  updateItemName,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 
@@ -148,4 +149,56 @@ export async function getFolderPath({ ownerId, folderId }) {
     currentFolderId = folder.parentId;
   }
   return path;
+}
+
+export async function renameItem({ ownerId, itemId, name }) {
+  if (!ObjectId.isValid(itemId)) {
+    throw new AppError("Invalid item ID", {
+      statusCode: 400,
+      code: "invalid-item-id",
+    });
+  }
+  if (typeof name !== "string" || !name.trim()) {
+    throw new AppError("Item name is required", {
+      statusCode: 400,
+      code: "invalid-name",
+    });
+  }
+  const objectId = new ObjectId(itemId);
+  const item = await findItemById({
+    ownerId,
+    itemId: objectId,
+  });
+
+  if (!item || item.trashedAt) {
+    throw new AppError("Item not found", {
+      statusCode: 404,
+      code: "item-not-found",
+    });
+  }
+
+  const trimmedName = name.trim();
+  const normalizedName = trimmedName.toLowerCase();
+
+  const existingItem = await findItemByName({
+    ownerId,
+    parentId: item.parentId,
+    normalizedName,
+  });
+
+  if (existingItem && !existingItem._id.equals(objectId)) {
+    throw new AppError("An item with this name already exists in this folder", {
+      statusCode: 409,
+      code: "name-conflict",
+    });
+  }
+
+  const updatedItem = await updateItemName({
+    ownerId,
+    itemId: objectId,
+    name: trimmedName,
+    normalizedName,
+  });
+
+  return toPublicItem(updatedItem);
 }

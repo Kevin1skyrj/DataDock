@@ -3,6 +3,7 @@ import {
   getFolderPath as getFolderPathService,
   getItem as getItemService,
   listItems as listItemsService,
+  renameItem as renameItemService,
 } from "../services/item.service.js";
 
 export async function getItems(req, res, next) {
@@ -61,6 +62,22 @@ export async function getFolderPath(req, res, next) {
     res.status(200).json({
       success: true,
       data: path,
+    });
+  }catch(error){
+    next(error);
+  }
+}
+
+export async function renameItem(req, res, next) {
+  try{
+    const item = await renameItemService({
+      ownerId: req.user.id,
+      itemId: req.params.itemId,
+      name: req.body.name,
+    });
+    res.status(200).json({
+      success: true,
+      data: item,
     });
   }catch(error){
     next(error);

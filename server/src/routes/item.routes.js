@@ -4,6 +4,7 @@ import {
   getFolderPath,
   getItem,
   getItems,
+  renameItem,
 } from "../controllers/item.controller.js";
 import { attachDevelopmentUser } from "../middleware/development-user.middleware.js";
 
@@ -13,5 +14,6 @@ itemRouter.get("/", getItems);
 itemRouter.get("/folders/:folderId/path", getFolderPath);
 itemRouter.get("/:itemId", getItem);
 itemRouter.post("/folders", createFolder);
+itemRouter.patch("/:itemId", renameItem);
 
 export default itemRouter;
