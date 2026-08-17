@@ -1,21 +1,20 @@
 import {
+  changePassword,
   logout,
   logoutAll,
+  requestPasswordReset,
+  resetPassword,
   resendEmailOtp,
   signIn,
   signUp,
   verifyEmailOtp,
+  verifyPasswordResetOtp,
 } from "./api/auth";
-import {
-  requestPasswordReset,
-  resendOtp as resendMockOtp,
-  resetPassword,
-  verifyOtp as verifyMockOtp,
-} from "./mock/auth";
 import { continueWithGoogle } from "./api/google-auth";
 
 export {
   continueWithGoogle,
+  changePassword,
   logout,
   logoutAll,
   requestPasswordReset,
@@ -26,12 +25,12 @@ export {
 
 export function verifyOtp({ flow = "verify", ...attempt }) {
   return flow === "reset"
-    ? verifyMockOtp(attempt)
+    ? verifyPasswordResetOtp(attempt)
     : verifyEmailOtp(attempt);
 }
 
 export function resendOtp({ flow = "verify", ...details }) {
   return flow === "reset"
-    ? resendMockOtp(details)
+    ? requestPasswordReset(details)
     : resendEmailOtp(details);
 }

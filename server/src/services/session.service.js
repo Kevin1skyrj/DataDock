@@ -1,6 +1,7 @@
 import {
   deleteAllSessionsByUserId,
   deleteExcessActiveSessions,
+  deleteOtherSessionsByUserId,
   deleteSessionById,
   insertSession,
 } from "../models/session.model.js";
@@ -55,4 +56,12 @@ export async function deleteAllUserSessions(userId) {
   }
 
   await deleteAllSessionsByUserId(userId);
+}
+
+export async function deleteOtherUserSessions({ userId, sessionId }) {
+  if (!userId || !sessionId) {
+    throw new Error("userId and sessionId are required to delete other sessions");
+  }
+
+  await deleteOtherSessionsByUserId({ userId, sessionId });
 }

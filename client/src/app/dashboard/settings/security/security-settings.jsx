@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { notify } from "@/components/ui/toast";
 import { currentPasswordRule, newPasswordRule } from "@/lib/validation/auth";
 import { useSession } from "@/providers/session-provider";
-import { logoutAll } from "@/services/auth";
+import { changePassword, logoutAll } from "@/services/auth";
 import { z } from "zod";
 
 const passwordSchema = z
@@ -42,6 +42,7 @@ export function SecuritySettings() {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(passwordSchema),
@@ -49,10 +50,25 @@ export function SecuritySettings() {
     defaultValues: { current: "", next: "" },
   });
 
-  const changePassword = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    reset();
-    notify({ title: "Password changed", description: "Other sessions have been signed out." });
+  const submitPasswordChange = async ({ current, next }) => {
+    try {
+      await changePassword({
+        currentPassword: current,
+        newPassword: next,
+      });
+
+      reset();
+      notify({
+        title: "Password changed",
+        description: "Other sessions have been signed out.",
+      });
+    } catch (error) {
+      if (error.field) {
+        setError(error.field, { message: error.message });
+      } else {
+        setError("root", { message: error.message });
+      }
+    }
   };
 
   const signOutAllDevices = async () => {
@@ -79,7 +95,7 @@ export function SecuritySettings() {
         description="How you sign in, and what is signed in right now."
       />
 
-      <form onSubmit={(event) => handleSubmit(changePassword)(event)}>
+      <form onSubmit={handleSubmit(submitPasswordChange)}>
         <SettingsCard
           title="Password"
           description="Changing it signs out every other device."
@@ -90,6 +106,11 @@ export function SecuritySettings() {
           }
         >
           <div className="flex flex-col gap-4 px-5 py-4">
+            {errors.root ? (
+              <p role="alert" className="text-sm text-error">
+                {errors.root.message}
+              </p>
+            ) : null}
             <PasswordField
               label="Current password"
               autoComplete="current-password"

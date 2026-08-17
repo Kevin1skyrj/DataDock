@@ -3,6 +3,7 @@ import { connectToDatabase } from "./src/config/db.js";
 import { createUserIndexes } from "./src/models/user.model.js";
 import { createSessionIndexes } from "./src/models/session.model.js";
 import { createOtpIndexes } from "./src/models/otp.model.js";
+import { createPasswordResetIndexes } from "./src/models/password-reset.model.js";
 const port = process.env.PORT || 4000;
 
 async function startServer() {
@@ -11,6 +12,7 @@ async function startServer() {
     await createUserIndexes();
     await createSessionIndexes();
     await createOtpIndexes();
+    await createPasswordResetIndexes();
     app.listen(port, () => {
       console.log(`Server started on port ${port}`);
     });

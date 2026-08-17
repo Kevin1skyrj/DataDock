@@ -5,6 +5,10 @@ const FIELD_BY_CODE = {
   "invalid-email": "email",
   "invalid-password": "password",
   "email-taken": "email",
+  "invalid-current-password": "current",
+  "current-password-incorrect": "current",
+  "invalid-new-password": "next",
+  "password-unchanged": "next",
 };
 
 export class AuthError extends Error {
@@ -52,6 +56,34 @@ export function verifyEmailOtp(attempt) {
 
 export function resendEmailOtp(details) {
   return authRequest("/auth/resend-verification", {
+    method: "POST",
+    body: details,
+  });
+}
+
+export function requestPasswordReset(details) {
+  return authRequest("/auth/forgot-password", {
+    method: "POST",
+    body: details,
+  });
+}
+
+export function verifyPasswordResetOtp(attempt) {
+  return authRequest("/auth/verify-reset-otp", {
+    method: "POST",
+    body: attempt,
+  });
+}
+
+export function resetPassword(details) {
+  return authRequest("/auth/reset-password", {
+    method: "POST",
+    body: details,
+  });
+}
+
+export function changePassword(details) {
+  return authRequest("/auth/change-password", {
     method: "POST",
     body: details,
   });

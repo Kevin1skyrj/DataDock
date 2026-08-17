@@ -30,3 +30,21 @@ export async function sendVerificationOtpEmail({ to, code }) {
     throw new Error(`Failed to send verification email: ${error.message}`);
   }
 }
+
+export async function sendPasswordResetOtpEmail({ to, code }) {
+  const { error } = await resend.emails.send({
+    from: emailFrom,
+    to,
+    subject: "Reset your DataDock password",
+    text: [
+      `Your DataDock password reset code is: ${code}`,
+      "",
+      "This code expires in 10 minutes.",
+      "If you did not request a password reset, ignore this email.",
+    ].join("\n"),
+  });
+
+  if (error) {
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
+}

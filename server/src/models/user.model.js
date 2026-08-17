@@ -140,3 +140,18 @@ export async function findUserById(userId) {
     _id: userId,
   });
 }
+
+export async function updateUserPassword({ userId, passwordHash }) {
+  const database = getDatabase();
+
+  return database.collection(USERS_COLLECTION).findOneAndUpdate(
+    { _id: userId },
+    {
+      $set: {
+        passwordHash,
+        updatedAt: new Date(),
+      },
+    },
+    { returnDocument: "after" },
+  );
+}

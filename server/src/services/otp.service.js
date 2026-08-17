@@ -5,7 +5,10 @@ import {
   findOtp,
 } from "../models/otp.model.js";
 import { generateOtp, hashOtp, verifyOtpHash } from "../utils/otp.js";
-import { sendVerificationOtpEmail } from "./email.service.js";
+import {
+  sendPasswordResetOtpEmail,
+  sendVerificationOtpEmail,
+} from "./email.service.js";
 import { AppError } from "../errors/app-error.js";
 import {
   findUserByEmail,
@@ -15,8 +18,10 @@ import {
   validateEmailVerificationInput,
   validateEmailInput,
 } from "../validators/auth.validator.js";
+import { createPasswordResetAuthorization } from "./password.service.js";
 
 export const EMAIL_VERIFICATION_PURPOSE = "email-verification";
+export const PASSWORD_RESET_PURPOSE = "password-reset";
 
 const OTP_DURATION_MS = 10 * 60 * 1000;
 const OTP_ATTEMPTS = 5;
@@ -160,4 +165,99 @@ export async function resendEmailVerificationOtp(input) {
   return {
     sentTo: email,
   };
+}
+
+async function sendPasswordResetOtp({ userId, email }) {
+  const code = generateOtp();
+  const expiresAt = new Date(Date.now() + OTP_DURATION_MS);
+
+  await saveOtp({
+    userId,
+    purpose: PASSWORD_RESET_PURPOSE,
+    codeHash: hashOtp({
+      userId,
+      purpose: PASSWORD_RESET_PURPOSE,
+      code,
+    }),
+    expiresAt,
+    attemptsRemaining: OTP_ATTEMPTS,
+  });
+
+  await sendPasswordResetOtpEmail({ to: email, code });
+}
+
+export async function requestPasswordResetOtp(input) {
+  const { email } = validateEmailInput(input);
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    return { sentTo: email };
+  }
+
+  const existingOtp = await findOtp({
+    userId: user._id,
+    purpose: PASSWORD_RESET_PURPOSE,
+  });
+
+  const cooldownActive =
+    existingOtp &&
+    Date.now() - existingOtp.createdAt.getTime() < OTP_RESEND_COOLDOWN_MS;
+
+  if (!cooldownActive) {
+    try {
+      await sendPasswordResetOtp({
+        userId: user._id,
+        email: user.email,
+      });
+    } catch (error) {
+      console.error("Failed to send password reset email", error);
+    }
+  }
+
+  return { sentTo: email };
+}
+
+export async function verifyPasswordResetOtp(input) {
+  const { email, code } = validateEmailVerificationInput(input);
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    throw invalidResetOtp();
+  }
+
+  const otp = await claimOtpAttempt({
+    userId: user._id,
+    purpose: PASSWORD_RESET_PURPOSE,
+  });
+
+  if (!otp) {
+    throw invalidResetOtp();
+  }
+
+  const matches = verifyOtpHash({
+    userId: user._id,
+    purpose: PASSWORD_RESET_PURPOSE,
+    code,
+    codeHash: otp.codeHash,
+  });
+
+  if (!matches) {
+    throw new AppError("The verification code is incorrect", {
+      statusCode: 400,
+      code: "otp-invalid",
+    });
+  }
+
+  await deleteOtp({ userId: user._id, purpose: PASSWORD_RESET_PURPOSE });
+
+  const token = await createPasswordResetAuthorization(user._id);
+
+  return { token };
+}
+
+function invalidResetOtp() {
+  return new AppError("The verification code is invalid or expired", {
+    statusCode: 400,
+    code: "otp-invalid-or-expired",
+  });
 }
