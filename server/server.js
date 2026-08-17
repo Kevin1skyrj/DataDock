@@ -1,6 +1,7 @@
 import app from "./src/app.js";
 import { connectToDatabase } from "./src/config/db.js";
 import { connectToRedis } from "./src/config/redis.js";
+import { verifyS3Connection } from "./src/config/s3.js";
 import {
   createUserIndexes,
   migrateUserRoles,
@@ -15,6 +16,7 @@ async function startServer() {
   try {
     await connectToDatabase();
     await connectToRedis();
+    await verifyS3Connection();
     await createUserIndexes();
     await migrateUserRoles();
     await syncConfiguredOwner();
