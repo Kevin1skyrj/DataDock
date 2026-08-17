@@ -9,10 +9,15 @@ import {
   logoutAll,
   getCurrentUser,
 } from "../controllers/auth.controller.js";
-
+import {
+  completeGoogleLogin,
+  startGoogleLogin,
+} from "../controllers/google-auth.controller.js";
 const authRouter = Router();
 
 authRouter.get("/me", authenticate, getCurrentUser);
+authRouter.get("/google", startGoogleLogin);
+authRouter.get("/google/callback", completeGoogleLogin);
 authRouter.post("/register", register);
 authRouter.post("/login", login);
 authRouter.post("/verify-email", verifyEmail);
