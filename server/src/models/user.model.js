@@ -36,3 +36,24 @@ export async function createUserIndexes() {
     .collection(USERS_COLLECTION)
     .createIndex({ email: 1 }, { unique: true });
 }
+
+export async function markUserEmailVerified(userId) {
+  const database = getDatabase();
+  const now = new Date();
+
+  return database.collection(USERS_COLLECTION).findOneAndUpdate(
+    {
+      _id: userId,
+      emailVerifiedAt: null,
+    },
+    {
+      $set: {
+        emailVerifiedAt: now,
+        updatedAt: now,
+      },
+    },
+    {
+      returnDocument: "after",
+    },
+  );
+}
