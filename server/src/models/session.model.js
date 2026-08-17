@@ -8,6 +8,7 @@ export async function createSessionIndexes() {
 
   await sessions.createIndex({ tokenHash: 1 }, { unique: true });
   await sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+  await sessions.createIndex({ userId: 1, createdAt: 1 });
 }
 
 export async function insertSession({ userId, tokenHash, expiresAt }) {
@@ -47,5 +48,34 @@ export async function deleteSessionById({ sessionId, userId }) {
   return database.collection(SESSIONS_COLLECTION).deleteOne({
     _id: sessionId,
     userId,
+  });
+}
+
+export async function deleteExcessActiveSessions({ userId, keepCount }) {
+  const database = getDatabase();
+  const sessions = database.collection(SESSIONS_COLLECTION);
+
+  const excessSessions = await sessions
+    .find({
+      userId,
+      expiresAt: { $gt: new Date() },
+    })
+    .sort({
+      createdAt: -1,
+      _id: -1,
+    })
+    .skip(keepCount)
+    .project({ _id: 1 })
+    .toArray();
+
+  if (excessSessions.length === 0) {
+    return;
+  }
+
+  await sessions.deleteMany({
+    userId,
+    _id: {
+      $in: excessSessions.map((session) => session._id),
+    },
   });
 }
