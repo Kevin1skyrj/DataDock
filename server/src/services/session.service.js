@@ -4,7 +4,7 @@ import {
   deleteOtherSessionsByUserId,
   deleteSessionById,
   insertSession,
-} from "../models/session.model.js";
+} from "../models/redis-session.model.js";
 import {
   generateSessionToken,
   hashSessionToken,

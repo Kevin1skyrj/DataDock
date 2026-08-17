@@ -1,6 +1,6 @@
 import { SESSION_COOKIE_NAME } from "../config/session.js";
 import { AppError } from "../errors/app-error.js";
-import { findActiveSessionByTokenHash } from "../models/session.model.js";
+import { findActiveSessionByTokenHash } from "../models/redis-session.model.js";
 import { findUserById } from "../models/user.model.js";
 import { hashSessionToken } from "../utils/session-token.js";
 import { USER_ROLES } from "../config/roles.js";

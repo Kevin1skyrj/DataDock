@@ -6,7 +6,6 @@ import {
   migrateUserRoles,
   syncConfiguredOwner,
 } from "./src/models/user.model.js";
-import { createSessionIndexes } from "./src/models/session.model.js";
 import { createOtpIndexes } from "./src/models/otp.model.js";
 import { createPasswordResetIndexes } from "./src/models/password-reset.model.js";
 import { createItemIndexes } from "./src/models/item.model.js";
@@ -19,7 +18,6 @@ async function startServer() {
     await createUserIndexes();
     await migrateUserRoles();
     await syncConfiguredOwner();
-    await createSessionIndexes();
     await createOtpIndexes();
     await createPasswordResetIndexes();
     await createItemIndexes();
