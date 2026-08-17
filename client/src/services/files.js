@@ -36,6 +36,7 @@ export {
   getFolderSummary,
   getItem,
   getDownloadUrl,
+  getPreview,
   ensureFolder,
   getPath,
   listFolders,
@@ -50,7 +51,6 @@ export {
 } from "@/services/api/files";
 
 export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/api/uploads";
-export { getPreview } from "@/services/mock/preview";
 
 export {
   getCleanupSuggestions,

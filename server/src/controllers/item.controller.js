@@ -3,6 +3,7 @@ import {
   getFolderPath as getFolderPathService,
   getItem as getItemService,
   getItemDownload as getItemDownloadService,
+  getItemPreview as getItemPreviewService,
   listItems as listItemsService,
   renameItem as renameItemService,
   starItems as starItemsService,
@@ -66,6 +67,18 @@ export async function downloadItem(req, res, next) {
       itemId: req.params.itemId,
     });
     res.status(200).json({ success: true, data: download });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function previewItem(req, res, next) {
+  try {
+    const preview = await getItemPreviewService({
+      ownerId: req.user.id,
+      itemId: req.params.itemId,
+    });
+    res.status(200).json({ success: true, data: preview });
   } catch (error) {
     next(error);
   }

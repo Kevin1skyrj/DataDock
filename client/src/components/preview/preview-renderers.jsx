@@ -1,7 +1,6 @@
 "use client";
 
-import { FileQuestion, Pause, Play } from "lucide-react";
-import { useState } from "react";
+import { FileQuestion } from "lucide-react";
 
 import { FileIcon } from "@/components/workspace/file-icon";
 import { formatBytes } from "@/lib/format";
@@ -20,11 +19,6 @@ import { cn } from "@/lib/utils";
  * There are no bytes behind these fixtures, and a scrubber that moved would be
  * claiming something untrue.
  */
-
-const seconds = (total) => {
-  const minutes = Math.floor(total / 60);
-  return `${minutes}:${String(Math.round(total % 60)).padStart(2, "0")}`;
-};
 
 function Frame({ children, className }) {
   return (
@@ -57,91 +51,27 @@ export function PreviewImage({ preview, item }) {
 
 export function PreviewPdf({ preview, item }) {
   return (
-    <div className="h-full overflow-y-auto bg-bg-deep p-6">
-      <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        {preview.pageUrls.map((url, index) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={url}
-            src={url}
-            alt={`${item.name}, page ${index + 1}`}
-            className="w-full rounded-lg shadow-elevated"
-          />
-        ))}
-        <p className="pb-2 text-center text-sm text-dim">
-          Showing {preview.pageUrls.length} of {preview.pages} pages
-        </p>
-      </div>
-    </div>
+    <iframe src={preview.url} title={item.name} className="h-full w-full bg-bg-deep" />
   );
 }
 
 export function PreviewVideo({ preview, item }) {
-  const [playing, setPlaying] = useState(false);
-
   return (
     <Frame>
-      <div className="relative w-full max-w-3xl overflow-hidden rounded-lg shadow-elevated">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={preview.poster} alt="" className="w-full" />
-
-        <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-[color-mix(in_oklab,var(--background)_72%,transparent)] px-4 py-3 backdrop-blur-[8px]">
-          <button
-            type="button"
-            aria-label={playing ? `Pause ${item.name}` : `Play ${item.name}`}
-            onClick={() => setPlaying((current) => !current)}
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-brand text-brand-contrast transition-[scale] duration-150 ease-standard active:scale-95"
-          >
-            {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-          </button>
-
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full w-0 rounded-full bg-brand" />
-          </div>
-
-          <span className="shrink-0 font-mono text-xs text-dim tabular-nums">
-            {seconds(preview.duration)}
-          </span>
-        </div>
-      </div>
+      <video src={preview.url} aria-label={item.name} controls className="max-h-full max-w-full rounded-lg shadow-elevated" />
     </Frame>
   );
 }
 
 export function PreviewAudio({ preview, item }) {
-  const [playing, setPlaying] = useState(false);
-
   return (
     <Frame>
       <div className="flex w-full max-w-xl flex-col gap-6 rounded-xl border border-line bg-surface p-6">
         <div className="flex items-center gap-3">
           <FileIcon kind="audio" className="size-5" />
           <span className="min-w-0 flex-1 truncate text-md text-foreground">{item.name}</span>
-          <span className="font-mono text-xs text-dim tabular-nums">
-            {seconds(preview.duration)}
-          </span>
         </div>
-
-        {/* Precomputed on upload in the real thing, which is why it is a plain
-            array of numbers and not something this component derives. */}
-        <div aria-hidden="true" className="flex h-16 items-center gap-px">
-          {preview.peaks.map((peak, index) => (
-            <span
-              key={index}
-              className="flex-1 rounded-full bg-brand/35"
-              style={{ height: `${peak * 100}%` }}
-            />
-          ))}
-        </div>
-
-        <button
-          type="button"
-          aria-label={playing ? `Pause ${item.name}` : `Play ${item.name}`}
-          onClick={() => setPlaying((current) => !current)}
-          className="mx-auto grid size-11 place-items-center rounded-full bg-brand text-brand-contrast transition-[scale] duration-150 ease-standard active:scale-95"
-        >
-          {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-        </button>
+        <audio src={preview.url} aria-label={item.name} controls className="w-full" />
       </div>
     </Frame>
   );

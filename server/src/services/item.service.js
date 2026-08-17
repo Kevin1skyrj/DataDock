@@ -138,6 +138,48 @@ export async function getItemDownload({ ownerId, itemId }) {
   };
 }
 
+export async function getItemPreview({ ownerId, itemId }) {
+  if (!ObjectId.isValid(itemId)) {
+    throw new AppError("Invalid item ID", {
+      statusCode: 400,
+      code: "invalid-item-id",
+    });
+  }
+
+  const item = await findItemById({ ownerId, itemId: new ObjectId(itemId) });
+  if (!item || item.type !== "file" || item.trashedAt || !item.storageKey) {
+    throw new AppError("File not found", {
+      statusCode: 404,
+      code: "file-not-found",
+    });
+  }
+
+  if (!["image", "pdf", "video", "audio"].includes(item.kind)) {
+    return {
+      kind: "unsupported",
+      reason: "There is no preview for this file type yet.",
+    };
+  }
+
+  const expiresIn = 15 * 60;
+  const url = await getSignedUrl(
+    s3Client,
+    new GetObjectCommand({
+      Bucket: s3BucketName,
+      Key: item.storageKey,
+      ResponseContentDisposition: "inline",
+      ResponseContentType: item.mimeType,
+    }),
+    { expiresIn },
+  );
+
+  return {
+    kind: item.kind,
+    url,
+    expiresAt: new Date(Date.now() + expiresIn * 1000),
+  };
+}
+
 export async function createFolder({ ownerId, name, parentId = null }) {
   if (!ownerId) {
     throw new Error("ownerId is required");

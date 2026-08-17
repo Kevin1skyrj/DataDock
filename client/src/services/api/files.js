@@ -39,6 +39,10 @@ export function getDownloadUrl(itemId) {
   return apiRequest(`/items/${encodeURIComponent(itemId)}/download`);
 }
 
+export function getPreview(item) {
+  return apiRequest(`/items/${encodeURIComponent(item.id)}/preview`);
+}
+
 export async function getFolderSummary(parentId = null) {
   const query = new URLSearchParams();
 

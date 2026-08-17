@@ -38,9 +38,19 @@ export function PreviewDialog({ open, items, index, actions, onClose, onIndex })
   useEffect(() => {
     if (!open || !item) return undefined;
     let cancelled = false;
-    getPreview(item).then((result) => {
-      if (!cancelled) setPreview({ id: item.id, ...result });
-    });
+    getPreview(item)
+      .then((result) => {
+        if (!cancelled) setPreview({ id: item.id, ...result });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreview({
+            id: item.id,
+            kind: "unsupported",
+            reason: "The preview could not be loaded.",
+          });
+        }
+      });
     return () => {
       cancelled = true;
     };
