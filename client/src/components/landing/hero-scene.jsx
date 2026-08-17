@@ -623,6 +623,53 @@ export function HeroScene({ className }) {
           camera.lookAt(0, 0, 0);
         };
 
+        /*
+         * The scene renders at thirty frames a second, not sixty.
+         *
+         * A background does not need a frame every time the page gets one. This
+         * one turns at about three degrees a second and its cards drift; at
+         * that speed thirty and sixty are indistinguishable side by side. What
+         * is very distinguishable is the page it sits behind: rendering the
+         * scene on every frame took the whole document from 60fps to 30 while
+         * scrolling, because the scroll and the scene were competing for the
+         * same frame budget.
+         *
+         * Halving the scene's rate hands those frames back to the scroll, which
+         * is the thing the eye is actually tracking while it moves.
+         *
+         * The skipped time is accumulated rather than discarded, so the object
+         * moves at exactly the same speed as before — it is drawn half as
+         * often, not animated half as fast.
+         */
+        const FRAME = 1 / 30;
+
+        /*
+         * And a quarter of that while the page is moving.
+         *
+         * Scrolling is the one moment the scene and the reader want different
+         * things. The eye is tracking the document, not a slowly turning object
+         * behind it — but that object is competing for the very frames the
+         * scroll needs to stay smooth. So it stands down: while a scroll is in
+         * flight the dock keeps moving, just far more cheaply, and it returns to
+         * its normal rate a moment after the page settles.
+         *
+         * Nobody can see a background lose frames during a scroll. Everybody can
+         * see the scroll lose them.
+         */
+        const SCROLLING_FRAME = 1 / 8;
+
+        let scrolling = false;
+        let settle = null;
+        const onScroll = () => {
+          scrolling = true;
+          if (settle) window.clearTimeout(settle);
+          settle = window.setTimeout(() => {
+            scrolling = false;
+          }, 140);
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+
+        let elapsed = 0;
         let raf = 0;
         const loop = () => {
           raf = requestAnimationFrame(loop);
@@ -631,7 +678,12 @@ export function HeroScene({ className }) {
           // the rest — a blocked main thread, a dragged window, a laptop lid.
           const dt = Math.min(timer.getDelta(), 0.05);
           if (!onscreen || document.hidden) return;
-          update(dt);
+
+          elapsed += dt;
+          if (elapsed < (scrolling ? SCROLLING_FRAME : FRAME)) return;
+
+          update(elapsed);
+          elapsed = 0;
           renderer.render(scene, camera);
         };
 
@@ -645,6 +697,8 @@ export function HeroScene({ className }) {
 
         teardown = () => {
           cancelAnimationFrame(raf);
+          window.removeEventListener("scroll", onScroll);
+          if (settle) window.clearTimeout(settle);
           // Releases the visibilitychange listener `connect` installed.
           timer.dispose();
           ro.disconnect();

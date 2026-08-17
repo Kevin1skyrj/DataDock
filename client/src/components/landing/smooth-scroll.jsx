@@ -114,10 +114,12 @@ export function SmoothScroll({ children }) {
         // reads as a reply to the gesture.
         smooth: 1.15,
         smoothTouch: false,
-        // Lets any element opt into a different rate with `data-speed` or
-        // `data-lag`, which is how the existing parallax layers can eventually
-        // move off their own ScrollTriggers.
-        effects: true,
+        // Off, because nothing uses it. `effects` makes the smoother track and
+        // update every `data-speed` / `data-lag` element on the page, and this
+        // page has none — the parallax layers all drive themselves from their
+        // own ScrollTriggers. Turning it on bought an effects system managing
+        // zero elements on every frame.
+        effects: false,
         // Routes the wheel through GSAP's ticker so scroll-linked animation
         // updates on the same frame as the scroll itself, rather than a frame
         // behind it.
