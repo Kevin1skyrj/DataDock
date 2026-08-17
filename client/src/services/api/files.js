@@ -121,3 +121,18 @@ export async function restoreItems(itemIds) {
     },
   });
 }
+
+export function createShare(itemId) {
+  return apiRequest(`/items/${encodeURIComponent(itemId)}/share`, { method: "POST" });
+}
+
+export function updateShare(itemId, changes) {
+  return apiRequest(`/items/${encodeURIComponent(itemId)}/share`, {
+    method: "PATCH",
+    body: changes,
+  });
+}
+
+export function revokeShare(itemId) {
+  return apiRequest(`/items/${encodeURIComponent(itemId)}/share`, { method: "DELETE" });
+}

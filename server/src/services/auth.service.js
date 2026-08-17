@@ -61,7 +61,7 @@ export async function loginUser(input) {
 
   const user = await findUserByEmail(email);
 
-  const passwordMatches = user?.passwordHash
+  const passwordMatches = user?.passwordHash && !user.deletedAt
     ? await bcrypt.compare(password, user.passwordHash)
     : false;
 
@@ -86,6 +86,7 @@ export async function loginUser(input) {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
+      role: user.role ?? "user",
     },
     session,
   };

@@ -43,7 +43,7 @@ export async function resetPassword(input) {
   const { email, token, password } = validatePasswordResetInput(input);
   const user = await findUserByEmail(email);
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw invalidReset();
   }
 

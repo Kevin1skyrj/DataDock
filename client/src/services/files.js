@@ -25,19 +25,17 @@ export {
   attachUploaded,
   collectDescendants,
   copyItems,
-  createShare,
   deleteItems,
   duplicateItems,
   ensureFolder,
   getDownloadUrl,
   getDriveUsage,
   listShareRecipients,
-  revokeShare,
-  updateShare,
 } from "@/services/mock/files";
 
 export {
   createFolder,
+  createShare,
   getFolderSummary,
   getItem,
   getPath,
@@ -45,9 +43,11 @@ export {
   listItems,
   moveItems,
   renameItem,
+  revokeShare,
   restoreItems,
   starItems,
   trashItems,
+  updateShare,
 } from "@/services/api/files";
 
 export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/mock/uploads";

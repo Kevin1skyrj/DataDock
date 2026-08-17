@@ -12,6 +12,7 @@ import {
   getFolderSummary,
 } from "../controllers/item.controller.js";
 import { authenticate } from "../middleware/authenticate.middleware.js";
+import { createShare, revokeShare, updateShare } from "../controllers/share.controller.js";
 
 const itemRouter = Router();
 
@@ -26,5 +27,8 @@ itemRouter.post("/folders", createFolder);
 itemRouter.patch("/starred", starItems);
 itemRouter.patch("/move", moveItems);
 itemRouter.patch("/:itemId", renameItem);
+itemRouter.post("/:itemId/share", createShare);
+itemRouter.patch("/:itemId/share", updateShare);
+itemRouter.delete("/:itemId/share", revokeShare);
 
 export default itemRouter;

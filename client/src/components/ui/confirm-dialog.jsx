@@ -27,6 +27,7 @@ export function ConfirmDialog({
   title,
   body,
   confirmLabel = "Delete",
+  confirmVariant = "destructive",
   loading = false,
   onConfirm,
   onClose,
@@ -68,7 +69,7 @@ export function ConfirmDialog({
 
             <div className="flex flex-col-reverse gap-2 border-t border-line p-4 sm:flex-row sm:justify-end">
               <AlertDialog.Close render={<Button variant="ghost">Cancel</Button>} />
-              <Button variant="destructive" loading={loading} onClick={onConfirm}>
+              <Button variant={confirmVariant} loading={loading} onClick={onConfirm}>
                 {confirmLabel}
               </Button>
             </div>

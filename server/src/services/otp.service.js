@@ -69,7 +69,7 @@ export async function verifyEmailOtp(input) {
 
   const user = await findUserByEmail(email);
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw new AppError("The verification code is invalid or expired", {
       statusCode: 400,
       code: "otp-invalid-or-expired",
@@ -135,7 +135,7 @@ export async function resendEmailVerificationOtp(input) {
 
   const user = await findUserByEmail(email);
 
-  if (!user || user.emailVerifiedAt) {
+  if (!user || user.deletedAt || user.emailVerifiedAt) {
     return {
       sentTo: email,
     };
@@ -190,7 +190,7 @@ export async function requestPasswordResetOtp(input) {
   const { email } = validateEmailInput(input);
   const user = await findUserByEmail(email);
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     return { sentTo: email };
   }
 
@@ -221,7 +221,7 @@ export async function verifyPasswordResetOtp(input) {
   const { email, code } = validateEmailVerificationInput(input);
   const user = await findUserByEmail(email);
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw invalidResetOtp();
   }
 

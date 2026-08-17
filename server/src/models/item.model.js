@@ -2,6 +2,16 @@ import { getDatabase } from "../config/db.js";
 
 const ITEMS_COLLECTION = "items";
 
+export async function createItemIndexes() {
+  await getDatabase().collection(ITEMS_COLLECTION).createIndex(
+    { "share.token": 1 },
+    {
+      unique: true,
+      partialFilterExpression: { "share.token": { $type: "string" } },
+    },
+  );
+}
+
 export async function findItemsByParent({ ownerId, parentId = null }) {
   const database = getDatabase();
   const itemsCollection = database.collection(ITEMS_COLLECTION);
@@ -244,4 +254,26 @@ export async function getFolderSummaryData({
     size: 0,
     updatedAt: null,
   };
+}
+
+export async function updateItemShare({ ownerId, itemId, share }) {
+  return getDatabase().collection(ITEMS_COLLECTION).findOneAndUpdate(
+    { _id: itemId, ownerId, trashedAt: null },
+    share
+      ? { $set: { share, updatedAt: new Date() } }
+      : { $unset: { share: "" }, $set: { updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+}
+
+export async function findPublicShareByToken(token) {
+  return getDatabase().collection(ITEMS_COLLECTION).findOne({
+    "share.token": token,
+    "share.scope": "link",
+    trashedAt: null,
+    $or: [
+      { "share.expiresAt": null },
+      { "share.expiresAt": { $gt: new Date() } },
+    ],
+  });
 }

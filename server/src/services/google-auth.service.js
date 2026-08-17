@@ -85,12 +85,26 @@ async function findOrCreateGoogleUser(identity) {
   let user = await findUserByGoogleId(identity.googleId);
 
   if (user) {
+    if (user.deletedAt) {
+      throw new AppError("This DataDock account is unavailable", {
+        statusCode: 403,
+        code: "account-disabled",
+      });
+    }
+
     return user;
   }
 
   user = await findUserByEmail(identity.email);
 
   if (user) {
+    if (user.deletedAt) {
+      throw new AppError("This DataDock account is unavailable", {
+        statusCode: 403,
+        code: "account-disabled",
+      });
+    }
+
     if (user.googleId && user.googleId !== identity.googleId) {
       throw new AppError("This email is connected to another Google account", {
         statusCode: 409,
@@ -120,7 +134,10 @@ async function findOrCreateGoogleUser(identity) {
       (await findUserByGoogleId(identity.googleId)) ??
       (await findUserByEmail(identity.email));
 
-    if (existingUser?.googleId === identity.googleId) {
+    if (
+      existingUser?.googleId === identity.googleId &&
+      !existingUser.deletedAt
+    ) {
       return existingUser;
     }
 
@@ -141,6 +158,7 @@ export async function loginWithGoogle(identity) {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl ?? null,
+      role: user.role ?? "user",
     },
     session,
   };

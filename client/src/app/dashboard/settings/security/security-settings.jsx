@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -95,6 +96,7 @@ export function SecuritySettings() {
         description="How you sign in, and what is signed in right now."
       />
 
+      {session.hasPassword ? (
       <form onSubmit={handleSubmit(submitPasswordChange)}>
         <SettingsCard
           title="Password"
@@ -131,6 +133,19 @@ export function SecuritySettings() {
           </div>
         </SettingsCard>
       </form>
+      ) : (
+        <SettingsCard title="Password" description="This account currently uses Google sign-in.">
+          <SettingRow
+            label="No password set"
+            hint="Verify your email through the password recovery flow to create one securely."
+            control={
+              <Button variant="secondary" size="sm" render={<Link href="/forgot-password" />}>
+                Set password
+              </Button>
+            }
+          />
+        </SettingsCard>
+      )}
 
       <SettingsCard title="Connected accounts">
         <SettingRow

@@ -3,6 +3,7 @@ import { AppError } from "../errors/app-error.js";
 import { findActiveSessionByTokenHash } from "../models/session.model.js";
 import { findUserById } from "../models/user.model.js";
 import { hashSessionToken } from "../utils/session-token.js";
+import { USER_ROLES } from "../config/roles.js";
 
 function authenticationRequired() {
   return new AppError("Authentication is required", {
@@ -28,7 +29,7 @@ export async function authenticate(req, res, next) {
 
     const user = await findUserById(session.userId);
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       throw authenticationRequired();
     }
 
@@ -36,6 +37,8 @@ export async function authenticate(req, res, next) {
       id: user._id,
       name: user.name,
       email: user.email,
+      role: user.role ?? USER_ROLES.USER,
+      hasPassword: Boolean(user.passwordHash),
     };
 
     req.auth = {

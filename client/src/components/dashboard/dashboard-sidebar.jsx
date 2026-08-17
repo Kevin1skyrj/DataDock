@@ -12,6 +12,7 @@ import {
   Star,
   Trash2,
   Upload,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useId, useRef } from "react";
@@ -25,6 +26,7 @@ import { useFilePicker } from "@/hooks/use-file-picker";
 import { useShortcut } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
 import { useWorkspaceCommands } from "@/lib/workspace-commands";
+import { useSession } from "@/providers/session-provider";
 
 const NAV_ICONS = {
   layout: LayoutGrid,
@@ -35,6 +37,7 @@ const NAV_ICONS = {
   trash: Trash2,
   chart: BarChart3,
   settings: Settings,
+  users: Users,
 };
 
 /**
@@ -62,6 +65,19 @@ export function DashboardSidebar({
   const Panel = collapsed ? PanelLeftOpen : PanelLeftClose;
   const shortcut = useShortcut("B");
   const sidebarId = useId();
+  const session = useSession();
+  const navigation =
+    session.role === "owner"
+      ? [
+          ...DASHBOARD_NAV,
+          {
+            label: "Administration",
+            items: [
+              { id: "admin-users", label: "Users", icon: "users", href: "/dashboard/admin/users" },
+            ],
+          },
+        ]
+      : DASHBOARD_NAV;
 
   /**
    * Uploads land in the folder currently on screen, not always at the root.
@@ -157,7 +173,7 @@ export function DashboardSidebar({
           meter are pinned, so neither can be scrolled out of reach on a short
           window. */}
       <nav aria-label="Main" className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-        {DASHBOARD_NAV.map((group) => (
+        {navigation.map((group) => (
           <div key={group.label} className="mb-5 flex flex-col gap-0.5 last:mb-0">
             <p
               data-shell="rail-hide"

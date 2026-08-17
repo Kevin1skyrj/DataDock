@@ -1,4 +1,5 @@
 import { getDatabase } from "../config/db.js";
+import { USER_ROLES } from "../config/roles.js";
 
 const USERS_COLLECTION = "users";
 
@@ -22,6 +23,7 @@ export async function insertUser({ name, email, passwordHash }) {
     name,
     email,
     passwordHash,
+    role: USER_ROLES.USER,
     emailVerifiedAt: null,
     createdAt: now,
     updatedAt: now,
@@ -50,6 +52,7 @@ export async function insertGoogleUser({
     email,
     avatarUrl,
     passwordHash: null,
+    role: USER_ROLES.USER,
     emailVerifiedAt: now,
     createdAt: now,
     updatedAt: now,
@@ -154,4 +157,110 @@ export async function updateUserPassword({ userId, passwordHash }) {
     },
     { returnDocument: "after" },
   );
+}
+
+export async function migrateUserRoles() {
+  const database = getDatabase();
+
+  await database.collection(USERS_COLLECTION).updateMany(
+    { role: { $exists: false } },
+    { $set: { role: USER_ROLES.USER } },
+  );
+}
+
+export async function syncConfiguredOwner() {
+  const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+
+  if (!ownerEmail) {
+    throw new Error("OWNER_EMAIL is missing from environment variables");
+  }
+
+  const users = getDatabase().collection(USERS_COLLECTION);
+  const owner = await users.findOne({ email: ownerEmail });
+
+  if (!owner) {
+    throw new Error(`OWNER_EMAIL does not match an existing user: ${ownerEmail}`);
+  }
+
+  await users.updateMany(
+    { role: USER_ROLES.OWNER, _id: { $ne: owner._id } },
+    { $set: { role: USER_ROLES.ADMIN, updatedAt: new Date() } },
+  );
+
+  await users.updateOne(
+    { _id: owner._id },
+    { $set: { role: USER_ROLES.OWNER, updatedAt: new Date() } },
+  );
+}
+
+export async function listUsers({ query, skip, limit }) {
+  const users = getDatabase().collection(USERS_COLLECTION);
+
+  const [items, total] = await Promise.all([
+    users
+      .find(query)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .project({
+        name: 1,
+        email: 1,
+        role: 1,
+        emailVerifiedAt: 1,
+        deletedAt: 1,
+        createdAt: 1,
+      })
+      .toArray(),
+    users.countDocuments(query),
+  ]);
+
+  return { items, total };
+}
+
+export async function updateUserRole({ userId, role }) {
+  return getDatabase().collection(USERS_COLLECTION).findOneAndUpdate(
+    { _id: userId, deletedAt: { $exists: false } },
+    { $set: { role, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+}
+
+export async function softDeleteUser({ userId, deletedBy }) {
+  const now = new Date();
+
+  return getDatabase().collection(USERS_COLLECTION).findOneAndUpdate(
+    { _id: userId, deletedAt: { $exists: false } },
+    {
+      $set: {
+        deletedAt: now,
+        deletedBy,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: "after" },
+  );
+}
+
+export async function unblockUserById(userId) {
+  return getDatabase().collection(USERS_COLLECTION).findOneAndUpdate(
+    { _id: userId, deletedAt: { $exists: true } },
+    {
+      $unset: { deletedAt: "", deletedBy: "" },
+      $set: { updatedAt: new Date() },
+    },
+    { returnDocument: "after" },
+  );
+}
+
+export async function permanentlyDeleteUser(userId) {
+  const database = getDatabase();
+
+  await Promise.all([
+    database.collection("sessions").deleteMany({ userId }),
+    database.collection("otps").deleteMany({ userId }),
+    database.collection("passwordResets").deleteMany({ userId }),
+    database.collection("items").deleteMany({ ownerId: userId }),
+  ]);
+
+  return database.collection(USERS_COLLECTION).deleteOne({ _id: userId });
 }

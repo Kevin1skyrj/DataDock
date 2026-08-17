@@ -58,6 +58,8 @@ export const SEGMENT_LABELS = {
   security: "Security",
   shortcuts: "Shortcuts",
   billing: "Billing",
+  admin: "Admin",
+  users: "Users",
 };
 
 /**

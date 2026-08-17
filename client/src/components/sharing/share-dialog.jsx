@@ -128,7 +128,9 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
 
   const people = recipients.id === item.id ? recipients.people : [];
 
-  const url = share ? `https://datadock.app/s/${share.token ?? share.id}` : "";
+  const url = share
+    ? `${typeof window === "undefined" ? "" : window.location.origin}/s/${share.token}`
+    : "";
   const access = ACCESS.find((option) => option.id === (share?.access ?? "view"));
 
   const run = async (work) => {

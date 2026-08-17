@@ -112,6 +112,8 @@ export function getCurrentUser(req, res) {
       id: req.user.id.toString(),
       name: req.user.name,
       email: req.user.email,
+      role: req.user.role,
+      hasPassword: req.user.hasPassword,
     },
   });
 }
