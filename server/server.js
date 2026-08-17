@@ -1,5 +1,6 @@
 import app from "./src/app.js";
 import { connectToDatabase } from "./src/config/db.js";
+import { connectToRedis } from "./src/config/redis.js";
 import {
   createUserIndexes,
   migrateUserRoles,
@@ -14,6 +15,7 @@ const port = process.env.PORT || 4000;
 async function startServer() {
   try {
     await connectToDatabase();
+    await connectToRedis();
     await createUserIndexes();
     await migrateUserRoles();
     await syncConfiguredOwner();
