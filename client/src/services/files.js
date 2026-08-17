@@ -22,12 +22,10 @@
  */
 export {
   FileServiceError,
-  attachUploaded,
   collectDescendants,
   copyItems,
   deleteItems,
   duplicateItems,
-  ensureFolder,
   getDownloadUrl,
   getDriveUsage,
   listShareRecipients,
@@ -38,6 +36,7 @@ export {
   createShare,
   getFolderSummary,
   getItem,
+  ensureFolder,
   getPath,
   listFolders,
   listItems,
@@ -50,7 +49,7 @@ export {
   updateShare,
 } from "@/services/api/files";
 
-export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/mock/uploads";
+export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/api/uploads";
 export { getPreview } from "@/services/mock/preview";
 
 export {

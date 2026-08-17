@@ -10,6 +10,14 @@ export async function createItemIndexes() {
       partialFilterExpression: { "share.token": { $type: "string" } },
     },
   );
+
+  await getDatabase().collection(ITEMS_COLLECTION).createIndex(
+    { storageKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { storageKey: { $type: "string" } },
+    },
+  );
 }
 
 export async function findItemsByParent({ ownerId, parentId = null }) {
@@ -254,6 +262,49 @@ export async function getFolderSummaryData({
     size: 0,
     updatedAt: null,
   };
+}
+
+export async function insertFile({
+  ownerId,
+  name,
+  parentId,
+  kind,
+  mimeType,
+  size,
+  storageKey,
+}) {
+  const now = new Date();
+  const file = {
+    ownerId,
+    type: "file",
+    name,
+    normalizedName: name.toLowerCase(),
+    parentId,
+    kind,
+    mimeType,
+    size,
+    storageKey,
+    starred: false,
+    trashedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    openedAt: null,
+  };
+  const result = await getDatabase().collection(ITEMS_COLLECTION).insertOne(file);
+
+  return { ...file, _id: result.insertedId };
+}
+
+export async function getUserStorageUsage(ownerId) {
+  const [result] = await getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { ownerId, type: "file" } },
+      { $group: { _id: null, used: { $sum: { $ifNull: ["$size", 0] } } } },
+    ])
+    .toArray();
+
+  return result?.used ?? 0;
 }
 
 export async function updateItemShare({ ownerId, itemId, share }) {

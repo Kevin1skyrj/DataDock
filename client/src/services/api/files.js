@@ -122,6 +122,15 @@ export async function restoreItems(itemIds) {
   });
 }
 
+export async function ensureFolder({ parentId = null, name }) {
+  const folders = await listFolders(parentId);
+  const existing = folders.find(
+    (folder) => folder.name.toLowerCase() === name.trim().toLowerCase(),
+  );
+
+  return existing ?? createFolder({ parentId, name });
+}
+
 export function createShare(itemId) {
   return apiRequest(`/items/${encodeURIComponent(itemId)}/share`, { method: "POST" });
 }

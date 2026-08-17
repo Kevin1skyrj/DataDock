@@ -16,3 +16,7 @@ export async function getJSON(key) {
 
   return json === null ? null : JSON.parse(json);
 }
+
+export async function deleteKey(key) {
+  return getRedisClient().del(key);
+}
