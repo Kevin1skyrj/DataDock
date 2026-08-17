@@ -40,3 +40,12 @@ export async function findActiveSessionByTokenHash(tokenHash) {
     expiresAt: { $gt: new Date() },
   });
 }
+
+export async function deleteSessionById({ sessionId, userId }) {
+  const database = getDatabase();
+
+  return database.collection(SESSIONS_COLLECTION).deleteOne({
+    _id: sessionId,
+    userId,
+  });
+}

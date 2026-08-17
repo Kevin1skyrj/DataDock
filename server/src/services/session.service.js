@@ -1,4 +1,4 @@
-import { insertSession } from "../models/session.model.js";
+import { deleteSessionById, insertSession } from "../models/session.model.js";
 import {
   generateSessionToken,
   hashSessionToken,
@@ -25,4 +25,15 @@ export async function createSession(userId) {
     token,
     expiresAt,
   };
+}
+
+export async function deleteCurrentSession({ sessionId, userId }) {
+  if (!sessionId || !userId) {
+    throw new Error("sessionId and userId are required to delete a session");
+  }
+
+  await deleteSessionById({
+    sessionId,
+    userId,
+  });
 }

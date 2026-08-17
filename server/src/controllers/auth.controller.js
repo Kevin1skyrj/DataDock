@@ -3,7 +3,11 @@ import {
   resendEmailVerificationOtp,
   verifyEmailOtp,
 } from "../services/otp.service.js";
-import { SESSION_COOKIE_NAME } from "../config/session.js";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+} from "../config/session.js";
+import { deleteCurrentSession } from "../services/session.service.js";
 
 export async function register(req, res, next) {
   try {
@@ -23,12 +27,8 @@ export async function login(req, res, next) {
     const { user, session } = await loginUser(req.body);
 
     res.cookie(SESSION_COOKIE_NAME, session.token, {
-      httpOnly: true,
-      signed: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      ...SESSION_COOKIE_OPTIONS,
       expires: session.expiresAt,
-      path: "/",
     });
 
     res.status(200).json({
@@ -64,4 +64,36 @@ export async function resendVerification(req, res, next) {
   } catch (error) {
     next(error);
   }
+}
+
+export async function logout(req, res, next) {
+  try {
+    await deleteCurrentSession({
+      sessionId: req.auth.sessionId,
+      userId: req.user.id,
+    });
+
+    res.clearCookie(
+      SESSION_COOKIE_NAME,
+      SESSION_COOKIE_OPTIONS,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export function getCurrentUser(req, res) {
+  res.status(200).json({
+    success: true,
+    data: {
+      id: req.user.id.toString(),
+      name: req.user.name,
+      email: req.user.email,
+    },
+  });
 }
