@@ -12,6 +12,7 @@ import {
   findTrashedItemsByIds,
   restoreItemsFromTrash,
 } from "../models/trash.model.js";
+import { invalidateItemLists } from "./item-cache.service.js";
 
 export async function trashItems({ ownerId, itemIds }) {
   if (!Array.isArray(itemIds) || itemIds.length === 0) {
@@ -47,6 +48,8 @@ export async function trashItems({ ownerId, itemIds }) {
     ownerId,
     itemIds: objectIds,
   });
+
+  await invalidateItemLists(ownerId);
 
   return trashedItems.map(toPublicItem);
 }
@@ -143,6 +146,8 @@ export async function restoreItems({ ownerId, itemIds }) {
     ownerId,
     itemIds: objectIds,
   });
+
+  await invalidateItemLists(ownerId);
 
   return restoredItems.map(toPublicItem);
 }

@@ -7,6 +7,7 @@ import {
   findPublicShareByToken,
   updateItemShare,
 } from "../models/item.model.js";
+import { invalidateItemLists } from "./item-cache.service.js";
 
 const ACCESS = new Set(["view", "comment", "edit"]);
 
@@ -45,6 +46,7 @@ export async function createPublicShare({ ownerId, itemId: value }) {
     createdAt: new Date(),
   };
   await updateItemShare({ ownerId, itemId: id, share });
+  await invalidateItemLists(ownerId);
   return share;
 }
 
@@ -69,6 +71,7 @@ export async function changePublicShare({ ownerId, itemId: value, changes }) {
   if (changes.expiresAt !== undefined) share.expiresAt = expiry(changes.expiresAt);
 
   await updateItemShare({ ownerId, itemId: id, share });
+  await invalidateItemLists(ownerId);
   return share;
 }
 
@@ -76,6 +79,7 @@ export async function stopPublicShare({ ownerId, itemId: value }) {
   const id = itemId(value);
   const item = await updateItemShare({ ownerId, itemId: id, share: null });
   if (!item) throw notFound();
+  await invalidateItemLists(ownerId);
   return { revoked: true };
 }
 

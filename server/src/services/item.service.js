@@ -15,6 +15,12 @@ import {
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
+import {
+  cacheItemList,
+  getCachedItemList,
+  getItemListCacheKey,
+  invalidateItemLists,
+} from "./item-cache.service.js";
 
 async function resolveParentId({ ownerId, parentId }) {
   if (parentId === null || parentId === undefined) {
@@ -49,16 +55,29 @@ export async function listItems({ ownerId, parentId = null }) {
     ownerId,
     parentId,
   });
+  const cacheKey = await getItemListCacheKey({
+    ownerId,
+    parentId: resolvedParentId,
+  });
+  const cachedResult = await getCachedItemList(cacheKey);
+
+  if (cachedResult) {
+    return cachedResult;
+  }
+
   const items = await findItemsByParent({
     ownerId,
     parentId: resolvedParentId,
   });
 
-  return {
+  const result = {
     items: items.map(toPublicItem),
     nextCursor: null,
     total: items.length,
   };
+
+  await cacheItemList(cacheKey, result);
+  return result;
 }
 
 export async function getItem({ ownerId, itemId }) {
@@ -114,6 +133,8 @@ export async function createFolder({ ownerId, name, parentId = null }) {
     name: trimmedName,
     parentId: resolvedParentId,
   });
+
+  await invalidateItemLists(ownerId);
 
   return toPublicItem(folder);
 }
@@ -194,6 +215,8 @@ export async function renameItem({ ownerId, itemId, name }) {
     normalizedName,
   });
 
+  await invalidateItemLists(ownerId);
+
   return toPublicItem(updatedItem);
 }
 
@@ -233,6 +256,8 @@ export async function starItems({ ownerId, itemIds, starred }) {
       code: "items-not-found",
     });
   }
+
+  await invalidateItemLists(ownerId);
 
   return items.map(toPublicItem);
 }
@@ -346,6 +371,8 @@ export async function moveItems({ ownerId, itemIds, parentId = null }) {
     itemIds: objectIds,
     parentId: resolvedParentId,
   });
+
+  await invalidateItemLists(ownerId);
 
   return movedItems.map(toPublicItem);
 }
