@@ -3,6 +3,7 @@ import {
   createFolder,
   getFolderPath,
   getItem,
+  downloadItem,
   getItems,
   renameItem,
   starItems,
@@ -22,6 +23,7 @@ itemRouter.get("/folders", getFolders);
 itemRouter.get("/folders/:folderId/path", getFolderPath);
 itemRouter.get("/starred", getStarredItems);
 itemRouter.get("/summary", getFolderSummary);
+itemRouter.get("/:itemId/download", downloadItem);
 itemRouter.get("/:itemId", getItem);
 itemRouter.post("/folders", createFolder);
 itemRouter.patch("/starred", starItems);

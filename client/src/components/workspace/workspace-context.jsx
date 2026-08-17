@@ -265,12 +265,15 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       download: async (selected) => {
         const [first] = selected;
         try {
-          await getDownloadUrl(first.id);
+          const download = await getDownloadUrl(first.id);
+          const link = document.createElement("a");
+          link.href = download.url;
+          link.download = first.name;
+          document.body.append(link);
+          link.click();
+          link.remove();
           setStatus({
-            text:
-              selected.length === 1
-                ? `Downloading ${first.name}.`
-                : `Downloading ${selected.length} files.`,
+            text: `Downloading ${first.name}.`,
           });
         } catch (failure) {
           setStatus({ tone: "error", text: failure.message });

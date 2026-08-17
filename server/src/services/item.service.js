@@ -15,6 +15,9 @@ import {
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3BucketName, s3Client } from "../config/s3.js";
 import {
   cacheItemList,
   getCachedItemList,
@@ -98,6 +101,41 @@ export async function getItem({ ownerId, itemId }) {
     });
   }
   return toPublicItem(item);
+}
+
+export async function getItemDownload({ ownerId, itemId }) {
+  if (!ObjectId.isValid(itemId)) {
+    throw new AppError("Invalid item ID", {
+      statusCode: 400,
+      code: "invalid-item-id",
+    });
+  }
+
+  const item = await findItemById({ ownerId, itemId: new ObjectId(itemId) });
+  if (!item || item.type !== "file" || item.trashedAt || !item.storageKey) {
+    throw new AppError("File not found", {
+      statusCode: 404,
+      code: "file-not-found",
+    });
+  }
+
+  const safeName = item.name.replace(/[\r\n"]/g, "_");
+  const expiresIn = 15 * 60;
+  const url = await getSignedUrl(
+    s3Client,
+    new GetObjectCommand({
+      Bucket: s3BucketName,
+      Key: item.storageKey,
+      ResponseContentDisposition: `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(item.name)}`,
+      ResponseContentType: item.mimeType,
+    }),
+    { expiresIn },
+  );
+
+  return {
+    url,
+    expiresAt: new Date(Date.now() + expiresIn * 1000),
+  };
 }
 
 export async function createFolder({ ownerId, name, parentId = null }) {

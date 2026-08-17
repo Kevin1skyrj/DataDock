@@ -35,6 +35,10 @@ export async function getPath(folderId) {
   return apiRequest(`/items/folders/${encodeURIComponent(folderId)}/path`);
 }
 
+export function getDownloadUrl(itemId) {
+  return apiRequest(`/items/${encodeURIComponent(itemId)}/download`);
+}
+
 export async function getFolderSummary(parentId = null) {
   const query = new URLSearchParams();
 

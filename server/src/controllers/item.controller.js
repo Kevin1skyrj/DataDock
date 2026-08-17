@@ -2,6 +2,7 @@ import {
   createFolder as createFolderService,
   getFolderPath as getFolderPathService,
   getItem as getItemService,
+  getItemDownload as getItemDownloadService,
   listItems as listItemsService,
   renameItem as renameItemService,
   starItems as starItemsService,
@@ -53,6 +54,18 @@ export async function getItem(req, res, next) {
       success: true,
       data: item,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function downloadItem(req, res, next) {
+  try {
+    const download = await getItemDownloadService({
+      ownerId: req.user.id,
+      itemId: req.params.itemId,
+    });
+    res.status(200).json({ success: true, data: download });
   } catch (error) {
     next(error);
   }

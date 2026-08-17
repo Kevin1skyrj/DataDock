@@ -144,7 +144,7 @@ const ACTIONS = {
     primary: true,
     // Zipping a folder is a server job that does not exist yet, and offering it
     // would be a promise the product cannot keep.
-    enabled: onlyFiles,
+    enabled: (selection) => single(selection) && selection[0].type === "file",
     run: (selection, handlers) => handlers.download(selection),
   },
   trash: {

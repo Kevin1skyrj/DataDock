@@ -26,7 +26,6 @@ export {
   copyItems,
   deleteItems,
   duplicateItems,
-  getDownloadUrl,
   getDriveUsage,
   listShareRecipients,
 } from "@/services/mock/files";
@@ -36,6 +35,7 @@ export {
   createShare,
   getFolderSummary,
   getItem,
+  getDownloadUrl,
   ensureFolder,
   getPath,
   listFolders,
