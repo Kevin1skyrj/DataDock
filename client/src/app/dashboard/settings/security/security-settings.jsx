@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Laptop, LogOut, Smartphone } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -12,43 +13,10 @@ import { ProviderMark } from "@/components/upload/provider-mark";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { notify } from "@/components/ui/toast";
-import { useMounted } from "@/hooks/use-mounted";
-import { formatDate } from "@/lib/format";
 import { currentPasswordRule, newPasswordRule } from "@/lib/validation/auth";
 import { useSession } from "@/providers/session-provider";
+import { logoutAll } from "@/services/auth";
 import { z } from "zod";
-
-/**
- * Sessions, as a real product would list them.
- *
- * The current one is marked and cannot be revoked from here — signing yourself
- * out of the page you are looking at is what Sign out is for, and offering it
- * twice under different words is how people end up doing it by accident.
- */
-const SESSIONS = [
-  {
-    id: "ses_current",
-    device: "Chrome on Windows",
-    kind: "desktop",
-    location: "Bengaluru, India",
-    lastActive: "2026-08-04T09:10:00.000Z",
-    current: true,
-  },
-  {
-    id: "ses_mac",
-    device: "Safari on macOS",
-    kind: "desktop",
-    location: "Bengaluru, India",
-    lastActive: "2026-08-02T18:40:00.000Z",
-  },
-  {
-    id: "ses_phone",
-    device: "DataDock for iOS",
-    kind: "mobile",
-    location: "Mumbai, India",
-    lastActive: "2026-07-28T07:15:00.000Z",
-  },
-];
 
 const passwordSchema = z
   .object({
@@ -65,12 +33,9 @@ const passwordSchema = z
 
 export function SecuritySettings() {
   const session = useSession();
-  const [sessions, setSessions] = useState(SESSIONS);
+  const router = useRouter();
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
-  // "Last active" resolves against the local clock and timezone, so the server
-  // cannot render it — it would say "Today" on the wrong day for anyone not
-  // sitting beside the machine. The location holds the line until it arrives.
-  const mounted = useMounted();
 
   const {
     control,
@@ -88,6 +53,23 @@ export function SecuritySettings() {
     await new Promise((resolve) => setTimeout(resolve, 600));
     reset();
     notify({ title: "Password changed", description: "Other sessions have been signed out." });
+  };
+
+  const signOutAllDevices = async () => {
+    setLoggingOutAll(true);
+
+    try {
+      await logoutAll();
+      router.replace("/login");
+      router.refresh();
+    } catch (error) {
+      setLoggingOutAll(false);
+      notify({
+        title: "Could not sign out",
+        description: error.message,
+        type: "error",
+      });
+    }
   };
 
   return (
@@ -184,64 +166,23 @@ export function SecuritySettings() {
 
       <SettingsCard
         title="Active sessions"
-        description="Signed in on these devices."
-        footer={
-          sessions.length > 1 ? (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setSessions((current) => current.filter((session) => session.current));
-                notify({ title: "Signed out everywhere else" });
-              }}
-            >
-              Sign out everywhere else
-            </Button>
-          ) : null
-        }
+        description="End every active session for this account, including this browser."
       >
-        {sessions.map((session) => (
-          <SettingRow
-            key={session.id}
-            label={
-              <span className="flex items-center gap-2">
-                {session.device}
-                {session.current ? (
-                  <span className="rounded-sm bg-brand-tint px-1.5 py-0.5 text-2xs text-brand">
-                    This device
-                  </span>
-                ) : null}
-              </span>
-            }
-            hint={
-              mounted
-                ? `${session.location} · last active ${formatDate(session.lastActive)}`
-                : session.location
-            }
-            control={
-              session.current ? null : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSessions((current) =>
-                      current.filter((entry) => entry.id !== session.id),
-                    );
-                    notify({ title: `Signed out of ${session.device}` });
-                  }}
-                >
-                  <LogOut className="size-3.5" />
-                  Sign out
-                </Button>
-              )
-            }
-          >
-            {session.kind === "mobile" ? (
-              <Smartphone className="order-first size-4 shrink-0 text-dim sm:order-none" />
-            ) : (
-              <Laptop className="order-first size-4 shrink-0 text-dim sm:order-none" />
-            )}
-          </SettingRow>
-        ))}
+        <SettingRow
+          label="Sign out on all devices"
+          hint="You will need to enter your email and password again on every device."
+          control={
+            <Button
+              variant="destructive"
+              size="sm"
+              loading={loggingOutAll}
+              onClick={signOutAllDevices}
+            >
+              <LogOut className="size-3.5" />
+              Sign out everywhere
+            </Button>
+          }
+        />
       </SettingsCard>
     </>
   );
