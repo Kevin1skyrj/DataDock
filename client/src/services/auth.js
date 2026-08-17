@@ -7,12 +7,12 @@ import {
   verifyEmailOtp,
 } from "./api/auth";
 import {
-  continueWithGoogle,
   requestPasswordReset,
   resendOtp as resendMockOtp,
   resetPassword,
   verifyOtp as verifyMockOtp,
 } from "./mock/auth";
+import { continueWithGoogle } from "./api/google-auth";
 
 export {
   continueWithGoogle,

@@ -173,12 +173,3 @@ export async function resetPassword({ token }) {
 
   return { ok: true };
 }
-
-/**
- * The real thing hands off to Google and comes back; there is nothing to hand
- * off to yet, so this only proves the pending state renders.
- */
-export async function continueWithGoogle() {
-  await wait(900);
-  return asUser("demo@datadock.app");
-}

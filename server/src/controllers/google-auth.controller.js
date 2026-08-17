@@ -22,6 +22,18 @@ function clearGoogleOAuthCookies(res) {
   res.clearCookie(GOOGLE_OAUTH_VERIFIER_COOKIE, cookieOptions);
 }
 
+function getClientCallbackUrl({ status, code }) {
+  const callbackUrl = new URL("/oauth/google/callback", process.env.CLIENT_ORIGIN);
+
+  callbackUrl.searchParams.set("status", status);
+
+  if (code) {
+    callbackUrl.searchParams.set("code", code);
+  }
+
+  return callbackUrl.toString();
+}
+
 export async function startGoogleLogin(req, res, next) {
   try {
     const { authorizationUrl, state, codeVerifier } =
@@ -45,7 +57,7 @@ export async function startGoogleLogin(req, res, next) {
   }
 }
 
-export async function completeGoogleLogin(req, res, next) {
+export async function completeGoogleLogin(req, res) {
   const expectedState = req.signedCookies[GOOGLE_OAUTH_STATE_COOKIE];
   const codeVerifier = req.signedCookies[GOOGLE_OAUTH_VERIFIER_COOKIE];
 
@@ -75,18 +87,24 @@ export async function completeGoogleLogin(req, res, next) {
     }
 
     const identity = await getGoogleIdentity({ code, codeVerifier });
-    const { user, session } = await loginWithGoogle(identity);
+    const { session } = await loginWithGoogle(identity);
 
     res.cookie(SESSION_COOKIE_NAME, session.token, {
       ...SESSION_COOKIE_OPTIONS,
       expires: session.expiresAt,
     });
 
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
+    res.redirect(getClientCallbackUrl({ status: "success" }));
   } catch (error) {
-    next(error);
+    if (!(error instanceof AppError)) {
+      console.error("Google OAuth callback failed", error);
+    }
+
+    res.redirect(
+      getClientCallbackUrl({
+        status: "error",
+        code: error.code ?? "google-authentication-failed",
+      }),
+    );
   }
 }
