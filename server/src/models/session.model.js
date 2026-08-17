@@ -51,6 +51,14 @@ export async function deleteSessionById({ sessionId, userId }) {
   });
 }
 
+export async function deleteAllSessionsByUserId(userId) {
+  const database = getDatabase();
+
+  return database.collection(SESSIONS_COLLECTION).deleteMany({
+    userId,
+  });
+}
+
 export async function deleteExcessActiveSessions({ userId, keepCount }) {
   const database = getDatabase();
   const sessions = database.collection(SESSIONS_COLLECTION);

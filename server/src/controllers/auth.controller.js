@@ -7,7 +7,10 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_OPTIONS,
 } from "../config/session.js";
-import { deleteCurrentSession } from "../services/session.service.js";
+import {
+  deleteAllUserSessions,
+  deleteCurrentSession,
+} from "../services/session.service.js";
 
 export async function register(req, res, next) {
   try {
@@ -77,6 +80,21 @@ export async function logout(req, res, next) {
       SESSION_COOKIE_NAME,
       SESSION_COOKIE_OPTIONS,
     );
+
+    res.status(200).json({
+      success: true,
+      data: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function logoutAll(req, res, next) {
+  try {
+    await deleteAllUserSessions(req.user.id);
+
+    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS);
 
     res.status(200).json({
       success: true,

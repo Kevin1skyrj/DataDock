@@ -1,4 +1,5 @@
 import {
+  deleteAllSessionsByUserId,
   deleteExcessActiveSessions,
   deleteSessionById,
   insertSession,
@@ -46,4 +47,12 @@ export async function deleteCurrentSession({ sessionId, userId }) {
     sessionId,
     userId,
   });
+}
+
+export async function deleteAllUserSessions(userId) {
+  if (!userId) {
+    throw new Error("userId is required to delete all sessions");
+  }
+
+  await deleteAllSessionsByUserId(userId);
 }

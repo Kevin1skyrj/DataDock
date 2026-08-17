@@ -6,6 +6,7 @@ import {
   verifyEmail,
   resendVerification,
   logout,
+  logoutAll,
   getCurrentUser,
 } from "../controllers/auth.controller.js";
 
@@ -17,4 +18,5 @@ authRouter.post("/login", login);
 authRouter.post("/verify-email", verifyEmail);
 authRouter.post("/resend-verification", resendVerification);
 authRouter.post("/logout", authenticate, logout);
+authRouter.post("/logout-all", authenticate, logoutAll);
 export default authRouter;
