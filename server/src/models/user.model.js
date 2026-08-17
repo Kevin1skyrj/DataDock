@@ -57,3 +57,11 @@ export async function markUserEmailVerified(userId) {
     },
   );
 }
+
+export async function findUserById(userId) {
+  const database = getDatabase();
+
+  return database.collection(USERS_COLLECTION).findOne({
+    _id: userId,
+  });
+}

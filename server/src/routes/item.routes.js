@@ -11,11 +11,11 @@ import {
   getFolders,
   getFolderSummary,
 } from "../controllers/item.controller.js";
-import { attachDevelopmentUser } from "../middleware/development-user.middleware.js";
+import { authenticate } from "../middleware/authenticate.middleware.js";
 
 const itemRouter = Router();
 
-itemRouter.use(attachDevelopmentUser);
+itemRouter.use(authenticate);
 itemRouter.get("/", getItems);
 itemRouter.get("/folders", getFolders);
 itemRouter.get("/folders/:folderId/path", getFolderPath);

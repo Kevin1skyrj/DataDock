@@ -3,7 +3,8 @@ import {
   resendEmailVerificationOtp,
   verifyEmailOtp,
 } from "../services/otp.service.js";
-const SESSION_COOKIE_NAME = "datadock_session";
+import { SESSION_COOKIE_NAME } from "../config/session.js";
+
 export async function register(req, res, next) {
   try {
     const user = await registerUser(req.body);

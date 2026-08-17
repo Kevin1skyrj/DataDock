@@ -4,11 +4,11 @@ import {
   getTrashedItems,
   restoreItems,
 } from "../controllers/trash.controller.js";
-import { attachDevelopmentUser } from "../middleware/development-user.middleware.js";
+import { authenticate } from "../middleware/authenticate.middleware.js";
 
 const trashRouter = Router();
 
-trashRouter.use(attachDevelopmentUser);
+trashRouter.use(authenticate);
 trashRouter.get("/", getTrashedItems);
 trashRouter.patch("/restore", restoreItems);
 trashRouter.patch("/", trashItems);
