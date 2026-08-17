@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { RESEND_SECONDS, SUCCESS, VERIFY } from "@/constants/auth";
 import { verifyOtpSchema } from "@/lib/validation/auth";
-import { resendOtp, verifyOtp } from "@/services/mock/auth";
+import { resendOtp, verifyOtp } from "@/services/auth";
 
 /**
  * The code screen, serving both flows.
@@ -65,7 +65,7 @@ export function VerifyEmail({ email, flow }) {
 
   const submit = async ({ code }) => {
     try {
-      const { token } = await verifyOtp({ email, code });
+      const { token } = await verifyOtp({ email, code, flow });
 
       if (flow === "reset") {
         // The next screen has to prove a code was checked, or it is a page
@@ -90,7 +90,7 @@ export function VerifyEmail({ email, flow }) {
   const resend = async () => {
     setResending(true);
     try {
-      await resendOtp({ email });
+      await resendOtp({ email, flow });
       setValue("code", "");
       setRemaining(RESEND_SECONDS);
       setResent(true);

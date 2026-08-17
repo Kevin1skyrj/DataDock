@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { notify } from "@/components/ui/toast";
 import { formatDateFull } from "@/lib/format";
-import { SESSION } from "@/services/mock/session";
+import { useSession } from "@/providers/session-provider";
 
 /**
  * Who you are.
@@ -19,9 +19,10 @@ import { SESSION } from "@/services/mock/session";
  * beside the route that actually changes it.
  */
 export function ProfileSettings() {
-  const [name, setName] = useState(SESSION.name);
+  const session = useSession();
+  const [name, setName] = useState(session.name);
   const [saving, setSaving] = useState(false);
-  const dirty = name.trim() !== SESSION.name && name.trim().length > 0;
+  const dirty = name.trim() !== session.name && name.trim().length > 0;
 
   const save = async () => {
     setSaving(true);
@@ -40,7 +41,7 @@ export function ProfileSettings() {
       <SettingsCard
         footer={
           <>
-            <Button variant="ghost" disabled={!dirty} onClick={() => setName(SESSION.name)}>
+            <Button variant="ghost" disabled={!dirty} onClick={() => setName(session.name)}>
               Reset
             </Button>
             {/* Disabled until something has actually changed. A Save that is
@@ -65,7 +66,7 @@ export function ProfileSettings() {
             aria-hidden="true"
             className="order-first grid size-14 shrink-0 place-items-center rounded-full bg-brand-tint text-xl font-semibold text-brand ring-1 ring-brand/25 ring-inset sm:order-none"
           >
-            {SESSION.initials}
+            {session.initials}
           </span>
         </SettingRow>
 
@@ -92,14 +93,14 @@ export function ProfileSettings() {
             </Button>
           }
         >
-          <p className="text-md text-muted-foreground">{SESSION.email}</p>
+          <p className="text-md text-muted-foreground">{session.email}</p>
         </SettingRow>
       </SettingsCard>
 
       <SettingsCard title="Account">
         <SettingRow
           label="Plan"
-          control={<span className="text-md text-foreground">{SESSION.plan}</span>}
+          control={<span className="text-md text-foreground">{session.plan}</span>}
         />
         <SettingRow
           label="Member since"
@@ -112,7 +113,7 @@ export function ProfileSettings() {
         <SettingRow
           label="Account ID"
           hint="Quote this if you contact support."
-          control={<span className="font-mono text-base text-dim">{SESSION.id}</span>}
+          control={<span className="font-mono text-base text-dim">{session.id}</span>}
         />
       </SettingsCard>
 

@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { UploadMenu } from "@/components/upload/upload-menu";
 import { FileIcon } from "@/components/workspace/file-icon";
 import { formatBytes, formatDate } from "@/lib/format";
+import { useSession } from "@/providers/session-provider";
 import { getStorageActivity, getStorageSummary, listItems } from "@/services/files";
-import { SESSION } from "@/services/mock/session";
 import { cn } from "@/lib/utils";
 
 /** Greets by the time of day, which is the only thing a greeting can honestly know. */
@@ -52,6 +52,7 @@ function useGreeting() {
  * rest of the product already uses.
  */
 export function DashboardHome() {
+  const session = useSession();
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState(null);
   const [activity, setActivity] = useState(null);
@@ -87,7 +88,7 @@ export function DashboardHome() {
             {/* Reserved height, so the line does not jump in when the clock is
                 read after mount. */}
             <h1 className="min-h-9 text-display-sm font-semibold tracking-tight text-foreground">
-              {hello ? `${hello}, ${SESSION.name.split(" ")[0]}` : " "}
+              {hello ? `${hello}, ${session.name.split(" ")[0]}` : " "}
             </h1>
             <p className="text-base text-muted-foreground">
               {summary

@@ -15,7 +15,7 @@ import { notify } from "@/components/ui/toast";
 import { useMounted } from "@/hooks/use-mounted";
 import { formatDate } from "@/lib/format";
 import { currentPasswordRule, newPasswordRule } from "@/lib/validation/auth";
-import { SESSION } from "@/services/mock/session";
+import { useSession } from "@/providers/session-provider";
 import { z } from "zod";
 
 /**
@@ -64,6 +64,7 @@ const passwordSchema = z
   });
 
 export function SecuritySettings() {
+  const session = useSession();
   const [sessions, setSessions] = useState(SESSIONS);
   const [twoFactor, setTwoFactor] = useState(false);
   // "Last active" resolves against the local clock and timezone, so the server
@@ -131,7 +132,7 @@ export function SecuritySettings() {
       <SettingsCard title="Connected accounts">
         <SettingRow
           label="Google"
-          hint={`Connected as ${SESSION.email}. Used for one-tap sign in.`}
+          hint={`Connected as ${session.email}. Used for one-tap sign in.`}
           control={
             <Button variant="secondary" size="sm">
               Disconnect

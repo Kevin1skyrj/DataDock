@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { LOGIN } from "@/constants/auth";
 import { loginSchema } from "@/lib/validation/auth";
-import { continueWithGoogle, signIn } from "@/services/mock/auth";
+import { continueWithGoogle, signIn } from "@/services/auth";
 
 /**
  * Where the drive is signed into.

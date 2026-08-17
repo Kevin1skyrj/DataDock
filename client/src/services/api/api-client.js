@@ -11,7 +11,7 @@ export class ApiError extends Error {
 
 export async function apiRequest(
   path,
-  { method = "GET", body } = {},
+  { method = "GET", body, headers } = {},
 ) {
   if (!API_URL) {
     throw new Error("NEXT_PUBLIC_API_URL is missing");
@@ -19,12 +19,10 @@ export async function apiRequest(
 
   const response = await fetch(`${API_URL}${path}`, {
     method,
-    headers:
-      body === undefined
-        ? undefined
-        : {
-            "Content-Type": "application/json",
-          },
+    headers: {
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...headers,
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "include",
     cache: "no-store",

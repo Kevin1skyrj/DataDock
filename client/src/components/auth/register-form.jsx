@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { REGISTER } from "@/constants/auth";
 import { registerSchema } from "@/lib/validation/auth";
-import { continueWithGoogle, signUp } from "@/services/mock/auth";
+import { continueWithGoogle, signUp } from "@/services/auth";
 
 const LEGAL_LINK =
   "rounded-xs text-muted-foreground underline decoration-line-2 underline-offset-2 transition-colors duration-200 ease-standard hover:text-brand hover:decoration-brand/40";

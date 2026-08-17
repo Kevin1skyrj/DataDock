@@ -2,7 +2,9 @@
 
 import { Check, CreditCard, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,9 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ACCENTS } from "@/constants/accents";
+import { notify } from "@/components/ui/toast";
 import { useAccent } from "@/providers/accent-provider";
 import { useMounted } from "@/hooks/use-mounted";
-import { SESSION } from "@/services/mock/session";
+import { useSession } from "@/providers/session-provider";
+import { logout } from "@/services/auth";
 import { cn } from "@/lib/utils";
 
 const THEMES = [
@@ -41,9 +45,25 @@ const THEMES = [
  * the surface where you configure rather than flick.
  */
 export function UserMenu() {
+  const session = useSession();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
   const { theme, setTheme } = useTheme();
   const { accent, setAccent } = useAccent();
   const mounted = useMounted();
+
+  const signOut = async () => {
+    setSigningOut(true);
+
+    try {
+      await logout();
+      router.replace("/login");
+      router.refresh();
+    } catch (error) {
+      setSigningOut(false);
+      notify({ title: "Could not sign out", description: error.message, type: "error" });
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -52,14 +72,14 @@ export function UserMenu() {
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={`Account — ${SESSION.name}`}
+            aria-label={`Account — ${session.name}`}
             className="rounded-full"
           >
             <span
               aria-hidden="true"
               className="grid size-7 place-items-center rounded-full bg-brand-tint text-2xs font-semibold text-brand ring-1 ring-brand/25 ring-inset"
             >
-              {SESSION.initials}
+              {session.initials}
             </span>
           </Button>
         }
@@ -67,8 +87,8 @@ export function UserMenu() {
 
       <DropdownMenuContent className="w-60">
         <div className="flex flex-col gap-0.5 px-2 py-1.5">
-          <p className="truncate text-base font-medium text-foreground">{SESSION.name}</p>
-          <p className="truncate text-sm text-dim">{SESSION.email}</p>
+          <p className="truncate text-base font-medium text-foreground">{session.name}</p>
+          <p className="truncate text-sm text-dim">{session.email}</p>
         </div>
 
         <DropdownMenuSeparator />
@@ -119,14 +139,15 @@ export function UserMenu() {
           <CreditCard className="size-3.5" />
           <span className="flex-1">Billing</span>
           <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-2xs text-muted-foreground">
-            {SESSION.plan}
+            {session.plan}
           </span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
-          render={<Link href="/login" />}
+          disabled={signingOut}
+          onClick={signOut}
           className={cn("text-muted-foreground data-highlighted:text-error")}
         >
           <LogOut className="size-3.5" />

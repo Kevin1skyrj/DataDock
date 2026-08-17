@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { requireSession } from "@/services/mock/session";
+import { SessionProvider } from "@/providers/session-provider";
+import { requireSession } from "@/services/session";
 
 export const metadata = {
   title: {
@@ -22,7 +23,11 @@ export const metadata = {
  * not from repeating the marketing light show.
  */
 export default async function DashboardLayout({ children }) {
-  await requireSession();
+  const session = await requireSession();
 
-  return <DashboardShell>{children}</DashboardShell>;
+  return (
+    <SessionProvider session={session}>
+      <DashboardShell>{children}</DashboardShell>
+    </SessionProvider>
+  );
 }

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { RESET, SUCCESS } from "@/constants/auth";
 import { resetPasswordSchema } from "@/lib/validation/auth";
-import { resetPassword } from "@/services/mock/auth";
+import { resetPassword } from "@/services/auth";
 
 /**
  * Setting the new password.

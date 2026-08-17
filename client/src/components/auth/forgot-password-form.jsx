@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { FORGOT } from "@/constants/auth";
 import { forgotPasswordSchema } from "@/lib/validation/auth";
-import { requestPasswordReset } from "@/services/mock/auth";
+import { requestPasswordReset } from "@/services/auth";
 
 /**
  * One field, one job.
