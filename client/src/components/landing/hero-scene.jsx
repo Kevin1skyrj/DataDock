@@ -458,16 +458,21 @@ export function HeroScene({ className }) {
         world.add(floorGlow);
 
         /* ------------------------------------------------------- motion -- */
-        const pointer = new THREE.Vector2();
-        const target = new THREE.Vector2();
-        const onMove = (e) => {
-          const r = host.getBoundingClientRect();
-          target.set(
-            ((e.clientX - r.left) / r.width) * 2 - 1,
-            ((e.clientY - r.top) / r.height) * 2 - 1,
-          );
-        };
-        window.addEventListener("pointermove", onMove, { passive: true });
+        /*
+         * The dock moves on its own clock, and on nothing else.
+         *
+         * It used to read the pointer and rotate towards it, which tied the
+         * object to the cursor: move the mouse anywhere on the page and the
+         * whole scene leaned after it. That makes an ambient background feel
+         * like a control — something being operated rather than something
+         * happening — and on a page whose actual controls sit right beside it,
+         * the two compete for the same gesture.
+         *
+         * What replaces it is drift: a slow yaw and a shallow tilt on
+         * independent, deliberately unrelated periods, so the loop never lands
+         * on an obvious beat. The result still breathes, but it belongs to the
+         * page rather than to the hand.
+         */
 
         const resize = () => {
           const w = host.clientWidth || 1;
@@ -601,11 +606,20 @@ export function HeroScene({ className }) {
             if (k >= 1) p.visible = false;
           }
 
-          pointer.lerp(target, 1 - Math.pow(0.001, dt));
-          world.rotation.y = pointer.x * 0.34 + t * 0.02;
-          world.rotation.x = pointer.y * 0.16;
-          camera.position.x = pointer.x * 0.5;
-          camera.position.y = 1.5 - pointer.y * 0.35;
+          // Continuous yaw, so the core is always turning rather than waiting
+          // to be turned. Faster than the old 0.02, which only looked slow
+          // because the pointer was supplying most of the movement.
+          world.rotation.y = t * 0.055;
+
+          // A shallow tilt on a long period. Small enough to read as the object
+          // settling rather than rocking.
+          world.rotation.x = Math.sin(t * 0.21) * 0.07;
+
+          // The camera drifts too, on periods that share no common multiple
+          // with the tilt — the composition never repeats exactly, which is
+          // what stops a loop from becoming visible.
+          camera.position.x = Math.sin(t * 0.13) * 0.28;
+          camera.position.y = 1.5 + Math.sin(t * 0.17) * 0.13;
           camera.lookAt(0, 0, 0);
         };
 
@@ -631,7 +645,6 @@ export function HeroScene({ className }) {
 
         teardown = () => {
           cancelAnimationFrame(raf);
-          window.removeEventListener("pointermove", onMove);
           // Releases the visibilitychange listener `connect` installed.
           timer.dispose();
           ro.disconnect();
