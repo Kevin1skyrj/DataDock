@@ -287,6 +287,35 @@ export async function getFolderSummaryData({
   };
 }
 
+export async function findItemTrees({ ownerId, itemIds }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { _id: { $in: itemIds }, ownerId, trashedAt: null } },
+      {
+        $graphLookup: {
+          from: ITEMS_COLLECTION,
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentId",
+          as: "descendants",
+          restrictSearchWithMatch: { ownerId, trashedAt: null },
+        },
+      },
+      { $project: { items: { $concatArrays: [["$$ROOT"], "$descendants"] } } },
+      { $unwind: "$items" },
+      { $replaceRoot: { newRoot: "$items" } },
+    ])
+    .toArray();
+}
+
+export function deleteItemsByIds({ ownerId, itemIds }) {
+  return getDatabase().collection(ITEMS_COLLECTION).deleteMany({
+    _id: { $in: itemIds },
+    ownerId,
+  });
+}
+
 export async function getFolderDescendantStats({ ownerId, folderIds }) {
   if (folderIds.length === 0) return [];
 

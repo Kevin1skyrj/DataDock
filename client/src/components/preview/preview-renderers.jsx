@@ -55,6 +55,17 @@ export function PreviewPdf({ preview, item }) {
   );
 }
 
+export function PreviewOffice({ preview, item }) {
+  return (
+    <iframe
+      src={preview.url}
+      title={item.name}
+      className="h-full w-full bg-bg-deep"
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
 export function PreviewVideo({ preview, item }) {
   return (
     <Frame>
@@ -185,6 +196,7 @@ export function PreviewUnsupported({ preview, item }) {
 export const PREVIEW_RENDERERS = {
   image: PreviewImage,
   pdf: PreviewPdf,
+  office: PreviewOffice,
   video: PreviewVideo,
   audio: PreviewAudio,
   markdown: PreviewMarkdown,

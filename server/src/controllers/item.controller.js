@@ -11,6 +11,7 @@ import {
   moveItems as moveItemsService,
   listFolders as listFoldersService,
   getFolderSummary as getFolderSummaryService,
+  duplicateItems as duplicateItemsService,
 } from "../services/item.service.js";
 
 export async function getItems(req, res, next) {
@@ -23,6 +24,18 @@ export async function getItems(req, res, next) {
       success: true,
       data: result,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function duplicateItems(req, res, next) {
+  try {
+    const items = await duplicateItemsService({
+      ownerId: req.user.id,
+      itemIds: req.body.itemIds,
+    });
+    res.status(201).json({ success: true, data: items });
   } catch (error) {
     next(error);
   }

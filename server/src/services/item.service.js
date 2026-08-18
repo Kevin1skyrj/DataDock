@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { ObjectId } from "mongodb";
 import {
   findItemById,
@@ -13,12 +14,21 @@ import {
   findFoldersByParent,
   getFolderSummaryData,
   getFolderDescendantStats,
+  findItemTrees,
+  deleteItemsByIds,
+  getUserStorageUsage,
+  insertFile,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  CopyObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3BucketName, s3Client } from "../config/s3.js";
+import { USER_STORAGE_QUOTA_BYTES } from "../config/storage.js";
 import {
   cacheItemList,
   getCachedItemList,
@@ -172,7 +182,47 @@ export async function getItemPreview({ ownerId, itemId }) {
     });
   }
 
-  if (!["image", "pdf", "video", "audio"].includes(item.kind)) {
+  const officeTypes = new Set([
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ]);
+  const textPreview =
+    item.mimeType?.startsWith("text/") ||
+    item.mimeType === "application/json" ||
+    item.name.toLowerCase().endsWith(".md");
+
+  if (textPreview) {
+    if (item.size > 1_000_000) {
+      return {
+        kind: "unsupported",
+        reason: "Text previews are limited to files smaller than 1 MB.",
+      };
+    }
+    const object = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: s3BucketName,
+        Key: item.storageKey,
+      }),
+    );
+    const content = await object.Body.transformToString("utf-8");
+    return {
+      kind: item.name.toLowerCase().endsWith(".md")
+        ? "markdown"
+        : item.kind === "code" || item.mimeType === "application/json"
+          ? "code"
+          : "text",
+      content,
+    };
+  }
+
+  if (
+    !officeTypes.has(item.mimeType) &&
+    !["image", "pdf", "video", "audio"].includes(item.kind)
+  ) {
     return {
       kind: "unsupported",
       reason: "There is no preview for this file type yet.",
@@ -191,11 +241,162 @@ export async function getItemPreview({ ownerId, itemId }) {
     { expiresIn },
   );
 
-  return {
-    kind: item.kind,
-    url,
-    expiresAt: new Date(Date.now() + expiresIn * 1000),
-  };
+  const expiresAt = new Date(Date.now() + expiresIn * 1000);
+  if (officeTypes.has(item.mimeType)) {
+    return {
+      kind: "office",
+      url: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`,
+      expiresAt,
+    };
+  }
+
+  return { kind: item.kind, url, expiresAt };
+}
+
+function duplicateName(name, number = 1) {
+  const dot = name.lastIndexOf(".");
+  const hasExtension = dot > 0 && dot < name.length - 1;
+  const stem = hasExtension ? name.slice(0, dot) : name;
+  const extension = hasExtension ? name.slice(dot) : "";
+  return `${stem} copy${number > 1 ? ` ${number}` : ""}${extension}`;
+}
+
+async function availableDuplicateName({ ownerId, parentId, name }) {
+  for (let number = 1; number <= 1000; number += 1) {
+    const candidate = duplicateName(name, number);
+    const existing = await findItemByName({
+      ownerId,
+      parentId,
+      normalizedName: candidate.toLowerCase(),
+    });
+    if (!existing) return candidate;
+  }
+  throw new AppError("A unique duplicate name could not be created", {
+    statusCode: 409,
+    code: "name-conflict",
+  });
+}
+
+export async function duplicateItems({ ownerId, itemIds }) {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    throw new AppError("At least one item ID is required", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+  if (!itemIds.every((itemId) => ObjectId.isValid(itemId))) {
+    throw new AppError("One or more item IDs are invalid", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  const requestedIds = [...new Set(itemIds)].map((itemId) => new ObjectId(itemId));
+  const treeItems = await findItemTrees({ ownerId, itemIds: requestedIds });
+  const byId = new Map(treeItems.map((item) => [item._id.toHexString(), item]));
+  if (requestedIds.some((itemId) => !byId.has(itemId.toHexString()))) {
+    throw new AppError("One or more items were not found", {
+      statusCode: 404,
+      code: "items-not-found",
+    });
+  }
+
+  const requested = new Set(requestedIds.map((itemId) => itemId.toHexString()));
+  const roots = requestedIds
+    .map((itemId) => byId.get(itemId.toHexString()))
+    .filter((item) => {
+      let parentId = item.parentId;
+      while (parentId) {
+        if (requested.has(parentId.toHexString())) return false;
+        parentId = byId.get(parentId.toHexString())?.parentId ?? null;
+      }
+      return true;
+    });
+  const totalBytes = [...byId.values()]
+    .filter((item) => item.type === "file")
+    .reduce((total, item) => total + (item.size ?? 0), 0);
+  if ((await getUserStorageUsage(ownerId)) + totalBytes > USER_STORAGE_QUOTA_BYTES) {
+    throw new AppError("Duplicating these items would exceed your 5 GB storage limit", {
+      statusCode: 409,
+      code: "storage-quota-exceeded",
+    });
+  }
+
+  const children = new Map();
+  for (const item of byId.values()) {
+    const parent = item.parentId?.toHexString();
+    if (parent && byId.has(parent)) {
+      children.set(parent, [...(children.get(parent) ?? []), item]);
+    }
+  }
+  const createdIds = [];
+  const createdKeys = [];
+  const createdRoots = [];
+
+  async function copyTree(source, parentId, isRoot = false) {
+    const name = isRoot
+      ? await availableDuplicateName({ ownerId, parentId, name: source.name })
+      : source.name;
+
+    if (source.type === "folder") {
+      const folder = await insertFolder({ ownerId, name, parentId });
+      createdIds.push(folder._id);
+      if (isRoot) createdRoots.push(folder);
+      for (const child of children.get(source._id.toHexString()) ?? []) {
+        await copyTree(child, folder._id);
+      }
+      return;
+    }
+
+    if (!source.storageKey) {
+      throw new AppError(`${source.name} has no stored file to duplicate`, {
+        statusCode: 409,
+        code: "file-storage-missing",
+      });
+    }
+    const storageKey = `users/${ownerId}/objects/${randomUUID()}`;
+    await s3Client.send(
+      new CopyObjectCommand({
+        Bucket: s3BucketName,
+        Key: storageKey,
+        CopySource: `${s3BucketName}/${encodeURIComponent(source.storageKey).replaceAll("%2F", "/")}`,
+        ContentType: source.mimeType,
+        MetadataDirective: "REPLACE",
+      }),
+    );
+    createdKeys.push(storageKey);
+    const file = await insertFile({
+      ownerId,
+      name,
+      parentId,
+      kind: source.kind,
+      mimeType: source.mimeType,
+      size: source.size,
+      storageKey,
+    });
+    createdIds.push(file._id);
+    if (isRoot) createdRoots.push(file);
+  }
+
+  try {
+    for (const root of roots) await copyTree(root, root.parentId, true);
+    await invalidateItemLists(ownerId);
+    return createdRoots.map(toPublicItem);
+  } catch (error) {
+    for (let index = 0; index < createdKeys.length; index += 1000) {
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: s3BucketName,
+          Delete: {
+            Objects: createdKeys.slice(index, index + 1000).map((Key) => ({ Key })),
+            Quiet: true,
+          },
+        }),
+      );
+    }
+    if (createdIds.length) await deleteItemsByIds({ ownerId, itemIds: createdIds });
+    throw error;
+  }
 }
 
 export async function createFolder({ ownerId, name, parentId = null }) {

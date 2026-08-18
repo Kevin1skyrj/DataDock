@@ -157,6 +157,13 @@ export function deleteItems(itemIds) {
   });
 }
 
+export function duplicateItems(itemIds) {
+  return apiRequest("/items/duplicate", {
+    method: "POST",
+    body: { itemIds },
+  });
+}
+
 export async function ensureFolder({ parentId = null, name }) {
   const folders = await listFolders(parentId);
   const existing = folders.find(

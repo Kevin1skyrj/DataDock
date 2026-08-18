@@ -12,6 +12,7 @@ import {
   moveItems,
   getFolders,
   getFolderSummary,
+  duplicateItems,
 } from "../controllers/item.controller.js";
 import { authenticate } from "../middleware/authenticate.middleware.js";
 import { createShare, revokeShare, updateShare } from "../controllers/share.controller.js";
@@ -28,6 +29,7 @@ itemRouter.get("/:itemId/download", downloadItem);
 itemRouter.get("/:itemId/preview", previewItem);
 itemRouter.get("/:itemId", getItem);
 itemRouter.post("/folders", createFolder);
+itemRouter.post("/duplicate", duplicateItems);
 itemRouter.patch("/starred", starItems);
 itemRouter.patch("/move", moveItems);
 itemRouter.patch("/:itemId", renameItem);

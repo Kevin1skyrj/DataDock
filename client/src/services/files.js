@@ -24,7 +24,6 @@ export {
   FileServiceError,
   collectDescendants,
   copyItems,
-  duplicateItems,
   getDriveUsage,
   listShareRecipients,
 } from "@/services/mock/files";
@@ -34,6 +33,7 @@ export {
   getCleanupSuggestions,
   createShare,
   deleteItems,
+  duplicateItems,
   getFolderSummary,
   getItem,
   getDownloadUrl,
