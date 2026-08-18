@@ -5,6 +5,7 @@ import {
   findFolderById,
   findItemByName,
   findItemsByParent,
+  findItemsByView,
   insertFolder,
   updateItemName,
   updateItemsStarred,
@@ -18,6 +19,7 @@ import {
   deleteItemsByIds,
   getUserStorageUsage,
   insertFile,
+  updateItemOpenedAt,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
@@ -77,28 +79,80 @@ export async function addFolderStats(ownerId, items) {
   });
 }
 
-export async function listItems({ ownerId, parentId = null }) {
+export async function listItems({
+  ownerId,
+  parentId = null,
+  view = "folder",
+  kinds = [],
+  query = "",
+  sortField,
+  sortDirection,
+}) {
   if (!ownerId) {
     throw new Error("ownerId is required to list the items");
   }
-  const resolvedParentId = await resolveParentId({
-    ownerId,
-    parentId,
-  });
-  const cacheKey = await getItemListCacheKey({
-    ownerId,
-    parentId: resolvedParentId,
-  });
-  const cachedResult = await getCachedItemList(cacheKey);
+
+  const resolvedParentId = view === "folder"
+    ? await resolveParentId({ ownerId, parentId })
+    : null;
+  const normalizedQuery = typeof query === "string" ? query.trim().toLowerCase() : "";
+  if (normalizedQuery.length > 200) {
+    throw new AppError("Search query is too long", {
+      statusCode: 400,
+      code: "invalid-search-query",
+    });
+  }
+
+  const escapedQuery = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const requestedKinds = Array.isArray(kinds) ? kinds.slice(0, 20) : [];
+  const fileKinds = requestedKinds.filter((kind) => kind !== "folder");
+  const kindFilter = requestedKinds.length
+    ? {
+        $or: [
+          ...(requestedKinds.includes("folder") ? [{ type: "folder" }] : []),
+          ...(fileKinds.length ? [{ type: "file", kind: { $in: fileKinds } }] : []),
+        ],
+      }
+    : {};
+  const viewFilter = {
+    folder: { trashedAt: null },
+    recent: { trashedAt: null, openedAt: { $type: "date" } },
+    starred: { trashedAt: null, starred: true },
+    shared: { trashedAt: null, "share.token": { $type: "string" } },
+    trash: { trashedAt: { $ne: null } },
+  }[view] ?? { trashedAt: null };
+  const filters = {
+    ...viewFilter,
+    ...(escapedQuery ? { normalizedName: { $regex: escapedQuery } } : {}),
+    ...kindFilter,
+  };
+  const allowedSorts = new Set(["name", "kind", "size", "updatedAt", "createdAt", "openedAt", "trashedAt"]);
+  const field = allowedSorts.has(sortField)
+    ? sortField
+    : view === "recent"
+      ? "openedAt"
+      : view === "trash"
+        ? "trashedAt"
+        : "name";
+  const direction = sortDirection === "desc" ? -1 : 1;
+  const sort = field === "name"
+    ? { type: -1, normalizedName: direction, _id: direction }
+    : field === "kind"
+      ? { type: -1, kind: direction, normalizedName: 1, _id: direction }
+    : { [field]: direction, _id: direction };
+  const cacheable = view === "folder" && !escapedQuery && !requestedKinds.length && field === "name" && direction === 1;
+  const cacheKey = cacheable
+    ? await getItemListCacheKey({ ownerId, parentId: resolvedParentId })
+    : null;
+  const cachedResult = cacheKey ? await getCachedItemList(cacheKey) : null;
 
   if (cachedResult) {
     return cachedResult;
   }
 
-  const items = await findItemsByParent({
-    ownerId,
-    parentId: resolvedParentId,
-  });
+  const items = view === "folder"
+    ? await findItemsByParent({ ownerId, parentId: resolvedParentId, filters, sort })
+    : await findItemsByView({ ownerId, filters, sort });
 
   const itemsWithStats = await addFolderStats(ownerId, items);
   const result = {
@@ -107,7 +161,7 @@ export async function listItems({ ownerId, parentId = null }) {
     total: items.length,
   };
 
-  await cacheItemList(cacheKey, result);
+  if (cacheKey) await cacheItemList(cacheKey, result);
   return result;
 }
 
@@ -147,6 +201,8 @@ export async function getItemDownload({ ownerId, itemId }) {
     });
   }
 
+  await updateItemOpenedAt({ ownerId, itemId: item._id });
+
   return createFileDownload(item);
 }
 
@@ -185,6 +241,8 @@ export async function getItemPreview({ ownerId, itemId }) {
       code: "file-not-found",
     });
   }
+
+  await updateItemOpenedAt({ ownerId, itemId: item._id });
 
   return createFilePreview(item);
 }

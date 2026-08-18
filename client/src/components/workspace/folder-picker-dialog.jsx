@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { collectDescendants, createFolder, listFolders } from "@/services/files";
+import { createFolder, listFolders } from "@/services/files";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,12 +38,7 @@ export function FolderPickerDialog({ open, title, action, items, onSubmit, onClo
   const movingIds = items.map((item) => item.id);
   // Everything inside what is being moved, plus the things themselves. Computed
   // once per open rather than per row.
-  const forbidden = open
-    ? movingIds.reduce((set, id) => {
-        for (const descendant of collectDescendants(id)) set.add(descendant);
-        return set;
-      }, new Set())
-    : new Set();
+  const forbidden = new Set(movingIds);
 
   const sourceParent = items[0]?.parentId ?? null;
 

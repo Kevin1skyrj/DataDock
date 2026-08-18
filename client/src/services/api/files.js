@@ -2,21 +2,22 @@ import { apiRequest } from "@/services/api/api-client";
 
 export async function listItems({
   parentId = null,
+  sort,
   filter = {},
 } = {}) {
-  if (filter.starred) {
-    return apiRequest("/items/starred");
-  }
-
-  if (filter.trashed) {
-    return apiRequest("/trash");
-  }
-
   const query = new URLSearchParams();
 
   if (parentId) {
     query.set("parentId", parentId);
   }
+  if (filter.recent) query.set("view", "recent");
+  else if (filter.starred) query.set("view", "starred");
+  else if (filter.shared) query.set("view", "shared");
+  else if (filter.trashed) query.set("view", "trash");
+  if (filter.kinds?.length) query.set("kinds", filter.kinds.join(","));
+  if (filter.query) query.set("q", filter.query);
+  if (sort?.field) query.set("sort", sort.field);
+  if (sort?.direction) query.set("direction", sort.direction);
 
   const queryString = query.toString();
 
@@ -155,6 +156,10 @@ export function deleteItems(itemIds) {
     method: "DELETE",
     body: { itemIds },
   });
+}
+
+export function emptyTrash() {
+  return apiRequest("/trash/all", { method: "DELETE" });
 }
 
 export function duplicateItems(itemIds) {

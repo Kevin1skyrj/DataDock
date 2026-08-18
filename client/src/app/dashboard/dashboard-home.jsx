@@ -8,6 +8,7 @@ import { PreviewDialog } from "@/components/preview/preview-dialog";
 import { Panel, PanelSkeleton, StorageActivity } from "@/components/storage/storage-panels";
 import { Button } from "@/components/ui/button";
 import { UploadMenu } from "@/components/upload/upload-menu";
+import { ImportDialog } from "@/components/upload/import-dialog";
 import { FileIcon } from "@/components/workspace/file-icon";
 import { formatBytes, formatDate } from "@/lib/format";
 import { useSession } from "@/providers/session-provider";
@@ -57,6 +58,8 @@ export function DashboardHome() {
   const [recent, setRecent] = useState(null);
   const [activity, setActivity] = useState(null);
   const [previewIndex, setPreviewIndex] = useState(null);
+  const [importing, setImporting] = useState(null);
+  const [nonce, setNonce] = useState(0);
   const hello = useGreeting();
 
   useEffect(() => {
@@ -74,7 +77,7 @@ export function DashboardHome() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [nonce]);
 
   const used = summary ? summary.used + summary.trashed : 0;
   const percent = summary ? (used / summary.quota) * 100 : 0;
@@ -97,7 +100,7 @@ export function DashboardHome() {
             </p>
           </div>
 
-          <UploadMenu parentId={null} onImport={() => {}} />
+          <UploadMenu parentId={null} onImport={setImporting} />
         </header>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -204,6 +207,13 @@ export function DashboardHome() {
         actions={[]}
         onClose={() => setPreviewIndex(null)}
         onIndex={setPreviewIndex}
+      />
+      <ImportDialog
+        provider={importing}
+        parentId={null}
+        open={Boolean(importing)}
+        onClose={() => setImporting(null)}
+        onImported={() => setNonce((current) => current + 1)}
       />
     </div>
   );

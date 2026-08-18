@@ -24,23 +24,29 @@ export async function createItemIndexes() {
     .createIndex({ ownerId: 1, type: 1, trashedAt: 1, size: -1 });
 }
 
-export async function findItemsByParent({ ownerId, parentId = null }) {
+export async function findItemsByParent({
+  ownerId,
+  parentId = null,
+  filters = { trashedAt: null },
+  sort = { type: -1, name: 1 },
+}) {
   const database = getDatabase();
   const itemsCollection = database.collection(ITEMS_COLLECTION);
 
   const items = await itemsCollection
-    .find({
-      ownerId,
-      parentId,
-      trashedAt: null,
-    })
-    .sort({
-      type: -1,
-      name: 1,
-    })
+    .find({ ownerId, parentId, ...filters })
+    .sort(sort)
     .toArray();
 
   return items;
+}
+
+export async function findItemsByView({ ownerId, filters, sort }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .find({ ownerId, ...filters })
+    .sort(sort)
+    .toArray();
 }
 
 export async function findItemByName({
@@ -314,6 +320,13 @@ export function deleteItemsByIds({ ownerId, itemIds }) {
     _id: { $in: itemIds },
     ownerId,
   });
+}
+
+export async function updateItemOpenedAt({ ownerId, itemId }) {
+  return getDatabase().collection(ITEMS_COLLECTION).updateOne(
+    { _id: itemId, ownerId, type: "file", trashedAt: null },
+    { $set: { openedAt: new Date() } },
+  );
 }
 
 export async function getFolderDescendantStats({ ownerId, folderIds }) {

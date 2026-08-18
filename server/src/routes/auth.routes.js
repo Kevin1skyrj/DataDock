@@ -19,9 +19,17 @@ import {
   updatePassword,
   verifyResetOtp,
 } from "../controllers/password.controller.js";
+import {
+  getPreferences,
+  updatePreferences,
+  updateProfile,
+} from "../controllers/account.controller.js";
 const authRouter = Router();
 
 authRouter.get("/me", authenticate, getCurrentUser);
+authRouter.patch("/me", authenticate, updateProfile);
+authRouter.get("/preferences", authenticate, getPreferences);
+authRouter.patch("/preferences", authenticate, updatePreferences);
 authRouter.get("/google", startGoogleLogin);
 authRouter.get("/google/callback", completeGoogleLogin);
 authRouter.post("/register", register);

@@ -4,7 +4,6 @@
  */
 export const DENSITY_STORAGE_KEY = "datadock:density";
 export const MOTION_STORAGE_KEY = "datadock:reduce-motion";
-export const NOTIFICATIONS_STORAGE_KEY = "datadock:notifications";
 
 export const SETTINGS_SECTIONS = [
   { id: "profile", label: "Profile", href: "/dashboard/settings" },

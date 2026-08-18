@@ -33,15 +33,6 @@ export function useGridKeyboard({ items, activeId, setActiveId, selection, handl
             event.preventDefault();
             selection.selectAll();
             return;
-          case "c":
-            if (!selection.count) return;
-            event.preventDefault();
-            handlers.copyToClipboard(selection.selected);
-            return;
-          case "v":
-            event.preventDefault();
-            shortcuts?.paste?.();
-            return;
           case "d":
             if (!selection.count) return;
             event.preventDefault();

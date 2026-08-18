@@ -5,7 +5,6 @@ import {
   ArrowUpDown,
   Check,
   ChevronDown,
-  ClipboardPaste,
   FolderPlus,
   Info,
   LayoutGrid,
@@ -71,7 +70,7 @@ export function FileToolbar() {
 /* --------------------------------------------------------------- browse -- */
 
 function BrowseBar() {
-  const { view, path, folderId, onNavigate, setCreatingFolder, setImporting, drag, clipboard, paste } =
+  const { view, path, folderId, onNavigate, setCreatingFolder, setImporting, drag } =
     useWorkspace();
 
   const parentId = path.at(-2)?.id ?? null;
@@ -112,15 +111,6 @@ function BrowseBar() {
       {/* Paste only exists when there is something to paste — the same rule the
           selection bar follows. A permanently greyed Paste teaches people to
           stop looking at that corner. */}
-      {clipboard ? (
-        <Button variant="ghost" size="sm" onClick={paste}>
-          <ClipboardPaste />
-          <span className="hidden sm:inline">
-            Paste {clipboard.items.length > 1 ? `${clipboard.items.length} items` : ""}
-          </span>
-        </Button>
-      ) : null}
-
       <div className="ml-auto flex items-center gap-1.5">
         <SortMenu />
         {view.canFilter !== false ? <FilterMenu /> : null}

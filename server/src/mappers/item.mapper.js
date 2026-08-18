@@ -12,6 +12,7 @@ export function toPublicItem(item) {
     trashedAt: item.trashedAt,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
+    openedAt: item.openedAt ?? null,
     share: item.share ?? null,
   };
 }

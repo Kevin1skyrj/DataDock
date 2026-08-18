@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy, Globe, Link2, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,6 @@ import { FileIcon } from "@/components/workspace/file-icon";
 import { formatBytes, formatDate } from "@/lib/format";
 import {
   createShare,
-  listShareRecipients,
   revokeShare,
   updateShare,
 } from "@/services/files";
@@ -109,24 +108,10 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
   const share =
     override && item && override.id === item.id ? override.share : (item?.share ?? null);
 
-  const [recipients, setRecipients] = useState({ id: null, people: [] });
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (!open || !item) return undefined;
-    let cancelled = false;
-    listShareRecipients(item.id).then((people) => {
-      if (!cancelled) setRecipients({ id: item.id, people });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, item]);
-
   if (!item) return null;
-
-  const people = recipients.id === item.id ? recipients.people : [];
 
   const url = share
     ? `${typeof window === "undefined" ? "" : window.location.origin}/s/${share.token}`
@@ -190,18 +175,12 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-2 text-md text-foreground">
-                {share?.scope === "private" ? (
-                  <Lock className="size-4 text-dim" />
-                ) : share ? (
+                {share ? (
                   <Globe className="size-4 text-brand" />
                 ) : (
                   <Lock className="size-4 text-dim" />
                 )}
-                {share
-                  ? share.scope === "private"
-                    ? "Only invited people"
-                    : "Anyone with the link"
-                  : "Not shared"}
+                {share ? "Anyone with the link" : "Not shared"}
               </span>
 
               <Button
@@ -218,9 +197,7 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
 
             {share ? (
               <p className="text-sm text-dim">
-                {share.scope === "private"
-                  ? "Only the people listed below can open this."
-                  : "Anyone who has the link can open this without signing in."}
+                Anyone who has the link can open this without signing in.
               </p>
             ) : (
               <p className="text-sm text-dim">Only you can see this file.</p>
@@ -240,32 +217,13 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
                 </Button>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-sm text-dim">Who</span>
-                  <Choice
-                    label="Who can open"
-                    value={share.scope === "private" ? "Invited only" : "Anyone with link"}
-                    options={[
-                      { id: "link", label: "Anyone with link" },
-                      { id: "private", label: "Invited only" },
-                    ]}
-                    disabled={busy}
-                    onSelect={(scope) => run(() => updateShare(item.id, { scope }))}
-                  />
-                </label>
-
-                <label className="flex flex-col gap-1.5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-sm text-dim">Permission</span>
-                  <Choice
-                    label="What they can do"
-                    value={access.label}
-                    options={ACCESS}
-                    disabled={busy}
-                    onSelect={(value) => run(() => updateShare(item.id, { access: value }))}
-                  />
-                </label>
-
+                  <span className="flex h-8 items-center rounded-md border border-line bg-surface px-3 text-sm text-muted-foreground">
+                    Can view and download
+                  </span>
+                </div>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm text-dim">Expires</span>
                   <Choice
@@ -280,34 +238,6 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
                 </label>
               </div>
 
-              {people.length ? (
-                <div className="flex flex-col gap-2">
-                  <p className="text-2xs tracking-widest text-dim uppercase">People with access</p>
-
-                  <ul className="flex flex-col gap-1">
-                    {people.map((person) => (
-                      <li key={person.id} className="flex items-center gap-2.5 py-1">
-                        <span
-                          aria-hidden="true"
-                          className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-tint text-2xs font-semibold text-brand ring-1 ring-brand/25 ring-inset"
-                        >
-                          {person.name
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")}
-                        </span>
-                        <span className="flex min-w-0 flex-1 flex-col">
-                          <span className="truncate text-base text-foreground">{person.name}</span>
-                          <span className="truncate text-xs text-dim">{person.email}</span>
-                        </span>
-                        <span className="shrink-0 text-xs text-dim">
-                          {ACCESS.find((option) => option.id === person.access)?.label}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
             </>
           ) : null}
         </DialogBody>

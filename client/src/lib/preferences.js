@@ -3,8 +3,6 @@ import { useSyncExternalStore } from "react";
 import {
   DENSITY_STORAGE_KEY,
   MOTION_STORAGE_KEY,
-  NOTIFICATION_DEFAULTS,
-  NOTIFICATIONS_STORAGE_KEY,
 } from "@/constants/settings";
 
 /**
@@ -80,30 +78,5 @@ export function setReducedMotionPreference(enabled) {
   else delete root.dataset.reduceMotion;
 
   write(MOTION_STORAGE_KEY, enabled ? "1" : "0");
-  announce();
-}
-
-/* ---------------------------------------------------------- notifications -- */
-
-let notifications = null;
-
-function readNotifications() {
-  if (notifications) return notifications;
-  try {
-    const stored = JSON.parse(localStorage.getItem(NOTIFICATIONS_STORAGE_KEY) ?? "{}");
-    notifications = { ...NOTIFICATION_DEFAULTS, ...stored };
-  } catch {
-    notifications = { ...NOTIFICATION_DEFAULTS };
-  }
-  return notifications;
-}
-
-export function useNotificationSettings() {
-  return useSyncExternalStore(subscribe, readNotifications, () => NOTIFICATION_DEFAULTS);
-}
-
-export function setNotificationSetting(id, enabled) {
-  notifications = { ...readNotifications(), [id]: enabled };
-  write(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
   announce();
 }

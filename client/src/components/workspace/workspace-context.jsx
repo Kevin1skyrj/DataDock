@@ -11,8 +11,6 @@ import { buildFileActions } from "@/lib/file-actions";
 import { setDetailsOpen } from "@/lib/workspace-prefs";
 import { useSelection } from "@/lib/use-selection";
 import {
-  collectDescendants,
-  copyItems,
   createFolder,
   deleteItems,
   duplicateItems,
@@ -76,7 +74,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
    * they belong, put them down. A dialog cannot express "somewhere I will
    * recognise when I see it".
    */
-  const [clipboard, setClipboard] = useState(null);
 
   /**
    * The listing, tagged with the request it answers.
@@ -261,7 +258,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
         });
       },
 
-      copyToClipboard: (selected) => setClipboard({ mode: "copy", items: selected }),
       share: (item) => setSharing(item),
 
       copyLink: async (item) => {
@@ -373,17 +369,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
 
       selection.clear();
 
-      if (mode === "copy") {
-        try {
-          await copyItems(ids, targetId);
-          reload();
-          notify({ title: `Copied ${label}.` });
-        } catch (failure) {
-          notify({ title: failure.message, type: "error" });
-        }
-        return;
-      }
-
       await mutate(
         (current) => ({
           items: current.items.filter((item) => !ids.includes(item.id)),
@@ -407,15 +392,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
     [items, selection, mutate, reload],
   );
 
-  const paste = useCallback(() => {
-    if (!clipboard) return;
-    relocate(
-      clipboard.items.map((item) => item.id),
-      folderId,
-      clipboard.mode,
-    );
-  }, [clipboard, folderId, relocate]);
-
   /* --------------------------------------------------------- dragging -- */
 
   const drag = useDragDrop({
@@ -424,7 +400,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
     // A folder may not land inside itself or anything it contains. The service
     // refuses too, but by then it has already appeared to move.
     isForbidden: (targetId, ids) =>
-      ids.some((id) => targetId !== null && collectDescendants(id).has(targetId)) ||
       items.some((item) => ids.includes(item.id) && item.parentId === targetId),
   });
 
@@ -554,7 +529,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       sharing, setSharing,
       confirmingDelete, setConfirmingDelete, commitDelete,
       destination, setDestination, relocate,
-      clipboard, setClipboard, paste,
       drag,
       reload, onNavigate,
     }),
@@ -563,7 +537,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       sort, kinds, query, filtered, selection, activeId, actions, actionsFor,
       scopeFor, handlers, toggleStar, renaming, commitRename, creatingFolder,
       commitNewFolder, importing, previewIndex, sharing, confirmingDelete,
-      commitDelete, destination, relocate, clipboard, paste, drag,
+      commitDelete, destination, relocate, drag,
       reload, onNavigate,
     ],
   );

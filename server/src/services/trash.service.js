@@ -156,6 +156,15 @@ export async function restoreItems({ ownerId, itemIds }) {
   return restoredItems.map(toPublicItem);
 }
 
+export async function emptyTrash(ownerId) {
+  const items = await findTrashedItems({ ownerId });
+  if (!items.length) return { deletedItems: 0, deletedFiles: 0 };
+  return permanentlyDeleteItems({
+    ownerId,
+    itemIds: items.map((item) => item._id.toHexString()),
+  });
+}
+
 export async function permanentlyDeleteItems({ ownerId, itemIds }) {
   if (!Array.isArray(itemIds) || itemIds.length === 0) {
     throw new AppError("At least one item ID is required", {

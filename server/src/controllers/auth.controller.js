@@ -11,6 +11,7 @@ import {
   deleteAllUserSessions,
   deleteCurrentSession,
 } from "../services/session.service.js";
+import { publicAccount } from "../services/account.service.js";
 
 export async function register(req, res, next) {
   try {
@@ -108,12 +109,6 @@ export async function logoutAll(req, res, next) {
 export function getCurrentUser(req, res) {
   res.status(200).json({
     success: true,
-    data: {
-      id: req.user.id.toString(),
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      hasPassword: req.user.hasPassword,
-    },
+    data: publicAccount(req.account),
   });
 }

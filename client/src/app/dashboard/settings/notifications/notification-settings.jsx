@@ -1,11 +1,15 @@
 "use client";
 
 import { ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { SettingRow, SettingsCard, SettingsHeading } from "@/components/settings/settings-parts";
 import { Switch } from "@/components/ui/switch";
-import { NOTIFICATION_GROUPS } from "@/constants/settings";
-import { setNotificationSetting, useNotificationSettings } from "@/lib/preferences";
+import { NOTIFICATION_DEFAULTS, NOTIFICATION_GROUPS } from "@/constants/settings";
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+} from "@/services/api/account";
 
 /**
  * What we would email about.
@@ -19,7 +23,25 @@ import { setNotificationSetting, useNotificationSettings } from "@/lib/preferenc
  * and disabling the control would be paternalistic about their own account.
  */
 export function NotificationSettings() {
-  const settings = useNotificationSettings();
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getNotificationPreferences().then((saved) => {
+      if (!cancelled) setSettings({ ...NOTIFICATION_DEFAULTS, ...saved });
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const change = async (id, enabled) => {
+    setSettings((current) => ({ ...current, [id]: enabled }));
+    try {
+      const saved = await updateNotificationPreferences({ [id]: enabled });
+      setSettings((current) => ({ ...current, ...saved }));
+    } catch {
+      setSettings((current) => ({ ...current, [id]: !enabled }));
+    }
+  };
 
   return (
     <>
@@ -46,8 +68,9 @@ export function NotificationSettings() {
               hint={item.hint}
               control={
                 <Switch
-                  checked={settings[item.id]}
-                  onCheckedChange={(next) => setNotificationSetting(item.id, next)}
+                  checked={settings?.[item.id] ?? NOTIFICATION_DEFAULTS[item.id]}
+                  disabled={!settings}
+                  onCheckedChange={(next) => change(item.id, next)}
                   aria-label={item.label}
                 />
               }

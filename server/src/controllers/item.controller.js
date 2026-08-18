@@ -19,6 +19,11 @@ export async function getItems(req, res, next) {
     const result = await listItemsService({
       ownerId: req.user.id,
       parentId: req.query.parentId,
+      view: req.query.view,
+      kinds: typeof req.query.kinds === "string" ? req.query.kinds.split(",").filter(Boolean) : [],
+      query: req.query.q,
+      sortField: req.query.sort,
+      sortDirection: req.query.direction,
     });
     res.status(200).json({
       success: true,

@@ -83,38 +83,3 @@ export const SHELL = {
   openMenu: "Open navigation",
   closeMenu: "Close navigation",
 };
-
-export const NOTIFICATIONS = [
-  {
-    id: "share-viewed",
-    icon: "share",
-    title: "Northline viewed your link",
-    body: "Q3 invoice — Northline.pdf",
-    time: "12m ago",
-    unread: true,
-  },
-  {
-    id: "upload-done",
-    icon: "upload",
-    title: "4 files finished uploading",
-    body: "Client work / Brand refresh",
-    time: "1h ago",
-    unread: true,
-  },
-  {
-    id: "link-expiring",
-    icon: "clock",
-    title: "A share link expires in 3 days",
-    body: "Kickoff recording.mp4",
-    time: "Yesterday",
-    unread: false,
-  },
-  {
-    id: "storage",
-    icon: "chart",
-    title: "You've used 61% of your storage",
-    body: "61.2 GB of 100 GB",
-    time: "2 days ago",
-    unread: false,
-  },
-];

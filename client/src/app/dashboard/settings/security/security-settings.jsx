@@ -12,7 +12,6 @@ import { PasswordStrength } from "@/components/auth/password-strength";
 import { SettingRow, SettingsCard, SettingsHeading } from "@/components/settings/settings-parts";
 import { ProviderMark } from "@/components/upload/provider-mark";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { notify } from "@/components/ui/toast";
 import { currentPasswordRule, newPasswordRule } from "@/lib/validation/auth";
 import { useSession } from "@/providers/session-provider";
@@ -36,7 +35,6 @@ export function SecuritySettings() {
   const session = useSession();
   const router = useRouter();
   const [loggingOutAll, setLoggingOutAll] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(false);
 
   const {
     control,
@@ -150,54 +148,11 @@ export function SecuritySettings() {
       <SettingsCard title="Connected accounts">
         <SettingRow
           label="Google"
-          hint={`Connected as ${session.email}. Used for one-tap sign in.`}
-          control={
-            <Button variant="secondary" size="sm">
-              Disconnect
-            </Button>
-          }
+          hint={session.googleConnected ? `Connected as ${session.email}.` : "Not connected."}
+          control={<span className="text-sm text-muted-foreground">{session.googleConnected ? "Connected" : "Not connected"}</span>}
         >
           <ProviderMark id="google-drive" className="order-first size-5 sm:order-none" />
         </SettingRow>
-      </SettingsCard>
-
-      <SettingsCard
-        title="Two-factor authentication"
-        description="A code from your phone, on top of your password."
-      >
-        <SettingRow
-          label="Authenticator app"
-          hint={
-            twoFactor
-              ? "On. You will be asked for a code when signing in from a new device."
-              : "Off. Anyone with your password can sign in."
-          }
-          control={
-            <Switch
-              checked={twoFactor}
-              onCheckedChange={(next) => {
-                setTwoFactor(next);
-                notify({
-                  title: next ? "Two-factor turned on" : "Two-factor turned off",
-                  type: next ? undefined : "error",
-                });
-              }}
-              aria-label="Two-factor authentication"
-            />
-          }
-        />
-
-        {twoFactor ? (
-          <SettingRow
-            label="Recovery codes"
-            hint="Ten single-use codes for when your phone is not to hand. Store them somewhere safe."
-            control={
-              <Button variant="secondary" size="sm">
-                View codes
-              </Button>
-            }
-          />
-        ) : null}
       </SettingsCard>
 
       <SettingsCard

@@ -159,6 +159,22 @@ export async function updateUserPassword({ userId, passwordHash }) {
   );
 }
 
+export async function updateUserProfile({ userId, name }) {
+  return getDatabase().collection(USERS_COLLECTION).findOneAndUpdate(
+    { _id: userId, deletedAt: { $exists: false } },
+    { $set: { name, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+}
+
+export async function updateUserNotificationPreferences({ userId, preferences }) {
+  return getDatabase().collection(USERS_COLLECTION).findOneAndUpdate(
+    { _id: userId, deletedAt: { $exists: false } },
+    { $set: { notificationPreferences: preferences, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+}
+
 export async function migrateUserRoles() {
   const database = getDatabase();
 

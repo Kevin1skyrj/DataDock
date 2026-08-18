@@ -10,6 +10,8 @@ function input(req) {
     includeTrashed: req.query.trashed === "1",
     cursor: req.query.cursor,
     limit: req.query.limit,
+    sortField: req.query.sort,
+    sortDirection: req.query.direction,
   };
 }
 

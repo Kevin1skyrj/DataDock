@@ -40,6 +40,7 @@ export async function authenticate(req, res, next) {
       role: user.role ?? USER_ROLES.USER,
       hasPassword: Boolean(user.passwordHash),
     };
+    req.account = user;
 
     req.auth = {
       sessionId: session._id,

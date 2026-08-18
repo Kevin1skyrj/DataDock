@@ -8,6 +8,8 @@ export async function searchUserItems({
   filters,
   skip,
   limit,
+  sortField,
+  sortDirection,
 }) {
   const textMatch = {
     ownerId,
@@ -30,6 +32,13 @@ export async function searchUserItems({
         }
       : {}),
   };
+  const sort = sortField === "name"
+    ? { type: -1, normalizedName: sortDirection, _id: sortDirection }
+    : sortField === "kind"
+      ? { type: -1, kind: sortDirection, normalizedName: 1 }
+      : sortField
+        ? { [sortField]: sortDirection, _id: sortDirection }
+        : { relevance: -1, updatedAt: -1, _id: -1 };
 
   const [result] = await getDatabase()
     .collection(COLLECTION)
@@ -75,7 +84,7 @@ export async function searchUserItems({
                   : 1,
               },
             },
-            { $sort: { relevance: -1, updatedAt: -1, _id: -1 } },
+            { $sort: sort },
             { $skip: skip },
             { $limit: limit },
             { $unset: "relevance" },

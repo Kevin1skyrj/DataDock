@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart3, Bell, Clock, Share2, Upload } from "lucide-react";
+import { Bell, FolderPlus, Pencil, Share2, Trash2, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,14 +12,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NOTIFICATIONS } from "@/constants/dashboard";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
+import { getStorageActivity } from "@/services/files";
 
 const ICONS = {
   share: Share2,
   upload: Upload,
-  clock: Clock,
-  chart: BarChart3,
+  created: FolderPlus,
+  modified: Pencil,
+  deleted: Trash2,
+  uploaded: Upload,
+  shared: Share2,
 };
 
 /**
@@ -35,7 +40,11 @@ const ICONS = {
  * supposed to feel calm.
  */
 export function NotificationsMenu() {
-  const unread = NOTIFICATIONS.filter((item) => item.unread).length;
+  const [activity, setActivity] = useState([]);
+
+  useEffect(() => {
+    getStorageActivity(6).then(setActivity).catch(() => setActivity([]));
+  }, []);
 
   return (
     <DropdownMenu>
@@ -45,15 +54,9 @@ export function NotificationsMenu() {
             variant="ghost"
             size="icon-sm"
             className="relative"
-            aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+            aria-label="Recent activity"
           >
             <Bell />
-            {unread ? (
-              <span
-                aria-hidden="true"
-                className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-brand ring-2 ring-background"
-              />
-            ) : null}
           </Button>
         }
       />
@@ -64,15 +67,17 @@ export function NotificationsMenu() {
         <DropdownMenuGroup>
           <DropdownMenuLabel>Activity</DropdownMenuLabel>
 
-          {NOTIFICATIONS.map((item) => {
-            const Icon = ICONS[item.icon] ?? Bell;
+          {activity.length === 0 ? (
+            <p className="px-3 py-5 text-center text-sm text-dim">No recent activity.</p>
+          ) : activity.map((event) => {
+            const Icon = ICONS[event.type] ?? Bell;
 
             return (
-              <DropdownMenuItem key={item.id} className="items-start gap-3 py-2">
+              <DropdownMenuItem key={event.id} className="items-start gap-3 py-2">
                 <span
                   className={cn(
                     "mt-0.5 grid size-7 shrink-0 place-items-center rounded-md",
-                    item.unread ? "bg-brand-tint text-brand" : "bg-surface-2 text-dim",
+                    "bg-surface-2 text-dim",
                   )}
                 >
                   <Icon className="size-3.5" />
@@ -82,15 +87,15 @@ export function NotificationsMenu() {
                   <span
                     className={cn(
                       "truncate text-base",
-                      item.unread ? "text-foreground" : "text-muted-foreground",
+                      "text-muted-foreground",
                     )}
                   >
-                    {item.title}
+                    {activityTitle(event.type)}
                   </span>
-                  <span className="truncate text-sm text-dim">{item.body}</span>
+                  <span className="truncate text-sm text-dim">{event.item.name}</span>
                 </span>
 
-                <span className="shrink-0 text-xs text-dim">{item.time}</span>
+                <span className="shrink-0 text-xs text-dim">{formatDate(event.at)}</span>
               </DropdownMenuItem>
             );
           })}
@@ -98,4 +103,14 @@ export function NotificationsMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+function activityTitle(type) {
+  return {
+    created: "Folder created",
+    uploaded: "File uploaded",
+    modified: "Item updated",
+    shared: "Link shared",
+    deleted: "Moved to trash",
+  }[type] ?? "Activity";
 }

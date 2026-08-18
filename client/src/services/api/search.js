@@ -25,6 +25,8 @@ function queryString(input) {
   if (input.includeTrashed) query.set("trashed", "1");
   if (input.cursor) query.set("cursor", input.cursor);
   if (input.limit) query.set("limit", input.limit);
+  if (input.sort?.field) query.set("sort", input.sort.field);
+  if (input.sort?.direction) query.set("direction", input.sort.direction);
   return query.toString();
 }
 

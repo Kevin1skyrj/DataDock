@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 export function FileGrid() {
   const {
     view, items, loading, refreshing, selection, activeId, setActiveId,
-    handlers, toggleStar, drag, paste, path: trail, onNavigate,
+    handlers, toggleStar, drag, path: trail, onNavigate,
   } = useWorkspace();
 
   const scrollRef = useRef(null);
@@ -43,7 +43,6 @@ export function FileGrid() {
     // Workspace-level shortcuts the listing does not own but is the only thing
     // focused when they are pressed.
     shortcuts: {
-      paste,
       up: () => onNavigate?.(trail.at(-2)?.id ?? null),
     },
   });

@@ -30,6 +30,9 @@ export async function searchDrive({ ownerId, input, quick = false }) {
   const [minSize, maxSize] = SIZE_RANGES[input.size] ?? SIZE_RANGES.any;
   const limit = Math.min(quick ? 10 : 100, Math.max(1, Number(input.limit) || (quick ? 5 : 100)));
   const skip = quick ? 0 : Math.max(0, Number.parseInt(input.cursor, 10) || 0);
+  const allowedSorts = new Set(["name", "kind", "size", "updatedAt", "createdAt"]);
+  const sortField = allowedSorts.has(input.sortField) ? input.sortField : null;
+  const sortDirection = input.sortDirection === "desc" ? -1 : 1;
   const result = await searchUserItems({
     ownerId,
     namePattern,
@@ -43,6 +46,8 @@ export async function searchDrive({ ownerId, input, quick = false }) {
     },
     skip,
     limit,
+    sortField,
+    sortDirection,
   });
   const enriched = await addFolderStats(ownerId, result.items);
   const items = enriched.map(toPublicItem);

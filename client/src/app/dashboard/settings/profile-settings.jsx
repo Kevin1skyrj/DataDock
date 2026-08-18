@@ -1,6 +1,5 @@
 "use client";
 
-import { Camera } from "lucide-react";
 import { useState } from "react";
 
 import { SettingRow, SettingsCard, SettingsHeading } from "@/components/settings/settings-parts";
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { notify } from "@/components/ui/toast";
 import { formatDateFull } from "@/lib/format";
 import { useSession } from "@/providers/session-provider";
+import { updateProfile } from "@/services/api/account";
 
 /**
  * Who you are.
@@ -26,9 +26,15 @@ export function ProfileSettings() {
 
   const save = async () => {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSaving(false);
-    notify({ title: "Profile updated" });
+    try {
+      const updated = await updateProfile(name.trim());
+      session.update(updated);
+      notify({ title: "Profile updated" });
+    } catch (error) {
+      notify({ title: error.message, type: "error" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -55,12 +61,6 @@ export function ProfileSettings() {
         <SettingRow
           label="Avatar"
           hint="A picture helps collaborators recognise your files at a glance."
-          control={
-            <Button variant="secondary" size="sm">
-              <Camera />
-              Upload
-            </Button>
-          }
         >
           <span
             aria-hidden="true"
@@ -87,11 +87,6 @@ export function ProfileSettings() {
         <SettingRow
           label="Email"
           hint="Used to sign in and for account notices. Changing it needs verification."
-          control={
-            <Button variant="secondary" size="sm">
-              Change email
-            </Button>
-          }
         >
           <p className="text-md text-muted-foreground">{session.email}</p>
         </SettingRow>
@@ -106,7 +101,7 @@ export function ProfileSettings() {
           label="Member since"
           control={
             <span className="text-md text-muted-foreground">
-              {formatDateFull("2026-01-08T14:00:00.000Z")}
+              {formatDateFull(session.createdAt)}
             </span>
           }
         />
@@ -117,17 +112,6 @@ export function ProfileSettings() {
         />
       </SettingsCard>
 
-      <SettingsCard title="Danger zone">
-        <SettingRow
-          label="Delete account"
-          hint="Removes every file, share link and invoice. This cannot be undone."
-          control={
-            <Button variant="destructive" size="sm">
-              Delete account
-            </Button>
-          }
-        />
-      </SettingsCard>
     </>
   );
 }

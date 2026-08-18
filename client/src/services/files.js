@@ -1,7 +1,7 @@
 /**
  * The file API, as the application sees it.
  *
- * Every component imports from here and never from `services/mock`. That is the
+ * Every component imports from this real HTTP-backed service boundary. That is the
  * entire seam: when the Node API exists, this file re-exports an HTTP client
  * instead of the in-memory drive and not one component changes. Left to import
  * the mock directly, the swap becomes a rename across every file that ever
@@ -21,19 +21,12 @@
  * - No entity carries a URL. `getDownloadUrl` resolves one when it is needed.
  */
 export {
-  FileServiceError,
-  collectDescendants,
-  copyItems,
-  getDriveUsage,
-  listShareRecipients,
-} from "@/services/mock/files";
-
-export {
   createFolder,
   getCleanupSuggestions,
   createShare,
   deleteItems,
   duplicateItems,
+  emptyTrash,
   getFolderSummary,
   getItem,
   getDownloadUrl,

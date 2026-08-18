@@ -88,7 +88,7 @@ function SortButton({ field, children, className }) {
 export function FileTable() {
   const {
     view, items, loading, refreshing, sort, selection, activeId, setActiveId,
-    handlers, toggleStar, drag, paste, path: trail, onNavigate,
+    handlers, toggleStar, drag, path: trail, onNavigate,
   } = useWorkspace();
 
   const scrollRef = useRef(null);
@@ -104,7 +104,6 @@ export function FileTable() {
     // Workspace-level shortcuts the listing does not own but is the only thing
     // focused when they are pressed.
     shortcuts: {
-      paste,
       up: () => onNavigate?.(trail.at(-2)?.id ?? null),
     },
   });
