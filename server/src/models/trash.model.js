@@ -93,3 +93,42 @@ export async function restoreItemsFromTrash({ ownerId, itemIds }) {
     })
     .toArray();
 }
+
+export async function findPermanentDeletionCandidates({ ownerId, itemIds }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      {
+        $match: {
+          _id: { $in: itemIds },
+          ownerId,
+          trashedAt: { $exists: true, $ne: null },
+        },
+      },
+      {
+        $graphLookup: {
+          from: ITEMS_COLLECTION,
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentId",
+          as: "descendants",
+          restrictSearchWithMatch: { ownerId },
+        },
+      },
+      {
+        $project: {
+          items: { $concatArrays: [["$$ROOT"], "$descendants"] },
+        },
+      },
+      { $unwind: "$items" },
+      { $replaceRoot: { newRoot: "$items" } },
+    ])
+    .toArray();
+}
+
+export async function deleteItemsPermanently({ ownerId, itemIds }) {
+  return getDatabase().collection(ITEMS_COLLECTION).deleteMany({
+    _id: { $in: itemIds },
+    ownerId,
+  });
+}

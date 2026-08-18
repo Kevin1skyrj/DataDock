@@ -24,7 +24,6 @@ export {
   FileServiceError,
   collectDescendants,
   copyItems,
-  deleteItems,
   duplicateItems,
   getDriveUsage,
   listShareRecipients,
@@ -33,6 +32,7 @@ export {
 export {
   createFolder,
   createShare,
+  deleteItems,
   getFolderSummary,
   getItem,
   getDownloadUrl,

@@ -1,5 +1,7 @@
 import { ObjectId } from "mongodb";
+import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { AppError } from "../errors/app-error.js";
+import { s3BucketName, s3Client } from "../config/s3.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
 import {
   findFolderById,
@@ -11,6 +13,8 @@ import {
   findTrashedItems,
   findTrashedItemsByIds,
   restoreItemsFromTrash,
+  findPermanentDeletionCandidates,
+  deleteItemsPermanently,
 } from "../models/trash.model.js";
 import { invalidateItemLists } from "./item-cache.service.js";
 
@@ -150,4 +154,71 @@ export async function restoreItems({ ownerId, itemIds }) {
   await invalidateItemLists(ownerId);
 
   return restoredItems.map(toPublicItem);
+}
+
+export async function permanentlyDeleteItems({ ownerId, itemIds }) {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    throw new AppError("At least one item ID is required", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  if (!itemIds.every((itemId) => ObjectId.isValid(itemId))) {
+    throw new AppError("One or more item IDs are invalid", {
+      statusCode: 400,
+      code: "invalid-item-ids",
+    });
+  }
+
+  const rootIds = [...new Set(itemIds)].map((itemId) => new ObjectId(itemId));
+  const candidates = await findPermanentDeletionCandidates({ ownerId, itemIds: rootIds });
+  const uniqueItems = [...new Map(candidates.map((item) => [item._id.toHexString(), item])).values()];
+  const foundRootIds = new Set(
+    uniqueItems
+      .filter((item) => rootIds.some((rootId) => rootId.equals(item._id)))
+      .map((item) => item._id.toHexString()),
+  );
+
+  if (foundRootIds.size !== rootIds.length) {
+    throw new AppError("One or more trashed items were not found", {
+      statusCode: 404,
+      code: "items-not-found",
+    });
+  }
+
+  const storageKeys = uniqueItems
+    .filter((item) => item.type === "file" && item.storageKey)
+    .map((item) => item.storageKey);
+
+  for (let index = 0; index < storageKeys.length; index += 1000) {
+    const batch = storageKeys.slice(index, index + 1000);
+    const result = await s3Client.send(
+      new DeleteObjectsCommand({
+        Bucket: s3BucketName,
+        Delete: {
+          Objects: batch.map((Key) => ({ Key })),
+          Quiet: true,
+        },
+      }),
+    );
+
+    if (result.Errors?.length) {
+      throw new AppError("Some stored files could not be deleted", {
+        statusCode: 502,
+        code: "storage-delete-failed",
+      });
+    }
+  }
+
+  await deleteItemsPermanently({
+    ownerId,
+    itemIds: uniqueItems.map((item) => item._id),
+  });
+  await invalidateItemLists(ownerId);
+
+  return {
+    deletedItems: uniqueItems.length,
+    deletedFiles: storageKeys.length,
+  };
 }

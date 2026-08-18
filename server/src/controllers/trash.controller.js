@@ -2,6 +2,7 @@ import {
   trashItems as trashItemsService,
   listTrashedItems as listTrashedItemsService,
   restoreItems as restoreItemsService,
+  permanentlyDeleteItems as permanentlyDeleteItemsService,
 } from "../services/trash.service.js";
 
 export async function trashItems(req, res, next) {
@@ -46,6 +47,18 @@ export async function restoreItems(req, res, next) {
       success: true,
       data: items,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function permanentlyDeleteItems(req, res, next) {
+  try {
+    const result = await permanentlyDeleteItemsService({
+      ownerId: req.user.id,
+      itemIds: req.body.itemIds,
+    });
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

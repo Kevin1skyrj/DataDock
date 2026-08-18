@@ -142,6 +142,13 @@ export async function restoreItems(itemIds) {
   });
 }
 
+export function deleteItems(itemIds) {
+  return apiRequest("/trash", {
+    method: "DELETE",
+    body: { itemIds },
+  });
+}
+
 export async function ensureFolder({ parentId = null, name }) {
   const folders = await listFolders(parentId);
   const existing = folders.find(
