@@ -68,7 +68,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
   /** The selected items while a move destination is being chosen. */
   const [destination, setDestination] = useState(null);
   /**
-   * Cut or copied, waiting to be pasted.
+   * Copied items waiting to be pasted.
    *
    * A real clipboard rather than a dialog-only Move, because ⌘X ⌘V is how
    * people actually reorganise a drive — pick things up here, walk to where
@@ -257,7 +257,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
         });
       },
 
-      cut: (selected) => setClipboard({ mode: "move", items: selected }),
       copyToClipboard: (selected) => setClipboard({ mode: "copy", items: selected }),
       share: (item) => setSharing(item),
 
@@ -407,8 +406,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       folderId,
       clipboard.mode,
     );
-    // A cut is consumed; a copy can be pasted into several places.
-    if (clipboard.mode === "move") setClipboard(null);
   }, [clipboard, folderId, relocate]);
 
   /* --------------------------------------------------------- dragging -- */

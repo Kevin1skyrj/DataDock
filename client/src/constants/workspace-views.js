@@ -33,7 +33,6 @@ const FULL_ACTIONS = [
   "preview",
   "rename",
   "duplicate",
-  "cut",
   "move",
   "share",
   "download",

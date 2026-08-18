@@ -128,7 +128,6 @@ export const SHORTCUT_GROUPS = [
     label: "Working with files",
     items: [
       { keys: ["F2"], label: "Rename" },
-      { keys: ["mod", "X"], label: "Cut" },
       { keys: ["mod", "C"], label: "Copy" },
       { keys: ["mod", "V"], label: "Paste into this folder" },
       { keys: ["mod", "D"], label: "Duplicate" },

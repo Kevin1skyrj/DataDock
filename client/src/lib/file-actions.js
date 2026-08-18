@@ -2,7 +2,6 @@ import {
   CopyPlus,
   Download,
   FolderInput,
-  Scissors,
   Link2,
   Pencil,
   RotateCcw,
@@ -91,15 +90,6 @@ const ACTIONS = {
     group: "edit",
     enabled: any,
     run: (selection, handlers) => handlers.duplicate(selection),
-  },
-  cut: {
-    id: "cut",
-    label: "Cut",
-    icon: Scissors,
-    shortcut: "⌘X",
-    group: "edit",
-    enabled: any,
-    run: (selection, handlers) => handlers.cut(selection),
   },
   share: {
     id: "share",

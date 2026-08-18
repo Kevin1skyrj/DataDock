@@ -33,11 +33,6 @@ export function useGridKeyboard({ items, activeId, setActiveId, selection, handl
             event.preventDefault();
             selection.selectAll();
             return;
-          case "x":
-            if (!selection.count) return;
-            event.preventDefault();
-            handlers.cut(selection.selected);
-            return;
           case "c":
             if (!selection.count) return;
             event.preventDefault();
