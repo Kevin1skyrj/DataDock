@@ -197,8 +197,8 @@ function WorkspaceFrame({ header }) {
       <FolderPickerDialog
         key={destination ? `${destination.mode}-${destination.items[0]?.id}` : "destination"}
         open={Boolean(destination)}
-        title={destination?.mode === "copy" ? "Copy to" : "Move to"}
-        action={destination?.mode === "copy" ? "Copy" : "Move"}
+        title="Move to"
+        action="Move"
         items={destination?.items ?? []}
         onSubmit={(targetId) =>
           relocate(destination.items.map((item) => item.id), targetId, destination.mode)

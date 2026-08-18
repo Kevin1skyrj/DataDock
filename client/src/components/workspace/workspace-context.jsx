@@ -65,7 +65,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
   const [sharing, setSharing] = useState(null);
   /** `{ items }` while permanent deletion is being confirmed. */
   const [confirmingDelete, setConfirmingDelete] = useState(null);
-  /** `{ mode: "move" | "copy", items }` while a destination is being chosen. */
+  /** The selected items while a move destination is being chosen. */
   const [destination, setDestination] = useState(null);
   /**
    * Cut or copied, waiting to be pasted.
@@ -241,7 +241,6 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
         setPreviewIndex(items.findIndex((candidate) => candidate.id === item.id)),
       rename: (item) => setRenaming(item),
       move: (selected) => setDestination({ mode: "move", items: selected }),
-      copy: (selected) => setDestination({ mode: "copy", items: selected }),
 
       duplicate: async (selected) => {
         const created = await duplicateItems(selected.map((item) => item.id));

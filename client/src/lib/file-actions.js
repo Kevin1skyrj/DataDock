@@ -1,5 +1,4 @@
 import {
-  Copy,
   CopyPlus,
   Download,
   FolderInput,
@@ -83,14 +82,6 @@ const ACTIONS = {
     primary: true,
     enabled: any,
     run: (selection, handlers) => handlers.move(selection),
-  },
-  copy: {
-    id: "copy",
-    label: "Copy to…",
-    icon: Copy,
-    group: "edit",
-    enabled: any,
-    run: (selection, handlers) => handlers.copy(selection),
   },
   duplicate: {
     id: "duplicate",

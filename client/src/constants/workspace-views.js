@@ -35,7 +35,6 @@ const FULL_ACTIONS = [
   "duplicate",
   "cut",
   "move",
-  "copy",
   "share",
   "download",
   "trash",

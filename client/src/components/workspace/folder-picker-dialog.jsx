@@ -18,10 +18,7 @@ import { cn } from "@/lib/utils";
 /**
  * Choosing where something goes.
  *
- * One dialog for Move and for Copy, because picking a destination is the same
- * act either way and only the verb differs. Two dialogs would be two places for
- * "you cannot put a folder inside itself" to be enforced, and one of them would
- * eventually forget.
+ * Browses the folder hierarchy to choose a move destination.
  *
  * It browses rather than showing a tree. A tree has to load the whole hierarchy
  * to draw itself, which is fine for twenty folders and impossible for a real
