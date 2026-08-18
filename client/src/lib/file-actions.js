@@ -2,6 +2,7 @@ import {
   CopyPlus,
   Download,
   FolderInput,
+  Info,
   Link2,
   Pencil,
   RotateCcw,
@@ -127,6 +128,15 @@ const ACTIONS = {
     // would be a promise the product cannot keep.
     enabled: (selection) => single(selection) && selection[0].type === "file",
     run: (selection, handlers) => handlers.download(selection),
+  },
+  properties: {
+    id: "properties",
+    label: "Properties",
+    icon: Info,
+    shortcut: "⌘I",
+    group: "details",
+    enabled: single,
+    run: (selection, handlers) => handlers.properties(selection[0]),
   },
   trash: {
     id: "trash",

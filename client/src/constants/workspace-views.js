@@ -36,6 +36,7 @@ const FULL_ACTIONS = [
   "move",
   "share",
   "download",
+  "properties",
   "trash",
 ];
 

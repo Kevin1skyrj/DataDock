@@ -8,6 +8,7 @@ import { publishTrail } from "@/lib/breadcrumb-trail";
 import { clearWorkspaceCommands, publishWorkspaceCommands } from "@/lib/workspace-commands";
 import { useUploadsLandedIn } from "@/lib/upload-store";
 import { buildFileActions } from "@/lib/file-actions";
+import { setDetailsOpen } from "@/lib/workspace-prefs";
 import { useSelection } from "@/lib/use-selection";
 import {
   collectDescendants,
@@ -338,6 +339,10 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       },
 
       newFolder: () => setCreatingFolder(true),
+      properties: (item) => {
+        selection.selectOnly(item);
+        setDetailsOpen(true);
+      },
 
       // The one action in the product with no undo to offer, so the only place
       // left to ask is before. Everything else does the thing and offers a way

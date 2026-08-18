@@ -4,6 +4,9 @@ import {
   getPublicShare,
   getPublicShareDownload,
   getPublicSharePreview,
+  getPublicChildDownload,
+  getPublicChildPreview,
+  listPublicShareItems,
   stopPublicShare,
 } from "../services/share.service.js";
 
@@ -32,6 +35,27 @@ export async function previewShare(req, res, next) {
 export async function downloadShare(req, res, next) {
   try {
     const download = await getPublicShareDownload(req.params.token);
+    res.redirect(download.url);
+  } catch (error) { next(error); }
+}
+
+export async function listSharedFolder(req, res, next) {
+  try {
+    const data = await listPublicShareItems({ token: req.params.token, parentId: req.query.parentId });
+    res.status(200).json({ success: true, data });
+  } catch (error) { next(error); }
+}
+
+export async function previewSharedChild(req, res, next) {
+  try {
+    const data = await getPublicChildPreview({ token: req.params.token, itemId: req.params.itemId });
+    res.status(200).json({ success: true, data });
+  } catch (error) { next(error); }
+}
+
+export async function downloadSharedChild(req, res, next) {
+  try {
+    const download = await getPublicChildDownload({ token: req.params.token, itemId: req.params.itemId });
     res.redirect(download.url);
   } catch (error) { next(error); }
 }

@@ -4,12 +4,13 @@ import { ObjectId } from "mongodb";
 import { AppError } from "../errors/app-error.js";
 import {
   findItemById,
+  findItemsByParent,
   findPublicShareByToken,
   incrementPublicShareViews,
   updateItemShare,
 } from "../models/item.model.js";
 import { invalidateItemLists } from "./item-cache.service.js";
-import { createFileDownload, createFilePreview } from "./item.service.js";
+import { addFolderStats, createFileDownload, createFilePreview } from "./item.service.js";
 
 const ACCESS = new Set(["view", "comment", "edit"]);
 
@@ -90,6 +91,7 @@ export async function getPublicShare(token) {
   await incrementPublicShareViews(item._id);
   await invalidateItemLists(item.ownerId);
   return {
+    id: item._id.toHexString(),
     name: item.name,
     type: item.type,
     size: item.size ?? null,
@@ -108,6 +110,28 @@ export async function getPublicShareDownload(token) {
   return createFileDownload(item);
 }
 
+export async function listPublicShareItems({ token, parentId }) {
+  const root = await resolvePublicFolder(token);
+  const folder = parentId ? await resolveSharedItem(root, parentId, "folder") : root;
+  const items = await findItemsByParent({ ownerId: root.ownerId, parentId: folder._id });
+  const itemsWithStats = await addFolderStats(root.ownerId, items);
+
+  return {
+    folder: { id: folder._id.toHexString(), name: folder.name },
+    items: itemsWithStats.map(publicChild),
+  };
+}
+
+export async function getPublicChildPreview({ token, itemId: value }) {
+  const root = await resolvePublicFolder(token);
+  return createFilePreview(await resolveSharedItem(root, value, "file"));
+}
+
+export async function getPublicChildDownload({ token, itemId: value }) {
+  const root = await resolvePublicFolder(token);
+  return createFileDownload(await resolveSharedItem(root, value, "file"));
+}
+
 async function resolvePublicShare(token) {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{32}$/.test(token)) throw notFound();
   const item = await findPublicShareByToken(token);
@@ -124,6 +148,44 @@ async function resolvePublicFile(token) {
     });
   }
   return item;
+}
+
+async function resolvePublicFolder(token) {
+  const item = await resolvePublicShare(token);
+  if (item.type !== "folder") {
+    throw new AppError("This shared item is not a folder", {
+      statusCode: 400,
+      code: "shared-item-not-folder",
+    });
+  }
+  return item;
+}
+
+async function resolveSharedItem(root, value, expectedType) {
+  if (!ObjectId.isValid(value)) throw notFound();
+  const item = await findItemById({ ownerId: root.ownerId, itemId: new ObjectId(value) });
+  if (!item || item.trashedAt || item.type !== expectedType) throw notFound();
+
+  let parentId = item.parentId;
+  for (let depth = 0; parentId && depth < 100; depth += 1) {
+    if (parentId.equals(root._id)) return item;
+    const parent = await findItemById({ ownerId: root.ownerId, itemId: parentId });
+    if (!parent || parent.trashedAt) break;
+    parentId = parent.parentId;
+  }
+  throw notFound();
+}
+
+function publicChild(item) {
+  return {
+    id: item._id.toHexString(),
+    type: item.type,
+    name: item.name,
+    kind: item.type === "folder" ? "folder" : item.kind,
+    size: item.size ?? null,
+    itemCount: item.itemCount ?? null,
+    updatedAt: item.updatedAt,
+  };
 }
 
 function notFound() {

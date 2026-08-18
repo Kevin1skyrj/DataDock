@@ -125,7 +125,11 @@ function WorkspaceFrame({ header }) {
               </button>
             </div>
           ) : empty ? (
-            <EmptyState />
+            <FileContextMenu target={null}>
+              <div className="flex min-h-0 flex-1 flex-col" onContextMenuCapture={() => setTarget(null)}>
+                <EmptyState />
+              </div>
+            </FileContextMenu>
           ) : (
             <FileContextMenu target={target}>
               <div

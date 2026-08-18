@@ -1,5 +1,8 @@
 "use client";
 
+import { FileUp, FolderPlus, FolderUp } from "lucide-react";
+import { useRef } from "react";
+
 import {
   ContextMenu,
   ContextMenuContent,
@@ -12,6 +15,7 @@ import {
 import { Kbd } from "@/components/ui/kbd";
 import { groupFileActions } from "@/lib/file-actions";
 import { useWorkspace } from "@/components/workspace/workspace-context";
+import { useFilePicker } from "@/hooks/use-file-picker";
 
 /**
  * The right-click menu, rendered from action descriptors.
@@ -28,7 +32,10 @@ import { useWorkspace } from "@/components/workspace/workspace-context";
  * the rows can offer the folder's own actions later, with nothing to rewire.
  */
 export function FileContextMenu({ target, children }) {
-  const { actionsFor, scopeFor, handlers, selection } = useWorkspace();
+  const { actionsFor, scopeFor, handlers, selection, folderId, view } = useWorkspace();
+  const filesRef = useRef(null);
+  const folderRef = useRef(null);
+  const onPick = useFilePicker(folderId);
 
   const actions = target ? actionsFor(target) : [];
   const groups = groupFileActions(actions);
@@ -45,7 +52,34 @@ export function FileContextMenu({ target, children }) {
     <ContextMenu>
       <ContextMenuTrigger render={children} />
 
+      <input ref={filesRef} type="file" multiple hidden onChange={onPick} />
+      <input
+        ref={folderRef}
+        type="file"
+        hidden
+        webkitdirectory=""
+        directory=""
+        onChange={onPick}
+      />
+
       <ContextMenuContent>
+        {!target && view.canCreate ? (
+          <ContextMenuGroup>
+            <ContextMenuItem onClick={() => handlers.newFolder()}>
+              <FolderPlus className="size-3.5" />
+              <span className="flex-1">New folder</span>
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => filesRef.current?.click()}>
+              <FileUp className="size-3.5" />
+              <span className="flex-1">File upload</span>
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => folderRef.current?.click()}>
+              <FolderUp className="size-3.5" />
+              <span className="flex-1">Folder upload</span>
+            </ContextMenuItem>
+          </ContextMenuGroup>
+        ) : null}
+
         {scope ? (
           <ContextMenuGroup>
             <ContextMenuLabel>{scope}</ContextMenuLabel>

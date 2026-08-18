@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SharedFolderBrowser } from "./shared-folder-browser";
+
 export const metadata = { title: "Shared file" };
 
 export default async function PublicSharePage({ params }) {
@@ -14,12 +16,19 @@ export default async function PublicSharePage({ params }) {
   if (!response.ok) notFound();
   const { data } = await response.json();
   let preview = null;
+  let folderItems = [];
 
   if (data.type === "file") {
     const previewResponse = await fetch(`${apiUrl}/shares/${encodedToken}/preview`, {
       cache: "no-store",
     });
     if (previewResponse.ok) preview = (await previewResponse.json()).data;
+  }
+  if (data.type === "folder") {
+    const itemsResponse = await fetch(`${apiUrl}/shares/${encodedToken}/items`, {
+      cache: "no-store",
+    });
+    if (itemsResponse.ok) folderItems = (await itemsResponse.json()).data.items;
   }
 
   return (
@@ -31,6 +40,14 @@ export default async function PublicSharePage({ params }) {
           Permission: {data.access}. {data.expiresAt ? `Expires ${new Date(data.expiresAt).toLocaleString()}.` : "This link does not expire."}
         </p>
         {preview ? <SharedPreview preview={preview} name={data.name} /> : null}
+        {data.type === "folder" ? (
+          <SharedFolderBrowser
+            apiUrl={apiUrl}
+            token={token}
+            root={{ id: data.id, name: data.name }}
+            initialItems={folderItems}
+          />
+        ) : null}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
           {data.type === "file" ? (
             <a
