@@ -437,12 +437,46 @@ export async function getUserStorageSummary(ownerId) {
               ],
             },
           },
+          starredCount: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$starred", true] }, { $eq: ["$trashedAt", null] }] },
+                1,
+                0,
+              ],
+            },
+          },
+          sharedCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: [{ $type: "$share" }, "object"] },
+                    { $eq: ["$trashedAt", null] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          trashCount: {
+            $sum: { $cond: [{ $ne: ["$trashedAt", null] }, 1, 0] },
+          },
         },
       },
     ])
     .toArray();
 
-  return result ?? { used: 0, trashed: 0, fileCount: 0, folderCount: 0 };
+  return result ?? {
+    used: 0,
+    trashed: 0,
+    fileCount: 0,
+    folderCount: 0,
+    starredCount: 0,
+    sharedCount: 0,
+    trashCount: 0,
+  };
 }
 
 export async function getUserStorageBreakdown(ownerId) {

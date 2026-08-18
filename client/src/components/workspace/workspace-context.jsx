@@ -172,7 +172,10 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
   // "Home / All files / Brand refresh".
   useEffect(() => () => publishTrail([]), []);
 
-  const reload = useCallback(() => setNonce((current) => current + 1), []);
+  const reload = useCallback(() => {
+    setNonce((current) => current + 1);
+    window.dispatchEvent(new Event("datadock:drive-changed"));
+  }, []);
 
   const selection = useSelection(items);
 

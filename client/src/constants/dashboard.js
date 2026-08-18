@@ -15,15 +15,15 @@ export const DASHBOARD_NAV = [
     label: "Browse",
     items: [
       { id: "dashboard", label: "Dashboard", icon: "layout", href: "/dashboard" },
-      { id: "files", label: "All files", icon: "folder", href: "/dashboard/files", count: 248 },
+      { id: "files", label: "All files", icon: "folder", href: "/dashboard/files" },
       { id: "recent", label: "Recent", icon: "clock", href: "/dashboard/recent" },
     ],
   },
   {
     label: "Organize",
     items: [
-      { id: "starred", label: "Starred", icon: "star", href: "/dashboard/starred", count: 14 },
-      { id: "shared", label: "Shared", icon: "share", href: "/dashboard/shared", count: 12 },
+      { id: "starred", label: "Starred", icon: "star", href: "/dashboard/starred" },
+      { id: "shared", label: "Shared", icon: "share", href: "/dashboard/shared" },
       { id: "trash", label: "Trash", icon: "trash", href: "/dashboard/trash" },
     ],
   },

@@ -291,6 +291,7 @@ async function start(id) {
     });
 
     patch(id, { status: "done", loaded: item.size, speed: 0 });
+    window.dispatchEvent(new Event("datadock:drive-changed"));
   } catch (failure) {
     if (controller.signal.aborted) patch(id, { status: "cancelled", speed: 0 });
     else patch(id, { status: "failed", error: failure.message, speed: 0 });

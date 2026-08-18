@@ -23,7 +23,8 @@ import { cn } from "@/lib/utils";
  * primitive for eight rows.
  */
 export function SidebarNavItem({ item, Icon, active, collapsed, onNavigate }) {
-  const description = item.count ? `${item.label}, ${item.count} items` : item.label;
+  const hasCount = item.count != null;
+  const description = hasCount ? `${item.label}, ${item.count} items` : item.label;
 
   return (
     <Link
@@ -55,7 +56,7 @@ export function SidebarNavItem({ item, Icon, active, collapsed, onNavigate }) {
         {item.label}
       </span>
 
-      {item.count ? (
+      {hasCount ? (
         <span data-shell="rail-hide" className="font-mono text-xs text-dim">
           {item.count}
         </span>

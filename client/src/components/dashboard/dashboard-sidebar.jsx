@@ -21,7 +21,6 @@ import { StorageMeter } from "@/components/common/storage-meter";
 import { SidebarNavItem } from "@/components/dashboard/sidebar-nav-item";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_NAV, SHELL } from "@/constants/dashboard";
-import { PREVIEW_STORAGE } from "@/constants/preview-data";
 import { useFilePicker } from "@/hooks/use-file-picker";
 import { useShortcut } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
@@ -68,23 +67,43 @@ export function DashboardSidebar({
   const shortcut = useShortcut("B");
   const sidebarId = useId();
   const session = useSession();
-  const [storage, setStorage] = useState(null);
+  const [storage, setStorage] = useState(undefined);
 
   useEffect(() => {
     let cancelled = false;
-    getStorageSummary()
-      .then((summary) => {
-        if (!cancelled) setStorage(summary);
-      })
-      .catch(() => {});
+    const refresh = () => {
+      getStorageSummary()
+        .then((summary) => {
+          if (!cancelled) setStorage(summary);
+        })
+        .catch(() => {
+          if (!cancelled) setStorage(null);
+        });
+    };
+    refresh();
+    window.addEventListener("datadock:drive-changed", refresh);
     return () => {
       cancelled = true;
+      window.removeEventListener("datadock:drive-changed", refresh);
     };
-  }, []);
+  }, [pathname]);
+
+  const counts = storage
+    ? {
+        files: storage.fileCount + storage.folderCount,
+        starred: storage.starredCount,
+        shared: storage.sharedCount,
+        trash: storage.trashCount,
+      }
+    : {};
+  const baseNavigation = DASHBOARD_NAV.map((group) => ({
+    ...group,
+    items: group.items.map((item) => ({ ...item, count: counts[item.id] })),
+  }));
   const navigation =
     session.role === "owner"
       ? [
-          ...DASHBOARD_NAV,
+          ...baseNavigation,
           {
             label: "Administration",
             items: [
@@ -92,7 +111,7 @@ export function DashboardSidebar({
             ],
           },
         ]
-      : DASHBOARD_NAV;
+      : baseNavigation;
 
   /**
    * Uploads land in the folder currently on screen, not always at the root.
@@ -230,10 +249,12 @@ export function DashboardSidebar({
             value={
               storage
                 ? Math.min(100, ((storage.used + storage.trashed) / storage.quota) * 100)
-                : PREVIEW_STORAGE.percent
+                : 0
             }
             usedLabel={storage ? formatBytes(storage.used + storage.trashed) : undefined}
             totalLabel={storage ? formatBytes(storage.quota) : undefined}
+            loading={storage === undefined}
+            unavailable={storage === null}
             className="transition-colors duration-150 ease-standard group-hover:border-line-2"
           />
         </Link>
