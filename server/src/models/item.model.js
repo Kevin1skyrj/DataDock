@@ -18,6 +18,10 @@ export async function createItemIndexes() {
       partialFilterExpression: { storageKey: { $type: "string" } },
     },
   );
+
+  await getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .createIndex({ ownerId: 1, type: 1, trashedAt: 1, size: -1 });
 }
 
 export async function findItemsByParent({ ownerId, parentId = null }) {
@@ -357,6 +361,33 @@ export async function getUserStorageSummary(ownerId) {
     .toArray();
 
   return result ?? { used: 0, trashed: 0, fileCount: 0, folderCount: 0 };
+}
+
+export async function getUserStorageBreakdown(ownerId) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { ownerId, type: "file", trashedAt: null } },
+      {
+        $group: {
+          _id: "$kind",
+          bytes: { $sum: { $ifNull: ["$size", 0] } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { bytes: -1 } },
+      { $project: { _id: 0, kind: "$_id", bytes: 1, count: 1 } },
+    ])
+    .toArray();
+}
+
+export async function findLargestUserFiles({ ownerId, limit }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .find({ ownerId, type: "file", trashedAt: null })
+    .sort({ size: -1, _id: 1 })
+    .limit(limit)
+    .toArray();
 }
 
 export async function updateItemShare({ ownerId, itemId, share }) {

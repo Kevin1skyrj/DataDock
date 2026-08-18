@@ -47,6 +47,14 @@ export function getStorageSummary() {
   return apiRequest("/storage/summary");
 }
 
+export function getStorageBreakdown() {
+  return apiRequest("/storage/breakdown");
+}
+
+export function getLargestFiles(limit = 8) {
+  return apiRequest(`/storage/largest?limit=${encodeURIComponent(limit)}`);
+}
+
 export async function getFolderSummary(parentId = null) {
   const query = new URLSearchParams();
 

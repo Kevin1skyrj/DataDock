@@ -37,6 +37,8 @@ export {
   getItem,
   getDownloadUrl,
   getPreview,
+  getLargestFiles,
+  getStorageBreakdown,
   getStorageSummary,
   ensureFolder,
   getPath,
@@ -55,9 +57,7 @@ export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/api/upl
 
 export {
   getCleanupSuggestions,
-  getLargestFiles,
   getStorageActivity,
-  getStorageBreakdown,
 } from "@/services/mock/insights";
 
 export { DATE_RANGES, SIZE_RANGES, quickSearch, searchDrive } from "@/services/mock/search";
