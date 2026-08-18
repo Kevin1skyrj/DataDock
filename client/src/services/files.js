@@ -57,4 +57,4 @@ export {
 
 export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/api/uploads";
 
-export { DATE_RANGES, SIZE_RANGES, quickSearch, searchDrive } from "@/services/mock/search";
+export { DATE_RANGES, SIZE_RANGES, quickSearch, searchDrive } from "@/services/api/search";

@@ -1,4 +1,4 @@
-import { googleDrive } from "@/services/mock/import-providers";
+import { googleDrive } from "@/services/api/google-drive";
 
 /**
  * Where files can come from, besides this computer.

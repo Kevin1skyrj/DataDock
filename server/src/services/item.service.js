@@ -51,7 +51,7 @@ async function resolveParentId({ ownerId, parentId }) {
   return folderId;
 }
 
-async function addFolderStats(ownerId, items) {
+export async function addFolderStats(ownerId, items) {
   const folderIds = items.filter((item) => item.type === "folder").map((item) => item._id);
   const stats = await getFolderDescendantStats({ ownerId, folderIds });
   const statsById = new Map(stats.map((entry) => [entry._id.toHexString(), entry]));

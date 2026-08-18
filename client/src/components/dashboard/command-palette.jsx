@@ -182,11 +182,22 @@ export function CommandPalette() {
   useEffect(() => {
     if (!open || needle.length < 2) return undefined;
 
+    let cancelled = false;
+
     const id = window.setTimeout(() => {
-      quickSearch(needle).then((items) => setFiles({ key: needle, items }));
+      quickSearch(needle)
+        .then((items) => {
+          if (!cancelled) setFiles({ key: needle, items });
+        })
+        .catch(() => {
+          if (!cancelled) setFiles({ key: needle, items: [] });
+        });
     }, 140);
 
-    return () => window.clearTimeout(id);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
   }, [open, needle]);
 
   const results = useMemo(() => {

@@ -10,6 +10,7 @@ import {
 import { createOtpIndexes } from "./src/models/otp.model.js";
 import { createPasswordResetIndexes } from "./src/models/password-reset.model.js";
 import { createItemIndexes } from "./src/models/item.model.js";
+import { createGoogleDriveIndexes } from "./src/models/google-drive.model.js";
 const port = process.env.PORT || 4000;
 
 async function startServer() {
@@ -23,6 +24,7 @@ async function startServer() {
     await createOtpIndexes();
     await createPasswordResetIndexes();
     await createItemIndexes();
+    await createGoogleDriveIndexes();
     app.listen(port, () => {
       console.log(`Server started on port ${port}`);
     });
