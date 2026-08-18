@@ -31,6 +31,7 @@ export {
 
 export {
   createFolder,
+  getCleanupSuggestions,
   createShare,
   deleteItems,
   getFolderSummary,
@@ -39,6 +40,7 @@ export {
   getPreview,
   getLargestFiles,
   getStorageBreakdown,
+  getStorageActivity,
   getStorageSummary,
   ensureFolder,
   getPath,
@@ -54,10 +56,5 @@ export {
 } from "@/services/api/files";
 
 export { MAX_UPLOAD_BYTES, uploadFile, validateUpload } from "@/services/api/uploads";
-
-export {
-  getCleanupSuggestions,
-  getStorageActivity,
-} from "@/services/mock/insights";
 
 export { DATE_RANGES, SIZE_RANGES, quickSearch, searchDrive } from "@/services/mock/search";

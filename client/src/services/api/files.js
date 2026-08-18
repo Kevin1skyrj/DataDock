@@ -55,6 +55,14 @@ export function getLargestFiles(limit = 8) {
   return apiRequest(`/storage/largest?limit=${encodeURIComponent(limit)}`);
 }
 
+export function getStorageActivity(limit = 12) {
+  return apiRequest(`/storage/activity?limit=${encodeURIComponent(limit)}`);
+}
+
+export function getCleanupSuggestions() {
+  return apiRequest("/storage/cleanup");
+}
+
 export async function getFolderSummary(parentId = null) {
   const query = new URLSearchParams();
 

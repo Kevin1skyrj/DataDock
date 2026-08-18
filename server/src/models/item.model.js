@@ -443,6 +443,113 @@ export async function findLargestUserFiles({ ownerId, limit }) {
     .toArray();
 }
 
+export async function findRecentUserItems({ ownerId, limit }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .find({ ownerId })
+    .sort({ updatedAt: -1, _id: -1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function findLargeUnusedFiles({ ownerId, minimumSize, openedBefore }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .find({
+      ownerId,
+      type: "file",
+      trashedAt: null,
+      size: { $gte: minimumSize },
+      $or: [{ openedAt: null }, { openedAt: { $lt: openedBefore } }],
+    })
+    .sort({ size: -1 })
+    .limit(50)
+    .toArray();
+}
+
+export async function findDuplicateFiles(ownerId) {
+  const groups = await getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { ownerId, type: "file", trashedAt: null } },
+      {
+        $group: {
+          _id: { name: "$normalizedName", size: "$size" },
+          items: { $push: "$$ROOT" },
+          count: { $sum: 1 },
+        },
+      },
+      { $match: { count: { $gt: 1 } } },
+      { $sort: { "_id.size": -1 } },
+      { $limit: 25 },
+    ])
+    .toArray();
+
+  return groups;
+}
+
+export async function findOldTrashedItems({ ownerId, trashedBefore }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { ownerId, trashedAt: { $lt: trashedBefore } } },
+      { $sort: { trashedAt: 1 } },
+      { $limit: 50 },
+      {
+        $graphLookup: {
+          from: ITEMS_COLLECTION,
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentId",
+          as: "descendants",
+          restrictSearchWithMatch: { ownerId },
+        },
+      },
+      {
+        $set: {
+          size: {
+            $cond: [
+              { $eq: ["$type", "folder"] },
+              { $sum: "$descendants.size" },
+              { $ifNull: ["$size", 0] },
+            ],
+          },
+        },
+      },
+      { $unset: "descendants" },
+    ])
+    .toArray();
+}
+
+export async function findEmptyFolders(ownerId) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { ownerId, type: "folder", trashedAt: null } },
+      {
+        $lookup: {
+          from: ITEMS_COLLECTION,
+          let: { folderId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                ownerId,
+                trashedAt: null,
+                $expr: { $eq: ["$parentId", "$$folderId"] },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: "children",
+        },
+      },
+      { $match: { children: { $size: 0 } } },
+      { $limit: 50 },
+      { $unset: "children" },
+    ])
+    .toArray();
+}
+
 export async function updateItemShare({ ownerId, itemId, share }) {
   return getDatabase().collection(ITEMS_COLLECTION).findOneAndUpdate(
     { _id: itemId, ownerId, trashedAt: null },
