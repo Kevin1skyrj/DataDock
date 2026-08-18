@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
  * nothing can later claim it. A meter stuck at 0% because nobody animated it is
  * the kind of bug that only shows up in the one context you did not check.
  */
-export function StorageMeter({ className, value }) {
+export function StorageMeter({ className, value, usedLabel, totalLabel }) {
   const atRest = value != null;
 
   return (
@@ -40,7 +40,7 @@ export function StorageMeter({ className, value }) {
       </div>
 
       <p className="mt-2.5 text-xs text-dim">
-        {PREVIEW_STORAGE.used} of {PREVIEW_STORAGE.total} used
+        {usedLabel ?? PREVIEW_STORAGE.used} of {totalLabel ?? PREVIEW_STORAGE.total} used
       </p>
     </div>
   );

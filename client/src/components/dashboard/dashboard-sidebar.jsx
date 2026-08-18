@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { StorageMeter } from "@/components/common/storage-meter";
 import { SidebarNavItem } from "@/components/dashboard/sidebar-nav-item";
@@ -25,8 +25,10 @@ import { PREVIEW_STORAGE } from "@/constants/preview-data";
 import { useFilePicker } from "@/hooks/use-file-picker";
 import { useShortcut } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
 import { useWorkspaceCommands } from "@/lib/workspace-commands";
 import { useSession } from "@/providers/session-provider";
+import { getStorageSummary } from "@/services/files";
 
 const NAV_ICONS = {
   layout: LayoutGrid,
@@ -66,6 +68,19 @@ export function DashboardSidebar({
   const shortcut = useShortcut("B");
   const sidebarId = useId();
   const session = useSession();
+  const [storage, setStorage] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStorageSummary()
+      .then((summary) => {
+        if (!cancelled) setStorage(summary);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const navigation =
     session.role === "owner"
       ? [
@@ -212,7 +227,13 @@ export function DashboardSidebar({
       <div data-shell="rail-hide" className="shrink-0 p-3 pt-0">
         <Link href="/dashboard/storage" onClick={onNavigate} className="group block rounded-lg">
           <StorageMeter
-            value={PREVIEW_STORAGE.percent}
+            value={
+              storage
+                ? Math.min(100, ((storage.used + storage.trashed) / storage.quota) * 100)
+                : PREVIEW_STORAGE.percent
+            }
+            usedLabel={storage ? formatBytes(storage.used + storage.trashed) : undefined}
+            totalLabel={storage ? formatBytes(storage.quota) : undefined}
             className="transition-colors duration-150 ease-standard group-hover:border-line-2"
           />
         </Link>

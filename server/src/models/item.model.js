@@ -307,6 +307,58 @@ export async function getUserStorageUsage(ownerId) {
   return result?.used ?? 0;
 }
 
+export async function getUserStorageSummary(ownerId) {
+  const [result] = await getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      { $match: { ownerId } },
+      {
+        $group: {
+          _id: null,
+          used: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$type", "file"] }, { $eq: ["$trashedAt", null] }] },
+                { $ifNull: ["$size", 0] },
+                0,
+              ],
+            },
+          },
+          trashed: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$type", "file"] }, { $ne: ["$trashedAt", null] }] },
+                { $ifNull: ["$size", 0] },
+                0,
+              ],
+            },
+          },
+          fileCount: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$type", "file"] }, { $eq: ["$trashedAt", null] }] },
+                1,
+                0,
+              ],
+            },
+          },
+          folderCount: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$type", "folder"] }, { $eq: ["$trashedAt", null] }] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ])
+    .toArray();
+
+  return result ?? { used: 0, trashed: 0, fileCount: 0, folderCount: 0 };
+}
+
 export async function updateItemShare({ ownerId, itemId, share }) {
   return getDatabase().collection(ITEMS_COLLECTION).findOneAndUpdate(
     { _id: itemId, ownerId, trashedAt: null },
