@@ -16,6 +16,7 @@ import {
   deleteItems,
   duplicateItems,
   getDownloadUrl,
+  getPreview,
   getPath,
   moveItems,
   renameItem,
@@ -210,11 +211,31 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
 
   const handlers = useMemo(
     () => ({
-      open: (item) => {
+      open: async (item) => {
         // A folder is somewhere to go; a file is something to look at. Enter
         // means "open" for both, and this is what that means for each.
-        if (item.type === "folder") onNavigate?.(item.id);
-        else setPreviewIndex(items.findIndex((candidate) => candidate.id === item.id));
+        if (item.type === "folder") {
+          onNavigate?.(item.id);
+          return;
+        }
+
+        // Reserve the tab during the click event. Opening it after awaiting the
+        // API would make browsers treat it as an unsolicited popup.
+        const tab = window.open("about:blank", "_blank");
+        if (!tab) {
+          notify({ title: "Allow popups to open this file.", type: "error" });
+          return;
+        }
+        tab.opener = null;
+
+        try {
+          const preview = await getPreview(item);
+          if (!preview.url) throw new Error(preview.reason ?? "This file cannot be opened.");
+          tab.location.replace(preview.url);
+        } catch (failure) {
+          tab.close();
+          notify({ title: failure.message ?? "This file could not be opened.", type: "error" });
+        }
       },
       preview: (item) =>
         setPreviewIndex(items.findIndex((candidate) => candidate.id === item.id)),
