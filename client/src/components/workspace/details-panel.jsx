@@ -92,6 +92,22 @@ export function DetailsPanel() {
 }
 
 function SingleDetails({ item }) {
+  const [folderSummary, setFolderSummary] = useState(null);
+
+  useEffect(() => {
+    if (item.type !== "folder") {
+      return undefined;
+    }
+
+    let cancelled = false;
+    getFolderSummary(item.id).then((result) => {
+      if (!cancelled) setFolderSummary(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, item.type]);
+
   return (
     <div className="flex flex-col gap-5">
       <div className="grid aspect-4/3 place-items-center rounded-lg border border-line bg-surface">
@@ -102,7 +118,9 @@ function SingleDetails({ item }) {
         <p className="text-md font-medium text-foreground break-words">{item.name}</p>
         <p className="text-sm text-dim">
           {item.type === "folder"
-            ? formatCount(item.itemCount ?? 0)
+            ? folderSummary
+              ? `${formatCount(folderSummary.count)} · ${formatBytes(folderSummary.size)}`
+              : "Calculating folder size…"
             : `${item.mimeType?.split("/").at(-1)?.toUpperCase()} · ${formatBytes(item.size)}`}
         </p>
       </div>
@@ -110,6 +128,12 @@ function SingleDetails({ item }) {
       <dl className="flex flex-col divide-y divide-line/60">
         <Field label="Modified">{formatDate(item.updatedAt)}</Field>
         <Field label="Created">{formatDate(item.createdAt)}</Field>
+        {item.type === "folder" && folderSummary ? (
+          <>
+            <Field label="Items">{formatCount(folderSummary.count)}</Field>
+            <Field label="Folder size">{formatBytes(folderSummary.size)}</Field>
+          </>
+        ) : null}
         <Field label="Last opened">{formatDate(item.openedAt)}</Field>
         <Field label="Starred" tone={item.starred ? "text-brand" : undefined}>
           {item.starred ? "Yes" : "No"}

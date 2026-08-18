@@ -12,6 +12,7 @@ import {
   updateItemsParent,
   findFoldersByParent,
   getFolderSummaryData,
+  getFolderDescendantStats,
 } from "../models/item.model.js";
 import { AppError } from "../errors/app-error.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
@@ -50,6 +51,22 @@ async function resolveParentId({ ownerId, parentId }) {
   return folderId;
 }
 
+async function addFolderStats(ownerId, items) {
+  const folderIds = items.filter((item) => item.type === "folder").map((item) => item._id);
+  const stats = await getFolderDescendantStats({ ownerId, folderIds });
+  const statsById = new Map(stats.map((entry) => [entry._id.toHexString(), entry]));
+
+  return items.map((item) => {
+    if (item.type !== "folder") return item;
+    const folderStats = statsById.get(item._id.toHexString());
+    return {
+      ...item,
+      itemCount: folderStats?.itemCount ?? 0,
+      size: folderStats?.size ?? 0,
+    };
+  });
+}
+
 export async function listItems({ ownerId, parentId = null }) {
   if (!ownerId) {
     throw new Error("ownerId is required to list the items");
@@ -73,8 +90,9 @@ export async function listItems({ ownerId, parentId = null }) {
     parentId: resolvedParentId,
   });
 
+  const itemsWithStats = await addFolderStats(ownerId, items);
   const result = {
-    items: items.map(toPublicItem),
+    items: itemsWithStats.map(toPublicItem),
     nextCursor: null,
     total: items.length,
   };
@@ -346,9 +364,10 @@ export async function listStarredItems({ ownerId }) {
   const items = await findStarredItems({
     ownerId,
   });
+  const itemsWithStats = await addFolderStats(ownerId, items);
 
   return {
-    items: items.map(toPublicItem),
+    items: itemsWithStats.map(toPublicItem),
     nextCursor: null,
     total: items.length,
   };
@@ -468,7 +487,8 @@ export async function listFolders({ ownerId, parentId = null }) {
     parentId: resolvedParentId,
   });
 
-  return folders.map(toPublicItem);
+  const foldersWithStats = await addFolderStats(ownerId, folders);
+  return foldersWithStats.map(toPublicItem);
 }
 
 export async function getFolderSummary({ ownerId, parentId = null }) {

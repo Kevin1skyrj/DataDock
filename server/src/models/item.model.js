@@ -239,22 +239,41 @@ export async function getFolderSummaryData({
         },
       },
       {
+        $graphLookup: {
+          from: ITEMS_COLLECTION,
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentId",
+          as: "descendants",
+          restrictSearchWithMatch: { ownerId, trashedAt: null },
+        },
+      },
+      {
+        $project: {
+          nodes: {
+            $concatArrays: [
+              [{ _id: "$_id", type: "$type", size: "$size", updatedAt: "$updatedAt" }],
+              "$descendants",
+            ],
+          },
+        },
+      },
+      { $unwind: "$nodes" },
+      {
+        $group: {
+          _id: "$nodes._id",
+          type: { $first: "$nodes.type" },
+          size: { $first: { $ifNull: ["$nodes.size", 0] } },
+          updatedAt: { $first: "$nodes.updatedAt" },
+        },
+      },
+      {
         $group: {
           _id: null,
           count: { $sum: 1 },
-          folderCount: {
-            $sum: {
-              $cond: [{ $eq: ["$type", "folder"] }, 1, 0],
-            },
-          },
-          size: {
-            $sum: {
-              $ifNull: ["$size", 0],
-            },
-          },
-          updatedAt: {
-            $max: "$updatedAt",
-          },
+          folderCount: { $sum: { $cond: [{ $eq: ["$type", "folder"] }, 1, 0] } },
+          size: { $sum: "$size" },
+          updatedAt: { $max: "$updatedAt" },
         },
       },
     ])
@@ -266,6 +285,40 @@ export async function getFolderSummaryData({
     size: 0,
     updatedAt: null,
   };
+}
+
+export async function getFolderDescendantStats({ ownerId, folderIds }) {
+  if (folderIds.length === 0) return [];
+
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .aggregate([
+      {
+        $match: {
+          _id: { $in: folderIds },
+          ownerId,
+          type: "folder",
+          trashedAt: null,
+        },
+      },
+      {
+        $graphLookup: {
+          from: ITEMS_COLLECTION,
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentId",
+          as: "descendants",
+          restrictSearchWithMatch: { ownerId, trashedAt: null },
+        },
+      },
+      {
+        $project: {
+          itemCount: { $size: "$descendants" },
+          size: { $sum: "$descendants.size" },
+        },
+      },
+    ])
+    .toArray();
 }
 
 export async function insertFile({

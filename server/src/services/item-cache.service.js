@@ -12,7 +12,7 @@ export async function getItemListCacheKey({ ownerId, parentId }) {
     const version = (await getRedisClient().get(versionKey(ownerId))) ?? "0";
     const folder = parentId?.toHexString() ?? "root";
 
-    return `datadock:items:${ownerId}:list:${folder}:v${version}`;
+    return `datadock:items:${ownerId}:list-with-folder-stats:${folder}:v${version}`;
   } catch (error) {
     console.error("Item cache key lookup failed:", error.message);
     return null;
