@@ -53,7 +53,7 @@ export function FileContextMenu({ target, children }) {
         ) : null}
 
         {groups.map((group, index) => (
-          <ContextMenuGroup key={group.group}>
+          <ContextMenuGroup key={`${group.group}-${index}`}>
             {index > 0 ? <ContextMenuSeparator /> : null}
 
             {group.actions.map((action) => (

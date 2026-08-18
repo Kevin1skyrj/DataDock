@@ -600,3 +600,10 @@ export async function findPublicShareByToken(token) {
     ],
   });
 }
+
+export async function incrementPublicShareViews(itemId) {
+  await getDatabase().collection(ITEMS_COLLECTION).updateOne(
+    { _id: itemId },
+    { $inc: { "share.viewCount": 1 } },
+  );
+}

@@ -147,6 +147,10 @@ export async function getItemDownload({ ownerId, itemId }) {
     });
   }
 
+  return createFileDownload(item);
+}
+
+export async function createFileDownload(item) {
   const safeName = item.name.replace(/[\r\n"]/g, "_");
   const expiresIn = 15 * 60;
   const url = await getSignedUrl(
@@ -182,6 +186,10 @@ export async function getItemPreview({ ownerId, itemId }) {
     });
   }
 
+  return createFilePreview(item);
+}
+
+export async function createFilePreview(item) {
   const officeTypes = new Set([
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

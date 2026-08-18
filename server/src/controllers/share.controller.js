@@ -2,6 +2,8 @@ import {
   changePublicShare,
   createPublicShare,
   getPublicShare,
+  getPublicShareDownload,
+  getPublicSharePreview,
   stopPublicShare,
 } from "../services/share.service.js";
 
@@ -20,4 +22,16 @@ export async function revokeShare(req, res, next) {
 export async function openShare(req, res, next) {
   try { res.status(200).json({ success: true, data: await getPublicShare(req.params.token) }); }
   catch (error) { next(error); }
+}
+
+export async function previewShare(req, res, next) {
+  try { res.status(200).json({ success: true, data: await getPublicSharePreview(req.params.token) }); }
+  catch (error) { next(error); }
+}
+
+export async function downloadShare(req, res, next) {
+  try {
+    const download = await getPublicShareDownload(req.params.token);
+    res.redirect(download.url);
+  } catch (error) { next(error); }
 }

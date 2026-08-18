@@ -261,7 +261,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       share: (item) => setSharing(item),
 
       copyLink: async (item) => {
-        const url = `https://datadock.app/s/${item.share?.token ?? item.share?.id}`;
+        const url = `${window.location.origin}/s/${item.share?.token ?? item.share?.id}`;
         try {
           await navigator.clipboard.writeText(url);
         } catch {

@@ -5,9 +5,11 @@ import { AppError } from "../errors/app-error.js";
 import {
   findItemById,
   findPublicShareByToken,
+  incrementPublicShareViews,
   updateItemShare,
 } from "../models/item.model.js";
 import { invalidateItemLists } from "./item-cache.service.js";
+import { createFileDownload, createFilePreview } from "./item.service.js";
 
 const ACCESS = new Set(["view", "comment", "edit"]);
 
@@ -84,9 +86,9 @@ export async function stopPublicShare({ ownerId, itemId: value }) {
 }
 
 export async function getPublicShare(token) {
-  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{32}$/.test(token)) throw notFound();
-  const item = await findPublicShareByToken(token);
-  if (!item) throw notFound();
+  const item = await resolvePublicShare(token);
+  await incrementPublicShareViews(item._id);
+  await invalidateItemLists(item.ownerId);
   return {
     name: item.name,
     type: item.type,
@@ -94,6 +96,34 @@ export async function getPublicShare(token) {
     access: item.share.access,
     expiresAt: item.share.expiresAt,
   };
+}
+
+export async function getPublicSharePreview(token) {
+  const item = await resolvePublicFile(token);
+  return createFilePreview(item);
+}
+
+export async function getPublicShareDownload(token) {
+  const item = await resolvePublicFile(token);
+  return createFileDownload(item);
+}
+
+async function resolvePublicShare(token) {
+  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{32}$/.test(token)) throw notFound();
+  const item = await findPublicShareByToken(token);
+  if (!item) throw notFound();
+  return item;
+}
+
+async function resolvePublicFile(token) {
+  const item = await resolvePublicShare(token);
+  if (item.type !== "file" || !item.storageKey) {
+    throw new AppError("This shared item is not a downloadable file", {
+      statusCode: 400,
+      code: "shared-item-not-file",
+    });
+  }
+  return item;
 }
 
 function notFound() {
