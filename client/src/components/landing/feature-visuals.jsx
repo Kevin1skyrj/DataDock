@@ -173,7 +173,7 @@ function StorageVisual() {
   return (
     <div className={cn(PANEL, "p-3.5")}>
       <p className="text-display-xs font-semibold tracking-tight text-foreground tabular-nums">
-        61.2 <span className="text-md font-normal text-dim">of 100 GB</span>
+        6.12 <span className="text-md font-normal text-dim">of 10 GB</span>
       </p>
 
       {/* One track, four segments — the composition of the space, not just how

@@ -7,11 +7,13 @@ export async function requireSession() {
   const cookieHeader = (await cookies()).toString();
 
   try {
-    return await apiRequest("/auth/me", {
-      headers: {
-        Cookie: cookieHeader,
-      },
-    });
+    const headers = { Cookie: cookieHeader };
+    const [account, billing] = await Promise.all([
+      apiRequest("/auth/me", { headers }),
+      apiRequest("/billing/current", { headers }),
+    ]);
+
+    return { ...account, plan: billing.plan.name };
   } catch (error) {
     if (error instanceof ApiError && error.statusCode === 401) {
       redirect("/login");

@@ -7,7 +7,9 @@ import {
 import { AppError } from "../errors/app-error.js";
 import {
   claimWebhookEvent,
+  findActiveSubscriptionByUserId,
   findLatestSubscriptionByUserId,
+  findOpenSubscriptionByUserId,
   findSubscriptionByRazorpayId,
   insertSubscription,
   releaseWebhookEvent,
@@ -19,12 +21,16 @@ import {
 } from "../utils/razorpay-signature.js";
 
 const OPEN_SUBSCRIPTION_STATUSES = new Set([
-  "created",
   "authenticated",
   "active",
   "pending",
   "halted",
   "paused",
+]);
+const PENDING_SYNC_STATUSES = new Set([
+  "created",
+  "authenticated",
+  "pending",
 ]);
 
 function fromRazorpayTimestamp(value) {
@@ -45,13 +51,48 @@ function hasPaidAccess(subscription) {
   );
 }
 
+async function syncSubscription(subscription) {
+  const razorpaySubscription =
+    await razorpayClient.subscriptions.fetch(
+      subscription.razorpaySubscriptionId,
+    );
+
+  if (razorpaySubscription.plan_id !== subscription.razorpayPlanId) {
+    throw new AppError("Subscription plan does not match", {
+      statusCode: 409,
+      code: "subscription-plan-mismatch",
+    });
+  }
+
+  return updateSubscription({
+    razorpaySubscriptionId: subscription.razorpaySubscriptionId,
+    changes: {
+      status: razorpaySubscription.status,
+      currentPeriodStart: fromRazorpayTimestamp(
+        razorpaySubscription.current_start,
+      ),
+      currentPeriodEnd: fromRazorpayTimestamp(
+        razorpaySubscription.current_end,
+      ),
+    },
+  });
+}
+
 async function resolveBilling(userId) {
-  const subscription = await findLatestSubscriptionByUserId(userId);
-  const paidPlan = subscription ? getPlan(subscription.planId) : null;
+  const [activeSubscription, latestSubscription] = await Promise.all([
+    findActiveSubscriptionByUserId(userId),
+    findLatestSubscriptionByUserId(userId),
+  ]);
+  const paidPlan = activeSubscription
+    ? getPlan(activeSubscription.planId)
+    : null;
 
   return {
-    plan: hasPaidAccess(subscription) && paidPlan ? paidPlan : PLANS.free,
-    subscription,
+    plan:
+      hasPaidAccess(activeSubscription) && paidPlan
+        ? paidPlan
+        : PLANS.free,
+    subscription: activeSubscription ?? latestSubscription,
   };
 }
 
@@ -65,7 +106,14 @@ export async function getEffectivePlan(userId) {
 }
 
 export async function getCurrentBilling(userId) {
-  const { plan, subscription } = await resolveBilling(userId);
+  let resolved = await resolveBilling(userId);
+
+  if (PENDING_SYNC_STATUSES.has(resolved.subscription?.status)) {
+    await syncSubscription(resolved.subscription);
+    resolved = await resolveBilling(userId);
+  }
+
+  const { plan, subscription } = resolved;
 
   return {
     plan: toPublicPlan(plan),
@@ -92,8 +140,10 @@ export async function createSubscription({ userId, planId }) {
     });
   }
 
-  const existingSubscription =
-    await findLatestSubscriptionByUserId(userId);
+  const existingSubscription = await findOpenSubscriptionByUserId(
+    userId,
+    [...OPEN_SUBSCRIPTION_STATUSES],
+  );
 
   if (
     existingSubscription &&
@@ -105,8 +155,9 @@ export async function createSubscription({ userId, planId }) {
     });
   }
 
-  const razorpaySubscription =
-    await razorpayClient.subscriptions.create({
+  let razorpaySubscription;
+  try {
+    razorpaySubscription = await razorpayClient.subscriptions.create({
       plan_id: plan.razorpayPlanId,
       total_count: 120,
       quantity: 1,
@@ -116,6 +167,17 @@ export async function createSubscription({ userId, planId }) {
         planId: plan.id,
       },
     });
+  } catch (error) {
+    throw new AppError(
+      error.error?.description ??
+        error.description ??
+        "Razorpay could not create the subscription",
+      {
+        statusCode: error.statusCode ?? 502,
+        code: "razorpay-subscription-failed",
+      },
+    );
+  }
 
   await insertSubscription({
     userId,
@@ -169,31 +231,7 @@ export async function verifySubscription({
     });
   }
 
-  const razorpaySubscription =
-    await razorpayClient.subscriptions.fetch(subscriptionId);
-
-  if (
-    razorpaySubscription.plan_id !==
-    subscription.razorpayPlanId
-  ) {
-    throw new AppError("Subscription plan does not match", {
-      statusCode: 409,
-      code: "subscription-plan-mismatch",
-    });
-  }
-
-  const updatedSubscription = await updateSubscription({
-    razorpaySubscriptionId: subscriptionId,
-    changes: {
-      status: razorpaySubscription.status,
-      currentPeriodStart: fromRazorpayTimestamp(
-        razorpaySubscription.current_start,
-      ),
-      currentPeriodEnd: fromRazorpayTimestamp(
-        razorpaySubscription.current_end,
-      ),
-    },
-  });
+  const updatedSubscription = await syncSubscription(subscription);
 
   return {
     planId: updatedSubscription.planId,

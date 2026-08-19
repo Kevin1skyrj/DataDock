@@ -225,7 +225,7 @@ export default function FoundationPage() {
           <Card padding="lg">
             <CardHeader>
               <CardTitle>Storage</CardTitle>
-              <CardDescription>61.2 GB of 100 GB used</CardDescription>
+              <CardDescription>6.12 GB of 10 GB used</CardDescription>
             </CardHeader>
           </Card>
         </div>

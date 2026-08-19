@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 const SessionContext = createContext(null);
 
@@ -15,14 +15,18 @@ function getInitials(name) {
 
 export function SessionProvider({ session, children }) {
   const [account, setAccount] = useState(session);
+  const update = useCallback(
+    (changes) => setAccount((current) => ({ ...current, ...changes })),
+    [],
+  );
   const value = useMemo(
     () => ({
       ...account,
       initials: getInitials(account.name),
-      plan: "Free",
-      update: (changes) => setAccount((current) => ({ ...current, ...changes })),
+      plan: account.plan ?? "Free",
+      update,
     }),
-    [account],
+    [account, update],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

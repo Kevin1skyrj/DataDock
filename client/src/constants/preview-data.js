@@ -107,8 +107,8 @@ export const PREVIEW_FILES = [
 ];
 
 export const PREVIEW_STORAGE = {
-  used: "61.2 GB",
-  total: "100 GB",
+  used: "6.12 GB",
+  total: "10 GB",
   percent: 61,
   /** The idle loop creeps toward this, as a background upload would. */
   ceiling: 64,

@@ -115,3 +115,25 @@ export async function updateSubscription({
       },
     );
 }
+
+export async function findActiveSubscriptionByUserId(userId) {
+  return getDatabase()
+    .collection(SUBSCRIPTIONS_COLLECTION)
+    .findOne(
+      {
+        userId,
+        status: "active",
+        currentPeriodEnd: { $gt: new Date() },
+      },
+      { sort: { currentPeriodEnd: -1 } },
+    );
+}
+
+export async function findOpenSubscriptionByUserId(userId, statuses) {
+  return getDatabase()
+    .collection(SUBSCRIPTIONS_COLLECTION)
+    .findOne(
+      { userId, status: { $in: statuses } },
+      { sort: { createdAt: -1 } },
+    );
+}
