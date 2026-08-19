@@ -1,4 +1,3 @@
-import { USER_STORAGE_QUOTA_BYTES } from "../config/storage.js";
 import {
   findLargestUserFiles,
   findRecentUserItems,
@@ -10,18 +9,29 @@ import {
   getUserStorageSummary,
 } from "../models/item.model.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
+import { getEffectivePlan } from "./billing.service.js";
+
+function formatQuota(bytes) {
+  return bytes >= 1_000_000_000
+    ? `${bytes / 1_000_000_000} GB`
+    : `${bytes / 1_000_000} MB`;
+}
 
 export async function getStorageSummary(ownerId) {
-  const summary = await getUserStorageSummary(ownerId);
+  const [summary, plan] = await Promise.all([
+    getUserStorageSummary(ownerId),
+    getEffectivePlan(ownerId),
+  ]);
   const occupied = summary.used + summary.trashed;
 
   return {
     ...summary,
-    quota: USER_STORAGE_QUOTA_BYTES,
-    available: Math.max(0, USER_STORAGE_QUOTA_BYTES - occupied),
+    quota: plan.storageQuotaBytes,
+    available: Math.max(0, plan.storageQuotaBytes - occupied),
     plan: {
-      name: "Free",
-      quotaLabel: "5 GB",
+      id: plan.id,
+      name: plan.name,
+      quotaLabel: formatQuota(plan.storageQuotaBytes),
     },
   };
 }

@@ -30,7 +30,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3BucketName, s3Client } from "../config/s3.js";
-import { USER_STORAGE_QUOTA_BYTES } from "../config/storage.js";
+import { getEffectivePlan } from "./billing.service.js";
 import {
   cacheItemList,
   getCachedItemList,
@@ -381,8 +381,9 @@ export async function duplicateItems({ ownerId, itemIds }) {
   const totalBytes = [...byId.values()]
     .filter((item) => item.type === "file")
     .reduce((total, item) => total + (item.size ?? 0), 0);
-  if ((await getUserStorageUsage(ownerId)) + totalBytes > USER_STORAGE_QUOTA_BYTES) {
-    throw new AppError("Duplicating these items would exceed your 5 GB storage limit", {
+  const plan = await getEffectivePlan(ownerId);
+  if ((await getUserStorageUsage(ownerId)) + totalBytes > plan.storageQuotaBytes) {
+    throw new AppError(`Duplicating these items would exceed your ${plan.name} storage limit`, {
       statusCode: 409,
       code: "storage-quota-exceeded",
     });

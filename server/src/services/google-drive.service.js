@@ -11,10 +11,6 @@ import {
   googleDriveOAuthClient,
 } from "../config/google-drive.js";
 import { s3BucketName, s3Client } from "../config/s3.js";
-import {
-  MAX_FILE_SIZE_BYTES,
-  USER_STORAGE_QUOTA_BYTES,
-} from "../config/storage.js";
 import { AppError } from "../errors/app-error.js";
 import {
   deleteGoogleDriveConnection,
@@ -32,6 +28,7 @@ import { getFileKind } from "../utils/file-kind.js";
 import { decryptSecret, encryptSecret } from "../utils/secret-box.js";
 import { invalidateItemLists } from "./item-cache.service.js";
 import { getJSON, setJSON } from "./redis.service.js";
+import { getEffectivePlan } from "./billing.service.js";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const EXPORTS = {
@@ -218,7 +215,14 @@ function importedName(file) {
   return format && !file.name.endsWith(format.extension) ? `${file.name}${format.extension}` : file.name;
 }
 
-async function importFile({ drive, ownerId, file, parentId, remainingBytes }) {
+async function importFile({
+  drive,
+  ownerId,
+  file,
+  parentId,
+  remainingBytes,
+  maxFileSizeBytes,
+}) {
   const format = EXPORTS[file.mimeType];
   if (file.mimeType.startsWith("application/vnd.google-apps.") && !format) {
     throw new AppError(`Google file type for ${file.name} is not supported`, {
@@ -227,7 +231,7 @@ async function importFile({ drive, ownerId, file, parentId, remainingBytes }) {
     });
   }
   const expectedSize = Number(file.size ?? 0);
-  if (expectedSize > MAX_FILE_SIZE_BYTES || expectedSize > remainingBytes) {
+  if (expectedSize > maxFileSizeBytes || expectedSize > remainingBytes) {
     throw new AppError(`${file.name} exceeds the available storage limit`, {
       statusCode: 409,
       code: "storage-quota-exceeded",
@@ -243,7 +247,7 @@ async function importFile({ drive, ownerId, file, parentId, remainingBytes }) {
   const meter = new Transform({
     transform(chunk, encoding, callback) {
       bytes += chunk.length;
-      if (bytes > MAX_FILE_SIZE_BYTES || bytes > remainingBytes) {
+      if (bytes > maxFileSizeBytes || bytes > remainingBytes) {
         callback(new Error("Imported file exceeds the storage limit"));
       } else callback(null, chunk);
     },
@@ -286,6 +290,7 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
     const destination = await resolveDestination(ownerId, parentId);
     const plan = await buildPlan(drive, fileIds);
     const destinationBySource = new Map();
+    const effectivePlan = await getEffectivePlan(ownerId);
     let used = await getUserStorageUsage(ownerId);
     let completed = 0;
 
@@ -310,7 +315,8 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
           ownerId,
           file,
           parentId: itemParentId,
-          remainingBytes: USER_STORAGE_QUOTA_BYTES - used,
+          remainingBytes: effectivePlan.storageQuotaBytes - used,
+          maxFileSizeBytes: effectivePlan.maxFileSizeBytes,
         });
       }
       completed += 1;

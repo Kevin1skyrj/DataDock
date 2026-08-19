@@ -10,10 +10,8 @@ import { ObjectId } from "mongodb";
 
 import { s3BucketName, s3Client } from "../config/s3.js";
 import {
-  MAX_FILE_SIZE_BYTES,
   UPLOAD_INTENT_TTL_SECONDS,
   UPLOAD_URL_TTL_SECONDS,
-  USER_STORAGE_QUOTA_BYTES,
 } from "../config/storage.js";
 import { AppError } from "../errors/app-error.js";
 import {
@@ -26,6 +24,7 @@ import { getFileKind } from "../utils/file-kind.js";
 import { invalidateItemLists } from "./item-cache.service.js";
 import { deleteKey, getJSON, setJSON } from "./redis.service.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
+import { getEffectivePlan } from "./billing.service.js";
 
 function uploadIntentKey(uploadId) {
   return `datadock:upload:${uploadId}`;
@@ -49,15 +48,21 @@ function validateName(value) {
   return name;
 }
 
-function validateSize(value) {
+function formatLimit(bytes) {
+  return bytes >= 1_000_000_000
+    ? `${bytes / 1_000_000_000} GB`
+    : `${bytes / 1_000_000} MB`;
+}
+
+function validateSize(value, maximumSize) {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new AppError("File size must be a positive integer", {
       statusCode: 400,
       code: "invalid-file-size",
     });
   }
-  if (value > MAX_FILE_SIZE_BYTES) {
-    throw new AppError("File size cannot exceed 2 GB", {
+  if (value > maximumSize) {
+    throw new AppError(`File size cannot exceed ${formatLimit(maximumSize)}`, {
       statusCode: 413,
       code: "file-too-large",
     });
@@ -91,10 +96,11 @@ async function resolveParent({ ownerId, parentId }) {
   return folderId;
 }
 
-async function assertQuota(ownerId, incomingSize) {
+async function assertQuota(ownerId, incomingSize, resolvedPlan) {
+  const plan = resolvedPlan ?? (await getEffectivePlan(ownerId));
   const used = await getUserStorageUsage(ownerId);
-  if (used + incomingSize > USER_STORAGE_QUOTA_BYTES) {
-    throw new AppError("This upload would exceed your 5 GB storage limit", {
+  if (used + incomingSize > plan.storageQuotaBytes) {
+    throw new AppError(`This upload would exceed your ${plan.name} storage limit`, {
       statusCode: 409,
       code: "storage-quota-exceeded",
     });
@@ -108,8 +114,9 @@ async function deleteObject(storageKey) {
 }
 
 export async function createUpload({ ownerId, input }) {
+  const plan = await getEffectivePlan(ownerId);
   const name = validateName(input.name);
-  const size = validateSize(input.size);
+  const size = validateSize(input.size, plan.maxFileSizeBytes);
   const mimeType = normalizeMimeType(input.mimeType);
   const parentId = await resolveParent({ ownerId, parentId: input.parentId });
 
@@ -125,7 +132,7 @@ export async function createUpload({ ownerId, input }) {
     });
   }
 
-  await assertQuota(ownerId, size);
+  await assertQuota(ownerId, size, plan);
 
   const uploadId = randomUUID();
   const storageKey = `users/${ownerId}/objects/${randomUUID()}`;

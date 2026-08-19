@@ -1,4 +1,2 @@
-export const MAX_FILE_SIZE_BYTES = 2_000_000_000;
-export const USER_STORAGE_QUOTA_BYTES = 5_000_000_000;
 export const UPLOAD_URL_TTL_SECONDS = 10 * 60;
 export const UPLOAD_INTENT_TTL_SECONDS = 15 * 60;

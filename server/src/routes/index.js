@@ -8,6 +8,8 @@ import uploadRouter from "./upload.routes.js";
 import storageRouter from "./storage.routes.js";
 import googleDriveRouter from "./google-drive.routes.js";
 import searchRouter from "./search.routes.js";
+import billingRouter from "./billing.routes.js";
+
 const apiRouter = Router();
 apiRouter.use("/items", itemRouter);
 apiRouter.use("/trash", trashRouter);
@@ -18,4 +20,5 @@ apiRouter.use("/uploads", uploadRouter);
 apiRouter.use("/storage", storageRouter);
 apiRouter.use("/imports/google-drive", googleDriveRouter);
 apiRouter.use("/search", searchRouter);
+apiRouter.use("/billing", billingRouter);
 export default apiRouter;
