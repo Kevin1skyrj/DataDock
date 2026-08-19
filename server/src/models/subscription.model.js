@@ -1,9 +1,11 @@
 import { getDatabase } from "../config/db.js";
 
 const SUBSCRIPTIONS_COLLECTION = "subscriptions";
+const WEBHOOK_EVENTS_COLLECTION = "razorpay_webhook_events";
 
 export async function createSubscriptionIndexes() {
   const subscriptions = getDatabase().collection(SUBSCRIPTIONS_COLLECTION);
+  const webhookEvents = getDatabase().collection(WEBHOOK_EVENTS_COLLECTION);
 
   await subscriptions.createIndex(
     { razorpaySubscriptionId: 1 },
@@ -14,6 +16,32 @@ export async function createSubscriptionIndexes() {
     userId: 1,
     createdAt: -1,
   });
+
+  await webhookEvents.createIndex({ eventId: 1 }, { unique: true });
+  await webhookEvents.createIndex(
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  );
+}
+
+export async function claimWebhookEvent(eventId) {
+  try {
+    await getDatabase().collection(WEBHOOK_EVENTS_COLLECTION).insertOne({
+      eventId,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    return true;
+  } catch (error) {
+    if (error.code === 11000) return false;
+    throw error;
+  }
+}
+
+export function releaseWebhookEvent(eventId) {
+  return getDatabase()
+    .collection(WEBHOOK_EVENTS_COLLECTION)
+    .deleteOne({ eventId });
 }
 
 export async function insertSubscription({

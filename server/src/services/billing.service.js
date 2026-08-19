@@ -6,12 +6,17 @@ import {
 } from "../config/razorpay.js";
 import { AppError } from "../errors/app-error.js";
 import {
+  claimWebhookEvent,
   findLatestSubscriptionByUserId,
   findSubscriptionByRazorpayId,
   insertSubscription,
+  releaseWebhookEvent,
   updateSubscription,
 } from "../models/subscription.model.js";
-import { verifySubscriptionSignature } from "../utils/razorpay-signature.js";
+import {
+  verifySubscriptionSignature,
+  verifyWebhookSignature,
+} from "../utils/razorpay-signature.js";
 
 const OPEN_SUBSCRIPTION_STATUSES = new Set([
   "created",
@@ -196,4 +201,78 @@ export async function verifySubscription({
     currentPeriodStart: updatedSubscription.currentPeriodStart,
     currentPeriodEnd: updatedSubscription.currentPeriodEnd,
   };
+}
+
+export async function processWebhook({ rawBody, signature, eventId }) {
+  if (!verifyWebhookSignature({ rawBody, signature })) {
+    throw new AppError("Webhook signature is invalid", {
+      statusCode: 400,
+      code: "invalid-webhook-signature",
+    });
+  }
+
+  if (typeof eventId !== "string" || !eventId) {
+    throw new AppError("Webhook event ID is missing", {
+      statusCode: 400,
+      code: "missing-webhook-event-id",
+    });
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawBody.toString("utf8"));
+  } catch {
+    throw new AppError("Webhook payload is invalid", {
+      statusCode: 400,
+      code: "invalid-webhook-payload",
+    });
+  }
+
+  const claimed = await claimWebhookEvent(eventId);
+  if (!claimed) return { duplicate: true };
+
+  try {
+    if (!payload.event?.startsWith("subscription.")) {
+      return { ignored: true };
+    }
+
+    const subscriptionId = payload.payload?.subscription?.entity?.id;
+    if (typeof subscriptionId !== "string") {
+      throw new AppError("Webhook subscription is missing", {
+        statusCode: 400,
+        code: "missing-webhook-subscription",
+      });
+    }
+
+    const subscription = await findSubscriptionByRazorpayId(subscriptionId);
+    if (!subscription) return { ignored: true };
+
+    const razorpaySubscription =
+      await razorpayClient.subscriptions.fetch(subscriptionId);
+
+    if (razorpaySubscription.plan_id !== subscription.razorpayPlanId) {
+      throw new AppError("Webhook subscription plan does not match", {
+        statusCode: 409,
+        code: "subscription-plan-mismatch",
+      });
+    }
+
+    await updateSubscription({
+      razorpaySubscriptionId: subscriptionId,
+      changes: {
+        status: razorpaySubscription.status,
+        currentPeriodStart: fromRazorpayTimestamp(
+          razorpaySubscription.current_start,
+        ),
+        currentPeriodEnd: fromRazorpayTimestamp(
+          razorpaySubscription.current_end,
+        ),
+      },
+    });
+
+    return { processed: true };
+  } catch (error) {
+    await releaseWebhookEvent(eventId);
+    throw error;
+  }
 }

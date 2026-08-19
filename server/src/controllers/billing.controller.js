@@ -2,8 +2,26 @@ import {
   createSubscription as createSubscriptionService,
   getCurrentBilling as getCurrentBillingService,
   listPlans as listPlansService,
+  processWebhook as processWebhookService,
   verifySubscription as verifySubscriptionService,
 } from "../services/billing.service.js";
+
+export async function processWebhook(req, res, next) {
+  try {
+    const result = await processWebhookService({
+      rawBody: req.body,
+      signature: req.get("x-razorpay-signature"),
+      eventId: req.get("x-razorpay-event-id"),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function getCurrentBilling(req, res, next) {
   try {
