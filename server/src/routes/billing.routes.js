@@ -8,6 +8,7 @@ import {
   verifySubscription,
 } from "../controllers/billing.controller.js";
 import { authenticate } from "../middleware/authenticate.middleware.js";
+import { billingRateLimiter } from "../middleware/rate-limit.middleware.js";
 
 const billingRouter = Router();
 
@@ -15,6 +16,7 @@ billingRouter.get("/plans", getPlans);
 billingRouter.get("/current", authenticate, getCurrentBilling);
 billingRouter.post(
   "/subscriptions",
+  billingRateLimiter,
   authenticate,
   createSubscription,
 );

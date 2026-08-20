@@ -2,16 +2,12 @@ import bcrypt from "bcrypt";
 
 import { AppError } from "../errors/app-error.js";
 import { findUserByEmail, insertUser } from "../models/user.model.js";
-import {
-  validateRegistrationInput,
-  validateLoginInput,
-} from "../validators/auth.validator.js";
 import { createSession } from "./session.service.js";
 import { sendEmailVerificationOtp } from "./otp.service.js";
 const BCRYPT_ROUNDS = 12;
 
 export async function registerUser(input) {
-  const { name, email, password } = validateRegistrationInput(input);
+  const { name, email, password } = input;
 
   const existingUser = await findUserByEmail(email);
 
@@ -57,7 +53,7 @@ export async function registerUser(input) {
 }
 
 export async function loginUser(input) {
-  const { email, password } = validateLoginInput(input);
+  const { email, password } = input;
 
   const user = await findUserByEmail(email);
 

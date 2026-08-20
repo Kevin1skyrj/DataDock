@@ -1,6 +1,12 @@
 import app from "./src/app.js";
-import { connectToDatabase } from "./src/config/db.js";
-import { connectToRedis } from "./src/config/redis.js";
+import {
+  closeDatabaseConnection,
+  connectToDatabase,
+} from "./src/config/db.js";
+import {
+  closeRedisConnection,
+  connectToRedis,
+} from "./src/config/redis.js";
 import { verifyS3Connection } from "./src/config/s3.js";
 import {
   createUserIndexes,
@@ -13,6 +19,38 @@ import { createItemIndexes } from "./src/models/item.model.js";
 import { createGoogleDriveIndexes } from "./src/models/google-drive.model.js";
 import { createSubscriptionIndexes } from "./src/models/subscription.model.js";
 const port = process.env.PORT || 4000;
+let httpServer;
+let shuttingDown = false;
+
+async function shutdown(signal, exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log(`${signal} received. Shutting down gracefully.`);
+
+  const forceExit = setTimeout(() => {
+    console.error("Graceful shutdown timed out");
+    process.exit(1);
+  }, 10_000);
+  forceExit.unref();
+
+  try {
+    if (httpServer) {
+      await new Promise((resolve, reject) => {
+        httpServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+
+    await Promise.allSettled([
+      closeRedisConnection(),
+      closeDatabaseConnection(),
+    ]);
+    process.exit(exitCode);
+  } catch (error) {
+    console.error("Graceful shutdown failed:", error);
+    process.exit(1);
+  }
+}
 
 async function startServer() {
   try {
@@ -27,7 +65,7 @@ async function startServer() {
     await createItemIndexes();
     await createGoogleDriveIndexes();
     await createSubscriptionIndexes();
-    app.listen(port, () => {
+    httpServer = app.listen(port, () => {
       console.log(`Server started on port ${port}`);
     });
   } catch (error) {
@@ -35,4 +73,16 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error);
+  shutdown("uncaughtException", 1);
+});
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled rejection:", error);
+  shutdown("unhandledRejection", 1);
+});
+
 startServer();

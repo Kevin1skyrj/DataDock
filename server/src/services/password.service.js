@@ -15,10 +15,6 @@ import {
   hashPasswordResetToken,
 } from "../utils/password-reset-token.js";
 import {
-  validatePasswordChangeInput,
-  validatePasswordResetInput,
-} from "../validators/auth.validator.js";
-import {
   deleteAllUserSessions,
   deleteOtherUserSessions,
 } from "./session.service.js";
@@ -40,7 +36,7 @@ export async function createPasswordResetAuthorization(userId) {
 }
 
 export async function resetPassword(input) {
-  const { email, token, password } = validatePasswordResetInput(input);
+  const { email, token, password } = input;
   const user = await findUserByEmail(email);
 
   if (!user || user.deletedAt) {
@@ -64,7 +60,7 @@ export async function resetPassword(input) {
 }
 
 export async function changePassword({ userId, sessionId, input }) {
-  const { currentPassword, newPassword } = validatePasswordChangeInput(input);
+  const { currentPassword, newPassword } = input;
   const user = await findUserById(userId);
 
   const matches = user?.passwordHash

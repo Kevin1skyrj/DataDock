@@ -14,10 +14,6 @@ import {
   findUserByEmail,
   markUserEmailVerified,
 } from "../models/user.model.js";
-import {
-  validateEmailVerificationInput,
-  validateEmailInput,
-} from "../validators/auth.validator.js";
 import { createPasswordResetAuthorization } from "./password.service.js";
 
 export const EMAIL_VERIFICATION_PURPOSE = "email-verification";
@@ -65,7 +61,7 @@ export async function sendEmailVerificationOtp({ userId, email }) {
 }
 
 export async function verifyEmailOtp(input) {
-  const { email, code } = validateEmailVerificationInput(input);
+  const { email, code } = input;
 
   const user = await findUserByEmail(email);
 
@@ -131,7 +127,7 @@ export async function verifyEmailOtp(input) {
 }
 
 export async function resendEmailVerificationOtp(input) {
-  const { email } = validateEmailInput(input);
+  const { email } = input;
 
   const user = await findUserByEmail(email);
 
@@ -187,7 +183,7 @@ async function sendPasswordResetOtp({ userId, email }) {
 }
 
 export async function requestPasswordResetOtp(input) {
-  const { email } = validateEmailInput(input);
+  const { email } = input;
   const user = await findUserByEmail(email);
 
   if (!user || user.deletedAt) {
@@ -218,7 +214,7 @@ export async function requestPasswordResetOtp(input) {
 }
 
 export async function verifyPasswordResetOtp(input) {
-  const { email, code } = validateEmailVerificationInput(input);
+  const { email, code } = input;
   const user = await findUserByEmail(email);
 
   if (!user || user.deletedAt) {

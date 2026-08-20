@@ -1,152 +1,79 @@
-import { AppError } from "../errors/app-error.js";
+import { z } from "zod";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const email = z
+  .string({ error: "Enter a valid email address" })
+  .trim()
+  .toLowerCase()
+  .email("Enter a valid email address");
 
-function validateNewPassword(password, code = "invalid-password") {
-  if (
-    typeof password !== "string" ||
-    password.length < 8 ||
-    Buffer.byteLength(password, "utf8") > 72
-  ) {
-    throw new AppError("Password must contain between 8 and 72 bytes", {
-      statusCode: 400,
-      code,
-    });
-  }
+const password = z
+  .string({ error: "Enter your password" })
+  .min(8, "Password must contain between 8 and 72 bytes")
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
+    message: "Password must contain between 8 and 72 bytes",
+  });
 
-  return password;
-}
+const currentPassword = z
+  .string({ error: "Enter your current password" })
+  .min(1, "Enter your current password")
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
+    message: "Enter a valid current password",
+  });
 
-export function validateRegistrationInput({ name, email, password } = {}) {
-  const normalizedName = typeof name === "string" ? name.trim() : "";
-  const normalizedEmail =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
+const otpCode = z
+  .string({ error: "Enter a valid six-digit verification code" })
+  .regex(/^\d{6}$/, "Enter a valid six-digit verification code");
 
-  if (normalizedName.length < 2 || normalizedName.length > 60) {
-    throw new AppError("Name must contain between 2 and 60 characters", {
-      statusCode: 400,
-      code: "invalid-name",
-    });
-  }
-
-  if (!EMAIL_PATTERN.test(normalizedEmail)) {
-    throw new AppError("Enter a valid email address", {
-      statusCode: 400,
-      code: "invalid-email",
-    });
-  }
-
-  validateNewPassword(password);
-
-  return {
-    name: normalizedName,
-    email: normalizedEmail,
+export const registrationSchema = z
+  .object({
+    name: z
+      .string({ error: "Name must contain between 2 and 60 characters" })
+      .trim()
+      .min(2, "Name must contain between 2 and 60 characters")
+      .max(60, "Name must contain between 2 and 60 characters"),
+    email,
     password,
-  };
-}
+  })
+  .strict();
 
-export function validateLoginInput({ email, password } = {}) {
-  const normalizedEmail =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
+export const loginSchema = z
+  .object({
+    email,
+    password: z
+      .string({ error: "Enter your password" })
+      .min(1, "Enter your password")
+      .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
+        message: "Enter a valid password",
+      }),
+  })
+  .strict();
 
-  if (!EMAIL_PATTERN.test(normalizedEmail)) {
-    throw new AppError("Enter a valid email address", {
-      statusCode: 400,
-      code: "invalid-email",
-    });
-  }
+export const emailVerificationSchema = z
+  .object({ email, code: otpCode })
+  .strict();
 
-  if (typeof password !== "string" || password.length === 0) {
-    throw new AppError("Enter your password", {
-      statusCode: 400,
-      code: "invalid-password",
-    });
-  }
+export const emailSchema = z.object({ email }).strict();
 
-  return {
-    email: normalizedEmail,
+export const passwordResetSchema = z
+  .object({
+    email,
+    token: z
+      .string({ error: "This password reset request is invalid or expired" })
+      .regex(
+        /^[A-Za-z0-9_-]{43}$/,
+        "This password reset request is invalid or expired",
+      ),
     password,
-  };
-}
+  })
+  .strict();
 
-export function validateEmailVerificationInput({ email, code } = {}) {
-  const normalizedEmail =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
-
-  if (!EMAIL_PATTERN.test(normalizedEmail)) {
-    throw new AppError("Enter a valid email address", {
-      statusCode: 400,
-      code: "invalid-email",
-    });
-  }
-
-  if (typeof code !== "string" || !/^\d{6}$/.test(code)) {
-    throw new AppError("Enter a valid six-digit verification code", {
-      statusCode: 400,
-      code: "invalid-otp",
-    });
-  }
-
-  return {
-    email: normalizedEmail,
-    code,
-  };
-}
-
-export function validateEmailInput({ email } = {}) {
-  const normalizedEmail =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
-
-  if (!EMAIL_PATTERN.test(normalizedEmail)) {
-    throw new AppError("Enter a valid email address", {
-      statusCode: 400,
-      code: "invalid-email",
-    });
-  }
-
-  return {
-    email: normalizedEmail,
-  };
-}
-
-export function validatePasswordResetInput({ email, token, password } = {}) {
-  const { email: normalizedEmail } = validateEmailInput({ email });
-
-  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
-    throw new AppError("This password reset request is invalid or expired", {
-      statusCode: 400,
-      code: "password-reset-invalid",
-    });
-  }
-
-  validateNewPassword(password);
-
-  return {
-    email: normalizedEmail,
-    token,
-    password,
-  };
-}
-
-export function validatePasswordChangeInput({
-  currentPassword,
-  newPassword,
-} = {}) {
-  if (typeof currentPassword !== "string" || currentPassword.length === 0) {
-    throw new AppError("Enter your current password", {
-      statusCode: 400,
-      code: "invalid-current-password",
-    });
-  }
-
-  validateNewPassword(newPassword, "invalid-new-password");
-
-  if (currentPassword === newPassword) {
-    throw new AppError("Choose a password different from your current password", {
-      statusCode: 400,
-      code: "password-unchanged",
-    });
-  }
-
-  return { currentPassword, newPassword };
-}
+export const passwordChangeSchema = z
+  .object({
+    currentPassword,
+    newPassword: password,
+  })
+  .strict()
+  .refine((input) => input.currentPassword !== input.newPassword, {
+    message: "Choose a password different from your current password",
+    path: ["newPassword"],
+  });
