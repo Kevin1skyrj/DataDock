@@ -1,4 +1,5 @@
 import { AppError } from "../errors/app-error.js";
+import { logError } from "../utils/log-error.js";
 
 export function notFound(req, res, next) {
   next(
@@ -21,7 +22,7 @@ export function errorHandler(error, req, res, next) {
         : 500;
 
   if (statusCode >= 500) {
-    console.error(error);
+    logError("Request failed", error);
   }
 
   res.status(statusCode).json({

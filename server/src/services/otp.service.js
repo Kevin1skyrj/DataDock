@@ -4,6 +4,7 @@ import {
   deleteOtp,
   findOtp,
 } from "../models/otp.model.js";
+import { logError } from "../utils/log-error.js";
 import { generateOtp, hashOtp, verifyOtpHash } from "../utils/otp.js";
 import {
   sendPasswordResetOtpEmail,
@@ -206,7 +207,7 @@ export async function requestPasswordResetOtp(input) {
         email: user.email,
       });
     } catch (error) {
-      console.error("Failed to send password reset email", error);
+      logError("Failed to send password reset email", error);
     }
   }
 

@@ -18,6 +18,7 @@ import { createPasswordResetIndexes } from "./src/models/password-reset.model.js
 import { createItemIndexes } from "./src/models/item.model.js";
 import { createGoogleDriveIndexes } from "./src/models/google-drive.model.js";
 import { createSubscriptionIndexes } from "./src/models/subscription.model.js";
+import { logError } from "./src/utils/log-error.js";
 const port = process.env.PORT || 4000;
 let httpServer;
 let shuttingDown = false;
@@ -47,7 +48,7 @@ async function shutdown(signal, exitCode = 0) {
     ]);
     process.exit(exitCode);
   } catch (error) {
-    console.error("Graceful shutdown failed:", error);
+    logError("Graceful shutdown failed", error);
     process.exit(1);
   }
 }
@@ -77,11 +78,11 @@ async function startServer() {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught exception:", error);
+  logError("Uncaught exception", error);
   shutdown("uncaughtException", 1);
 });
 process.on("unhandledRejection", (error) => {
-  console.error("Unhandled rejection:", error);
+  logError("Unhandled rejection", error);
   shutdown("unhandledRejection", 1);
 });
 

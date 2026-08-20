@@ -11,6 +11,7 @@ const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN;
 const cookieSecret = process.env.COOKIE_SECRET;
 const otpSecret = process.env.OTP_SECRET;
+const production = process.env.NODE_ENV === "production";
 if (!cookieSecret) {
   throw new Error("COOKIE_SECRET is missing from environment variables");
 }
@@ -23,7 +24,29 @@ if (!clientOrigin) {
   throw new Error("CLIENT_ORIGIN is missing from environment variables");
 }
 
-if (process.env.NODE_ENV === "production") {
+let parsedClientOrigin;
+try {
+  parsedClientOrigin = new URL(clientOrigin);
+} catch {
+  throw new Error("CLIENT_ORIGIN must be a valid URL");
+}
+
+if (
+  !["http:", "https:"].includes(parsedClientOrigin.protocol) ||
+  parsedClientOrigin.origin !== clientOrigin
+) {
+  throw new Error("CLIENT_ORIGIN must contain only an HTTP(S) origin");
+}
+
+if (production && parsedClientOrigin.protocol !== "https:") {
+  throw new Error("CLIENT_ORIGIN must use HTTPS in production");
+}
+
+if (production && (cookieSecret.length < 32 || otpSecret.length < 32)) {
+  throw new Error("COOKIE_SECRET and OTP_SECRET must each contain at least 32 characters in production");
+}
+
+if (production) {
   app.set("trust proxy", 1);
 }
 
@@ -43,6 +66,10 @@ app.get("/health", (req, res) => {
 });
 app.use("/api/v1", apiRateLimiter);
 app.use("/api/v1", protectFromCsrf);
+app.use("/api/v1", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser(cookieSecret));
 app.use("/api/v1", apiRouter);

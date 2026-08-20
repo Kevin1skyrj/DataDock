@@ -13,6 +13,7 @@ import {
   getGoogleIdentity,
   loginWithGoogle,
 } from "../services/google-auth.service.js";
+import { logError } from "../utils/log-error.js";
 
 function clearGoogleOAuthCookies(res) {
   const cookieOptions = { ...GOOGLE_OAUTH_COOKIE_OPTIONS };
@@ -97,7 +98,7 @@ export async function completeGoogleLogin(req, res) {
     res.redirect(getClientCallbackUrl({ status: "success" }));
   } catch (error) {
     if (!(error instanceof AppError)) {
-      console.error("Google OAuth callback failed", error);
+      logError("Google OAuth callback failed", error);
     }
 
     res.redirect(
