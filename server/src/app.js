@@ -6,6 +6,7 @@ import { errorHandler, notFound } from "./middleware/error.middleware.js";
 import cookieParser from "cookie-parser";
 import billingWebhookRouter from "./routes/billing-webhook.routes.js";
 import { apiRateLimiter } from "./middleware/rate-limit.middleware.js";
+import { protectFromCsrf } from "./middleware/csrf.middleware.js";
 const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN;
 const cookieSecret = process.env.COOKIE_SECRET;
@@ -41,6 +42,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({ success: true, data: { status: "ok" } });
 });
 app.use("/api/v1", apiRateLimiter);
+app.use("/api/v1", protectFromCsrf);
 app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser(cookieSecret));
 app.use("/api/v1", apiRouter);
