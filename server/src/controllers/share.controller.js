@@ -41,7 +41,10 @@ export async function downloadShare(req, res, next) {
 
 export async function listSharedFolder(req, res, next) {
   try {
-    const data = await listPublicShareItems({ token: req.params.token, parentId: req.query.parentId });
+    const data = await listPublicShareItems({
+      token: req.params.token,
+      parentId: req.validatedQuery.parentId,
+    });
     res.status(200).json({ success: true, data });
   } catch (error) { next(error); }
 }

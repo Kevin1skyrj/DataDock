@@ -1,17 +1,19 @@
 import { searchDrive } from "../services/search.service.js";
 
 function input(req) {
+  const query = req.validatedQuery;
+
   return {
-    query: req.query.q,
-    kinds: typeof req.query.kinds === "string" ? req.query.kinds.split(",") : [],
-    date: req.query.date,
-    size: req.query.size,
-    sharedOnly: req.query.shared === "1",
-    includeTrashed: req.query.trashed === "1",
-    cursor: req.query.cursor,
-    limit: req.query.limit,
-    sortField: req.query.sort,
-    sortDirection: req.query.direction,
+    query: query.q,
+    kinds: query.kinds ?? [],
+    date: query.date,
+    size: query.size,
+    sharedOnly: query.shared ?? false,
+    includeTrashed: query.trashed ?? false,
+    cursor: query.cursor,
+    limit: query.limit,
+    sortField: query.sort,
+    sortDirection: query.direction,
   };
 }
 
