@@ -15,6 +15,13 @@ export function createSubscription(planId) {
   });
 }
 
+/** Ends the plan when the paid period runs out — never immediately. */
+export function cancelSubscription() {
+  return apiRequest("/billing/subscriptions/cancel", {
+    method: "POST",
+  });
+}
+
 export function verifySubscription({ paymentId, subscriptionId, signature }) {
   return apiRequest("/billing/subscriptions/verify", {
     method: "POST",

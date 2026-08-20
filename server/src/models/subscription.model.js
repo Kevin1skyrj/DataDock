@@ -63,6 +63,7 @@ export async function insertSubscription({
     currentPeriodStart: null,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
+    endedAt: null,
     createdAt: now,
     updatedAt: now,
   };

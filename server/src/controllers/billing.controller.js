@@ -1,4 +1,5 @@
 import {
+  cancelSubscription as cancelSubscriptionService,
   createSubscription as createSubscriptionService,
   getCurrentBilling as getCurrentBillingService,
   listPlans as listPlansService,
@@ -57,6 +58,19 @@ export async function createSubscription(req, res, next) {
     });
 
     res.status(201).json({
+      success: true,
+      data: subscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function cancelSubscription(req, res, next) {
+  try {
+    const subscription = await cancelSubscriptionService(req.user.id);
+
+    res.status(200).json({
       success: true,
       data: subscription,
     });

@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  cancelSubscription,
   createSubscription,
   getCurrentBilling,
   getPlans,
@@ -22,4 +23,10 @@ billingRouter.post(
   authenticate,
   verifySubscription,
 );
+billingRouter.post(
+  "/subscriptions/cancel",
+  authenticate,
+  cancelSubscription,
+);
+
 export default billingRouter;
