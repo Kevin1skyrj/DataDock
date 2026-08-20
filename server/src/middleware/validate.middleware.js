@@ -3,9 +3,17 @@ import { ZodError } from "zod";
 import { AppError } from "../errors/app-error.js";
 
 export function validateBody(schema) {
-  return function validateRequestBody(req, res, next) {
+  return validate("body", schema);
+}
+
+export function validateParams(schema) {
+  return validate("params", schema);
+}
+
+function validate(source, schema) {
+  return function validateRequest(req, res, next) {
     try {
-      req.body = schema.parse(req.body);
+      req[source] = schema.parse(req[source]);
       next();
     } catch (error) {
       if (error instanceof ZodError) {

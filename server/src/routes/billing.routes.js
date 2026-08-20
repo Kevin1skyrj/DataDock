@@ -9,6 +9,11 @@ import {
 } from "../controllers/billing.controller.js";
 import { authenticate } from "../middleware/authenticate.middleware.js";
 import { billingRateLimiter } from "../middleware/rate-limit.middleware.js";
+import { validateBody } from "../middleware/validate.middleware.js";
+import {
+  createSubscriptionSchema,
+  verifySubscriptionSchema,
+} from "../validators/billing.validator.js";
 
 const billingRouter = Router();
 
@@ -16,13 +21,15 @@ billingRouter.get("/plans", getPlans);
 billingRouter.get("/current", authenticate, getCurrentBilling);
 billingRouter.post(
   "/subscriptions",
-  billingRateLimiter,
   authenticate,
+  billingRateLimiter,
+  validateBody(createSubscriptionSchema),
   createSubscription,
 );
 billingRouter.post(
   "/subscriptions/verify",
   authenticate,
+  validateBody(verifySubscriptionSchema),
   verifySubscription,
 );
 billingRouter.post(
