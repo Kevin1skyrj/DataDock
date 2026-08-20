@@ -9,7 +9,7 @@ import {
 
 export async function listAllUsers(req, res, next) {
   try {
-    const result = await getUsers(req.query);
+    const result = await getUsers(req.validatedQuery);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);

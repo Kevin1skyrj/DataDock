@@ -94,7 +94,7 @@ export async function getGoogleDriveItems(req, res, next) {
   try {
     const items = await listGoogleDriveItems({
       userId: req.user.id,
-      folderId: typeof req.query.folderId === "string" ? req.query.folderId : "root",
+      folderId: req.validatedQuery.folderId,
     });
     res.status(200).json({ success: true, data: items });
   } catch (error) {

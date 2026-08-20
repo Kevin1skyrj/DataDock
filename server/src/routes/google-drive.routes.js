@@ -9,6 +9,16 @@ import {
   startGoogleDriveConnection,
 } from "../controllers/google-drive.controller.js";
 import { authenticate } from "../middleware/authenticate.middleware.js";
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+} from "../middleware/validate.middleware.js";
+import {
+  googleDriveImportSchema,
+  googleDriveItemsQuerySchema,
+  googleDriveJobParamsSchema,
+} from "../validators/google-drive.validator.js";
 
 const googleDriveRouter = Router();
 
@@ -17,8 +27,20 @@ googleDriveRouter.get("/connect", startGoogleDriveConnection);
 googleDriveRouter.get("/callback", completeGoogleDriveConnection);
 googleDriveRouter.get("/account", getGoogleDriveConnection);
 googleDriveRouter.delete("/connection", removeGoogleDriveConnection);
-googleDriveRouter.get("/items", getGoogleDriveItems);
-googleDriveRouter.post("/jobs", createGoogleDriveImport);
-googleDriveRouter.get("/jobs/:jobId", getGoogleDriveImport);
+googleDriveRouter.get(
+  "/items",
+  validateQuery(googleDriveItemsQuerySchema),
+  getGoogleDriveItems,
+);
+googleDriveRouter.post(
+  "/jobs",
+  validateBody(googleDriveImportSchema),
+  createGoogleDriveImport,
+);
+googleDriveRouter.get(
+  "/jobs/:jobId",
+  validateParams(googleDriveJobParamsSchema),
+  getGoogleDriveImport,
+);
 
 export default googleDriveRouter;

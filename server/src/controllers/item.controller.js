@@ -16,14 +16,15 @@ import {
 
 export async function getItems(req, res, next) {
   try {
+    const query = req.validatedQuery;
     const result = await listItemsService({
       ownerId: req.user.id,
-      parentId: req.query.parentId,
-      view: req.query.view,
-      kinds: typeof req.query.kinds === "string" ? req.query.kinds.split(",").filter(Boolean) : [],
-      query: req.query.q,
-      sortField: req.query.sort,
-      sortDirection: req.query.direction,
+      parentId: query.parentId,
+      view: query.view,
+      kinds: query.kinds ?? [],
+      query: query.q,
+      sortField: query.sort,
+      sortDirection: query.direction,
     });
     res.status(200).json({
       success: true,
@@ -186,7 +187,7 @@ export async function getFolders(req, res, next) {
   try {
     const folders = await listFoldersService({
       ownerId: req.user.id,
-      parentId: req.query.parentId,
+      parentId: req.validatedQuery.parentId,
     });
 
     res.status(200).json({
@@ -202,7 +203,7 @@ export async function getFolderSummary(req, res, next) {
   try {
     const summary = await getFolderSummaryService({
       ownerId: req.user.id,
-      parentId: req.query.parentId,
+      parentId: req.validatedQuery.parentId,
     });
 
     res.status(200).json({

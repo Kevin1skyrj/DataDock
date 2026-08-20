@@ -7,8 +7,11 @@ import {
   previewSharedChild,
   previewShare,
 } from "../controllers/share.controller.js";
-import { validateQuery } from "../middleware/validate.middleware.js";
-import { sharedFolderQuerySchema } from "../validators/share.validator.js";
+import { validateParams, validateQuery } from "../middleware/validate.middleware.js";
+import {
+  sharedChildParamsSchema,
+  sharedFolderQuerySchema,
+} from "../validators/share.validator.js";
 
 const shareRouter = Router();
 shareRouter.get(
@@ -16,8 +19,16 @@ shareRouter.get(
   validateQuery(sharedFolderQuerySchema),
   listSharedFolder,
 );
-shareRouter.get("/:token/items/:itemId/preview", previewSharedChild);
-shareRouter.get("/:token/items/:itemId/download", downloadSharedChild);
+shareRouter.get(
+  "/:token/items/:itemId/preview",
+  validateParams(sharedChildParamsSchema),
+  previewSharedChild,
+);
+shareRouter.get(
+  "/:token/items/:itemId/download",
+  validateParams(sharedChildParamsSchema),
+  downloadSharedChild,
+);
 shareRouter.get("/:token/preview", previewShare);
 shareRouter.get("/:token/download", downloadShare);
 shareRouter.get("/:token", openShare);

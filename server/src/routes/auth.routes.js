@@ -32,6 +32,10 @@ import {
 } from "../middleware/rate-limit.middleware.js";
 import { validateBody } from "../middleware/validate.middleware.js";
 import {
+  notificationPreferencesSchema,
+  updateProfileSchema,
+} from "../validators/account.validator.js";
+import {
   emailSchema,
   emailVerificationSchema,
   loginSchema,
@@ -42,9 +46,14 @@ import {
 const authRouter = Router();
 
 authRouter.get("/me", authenticate, getCurrentUser);
-authRouter.patch("/me", authenticate, updateProfile);
+authRouter.patch("/me", authenticate, validateBody(updateProfileSchema), updateProfile);
 authRouter.get("/preferences", authenticate, getPreferences);
-authRouter.patch("/preferences", authenticate, updatePreferences);
+authRouter.patch(
+  "/preferences",
+  authenticate,
+  validateBody(notificationPreferencesSchema),
+  updatePreferences,
+);
 authRouter.get("/google", startGoogleLogin);
 authRouter.get("/google/callback", completeGoogleLogin);
 authRouter.post(

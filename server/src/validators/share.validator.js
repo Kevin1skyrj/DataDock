@@ -36,3 +36,10 @@ export const updateShareSchema = z
 export const sharedFolderQuerySchema = z
   .object({ parentId: objectId.optional() })
   .strict();
+
+export const sharedChildParamsSchema = z
+  .object({
+    token: z.string(),
+    itemId: objectId,
+  })
+  .strict();

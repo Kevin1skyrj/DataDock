@@ -28,7 +28,7 @@ export async function getStorageActivity(req, res, next) {
   try {
     const events = await getStorageActivityService({
       ownerId: req.user.id,
-      limit: Number(req.query.limit),
+      limit: req.validatedQuery.limit,
     });
     res.status(200).json({ success: true, data: events });
   } catch (error) {
@@ -49,7 +49,7 @@ export async function getLargestFiles(req, res, next) {
   try {
     const files = await getLargestFilesService({
       ownerId: req.user.id,
-      limit: Number(req.query.limit),
+      limit: req.validatedQuery.limit,
     });
     res.status(200).json({ success: true, data: files });
   } catch (error) {
