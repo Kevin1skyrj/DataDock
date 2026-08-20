@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon --exec \"node --env-file=.env\" server.js",
+    "dev:atlas": "nodemon --exec \"node --env-file=.env.atlas-test\" server.js",
     "start": "node --env-file=.env server.js"
   },
   "keywords": [],

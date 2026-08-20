@@ -3,6 +3,14 @@ import { USER_ROLES } from "../config/roles.js";
 
 const USERS_COLLECTION = "users";
 
+function getInitialUserRole(email) {
+  const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+
+  return email?.trim().toLowerCase() === ownerEmail
+    ? USER_ROLES.OWNER
+    : USER_ROLES.USER;
+}
+
 export async function findUserByEmail(email) {
   const database = getDatabase();
 
@@ -23,7 +31,7 @@ export async function insertUser({ name, email, passwordHash }) {
     name,
     email,
     passwordHash,
-    role: USER_ROLES.USER,
+    role: getInitialUserRole(email),
     emailVerifiedAt: null,
     createdAt: now,
     updatedAt: now,
@@ -52,7 +60,7 @@ export async function insertGoogleUser({
     email,
     avatarUrl,
     passwordHash: null,
-    role: USER_ROLES.USER,
+    role: getInitialUserRole(email),
     emailVerifiedAt: now,
     createdAt: now,
     updatedAt: now,
@@ -195,6 +203,10 @@ export async function syncConfiguredOwner() {
   const owner = await users.findOne({ email: ownerEmail });
 
   if (!owner) {
+    const userCount = await users.countDocuments({}, { limit: 1 });
+
+    if (userCount === 0) return;
+
     throw new Error(`OWNER_EMAIL does not match an existing user: ${ownerEmail}`);
   }
 
