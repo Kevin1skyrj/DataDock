@@ -2,6 +2,7 @@ import { AuthError } from "./auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MESSAGE_TYPE = "datadock:google-auth";
+const CHANNEL_NAME = "datadock:google-auth";
 
 const ERROR_MESSAGES = {
   "google-login-cancelled": "Google login was cancelled.",
@@ -35,30 +36,27 @@ export function continueWithGoogle() {
 
   return new Promise((resolve, reject) => {
     let settled = false;
+    const channel = new BroadcastChannel(CHANNEL_NAME);
 
     const finish = (callback) => {
       if (settled) return;
       settled = true;
       window.removeEventListener("message", receiveMessage);
+      channel.removeEventListener("message", receiveBroadcast);
+      channel.close();
       window.clearInterval(closedCheck);
       callback();
     };
 
-    const receiveMessage = (event) => {
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== popup ||
-        event.data?.type !== MESSAGE_TYPE
-      ) {
-        return;
-      }
+    const receiveResult = (data) => {
+      if (data?.type !== MESSAGE_TYPE) return;
 
-      if (event.data.status === "success") {
+      if (data.status === "success") {
         finish(resolve);
         return;
       }
 
-      const code = event.data.code ?? "google-authentication-failed";
+      const code = data.code ?? "google-authentication-failed";
       finish(() =>
         reject(
           new AuthError(
@@ -68,6 +66,16 @@ export function continueWithGoogle() {
         ),
       );
     };
+
+    const receiveMessage = (event) => {
+      if (event.origin !== window.location.origin || event.source !== popup) {
+        return;
+      }
+
+      receiveResult(event.data);
+    };
+
+    const receiveBroadcast = (event) => receiveResult(event.data);
 
     const closedCheck = window.setInterval(() => {
       if (popup.closed) {
@@ -82,6 +90,7 @@ export function continueWithGoogle() {
     }, 500);
 
     window.addEventListener("message", receiveMessage);
+    channel.addEventListener("message", receiveBroadcast);
     popup.focus();
   });
 }
