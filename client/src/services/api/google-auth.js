@@ -36,6 +36,7 @@ export function continueWithGoogle() {
 
   return new Promise((resolve, reject) => {
     let settled = false;
+    let timeoutId;
     const channel = new BroadcastChannel(CHANNEL_NAME);
 
     const finish = (callback) => {
@@ -44,7 +45,7 @@ export function continueWithGoogle() {
       window.removeEventListener("message", receiveMessage);
       channel.removeEventListener("message", receiveBroadcast);
       channel.close();
-      window.clearInterval(closedCheck);
+      window.clearTimeout(timeoutId);
       callback();
     };
 
@@ -77,20 +78,17 @@ export function continueWithGoogle() {
 
     const receiveBroadcast = (event) => receiveResult(event.data);
 
-    const closedCheck = window.setInterval(() => {
-      if (popup.closed) {
-        finish(() =>
-          reject(
-            new AuthError("Google login was cancelled.", {
-              code: "popup-closed",
-            }),
-          ),
-        );
-      }
-    }, 500);
-
     window.addEventListener("message", receiveMessage);
     channel.addEventListener("message", receiveBroadcast);
+    timeoutId = window.setTimeout(() => {
+      finish(() =>
+        reject(
+          new AuthError("Google login timed out. Please try again.", {
+            code: "google-login-timeout",
+          }),
+        ),
+      );
+    }, 10 * 60 * 1000);
     popup.focus();
   });
 }
