@@ -339,13 +339,6 @@ The complete deployment runbook is available in [notes/deployment.md](notes/depl
 - Centralized monitoring, structured logs and alerts
 - Managed Redis and multi-instance architecture if traffic justifies scaling
 
-## Engineering documentation
-
-- [Project interview guide](notes/project.md)
-- [Deployment runbook](notes/deployment.md)
-- [Backend architecture notes](notes/notes.md)
-- [RBAC notes](notes/rbac.note.md)
-
 ## Author
 
 **Rajat Pandey**
