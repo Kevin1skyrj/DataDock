@@ -45,7 +45,7 @@ export const LOGIN = {
 
 export const REGISTER = {
   title: "Create your drive",
-  description: "5 GB free, forever. No card, no onboarding call.",
+  description: "500 MB free, forever. No card, no onboarding call.",
 
   google: "Continue with Google",
   divider: "or",

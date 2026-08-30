@@ -278,7 +278,7 @@ export function Hero({ children }) {
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
         <div data-animate="rise" data-step="badge">
           <Badge variant="brand" pill size="md">
-            Now in early access — 5 GB free
+            Now in early access — 500 MB free
           </Badge>
         </div>
 

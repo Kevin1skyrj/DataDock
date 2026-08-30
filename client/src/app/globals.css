@@ -736,6 +736,13 @@
   padding: 0.375rem;
 }
 
+.legal-copy { color: var(--muted-foreground); font-size: 1rem; line-height: 1.75; }
+.legal-copy section + section { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.legal-copy h2 { margin-bottom: 0.75rem; color: var(--foreground); font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.legal-copy ul { margin-top: 0.75rem; padding-left: 1.25rem; list-style: disc; }
+.legal-copy li + li { margin-top: 0.5rem; }
+.legal-copy a { color: var(--brand); text-decoration: underline; text-underline-offset: 0.2em; }
+
 /*
  * The application's own reduced-motion switch, for people whose system does not
  * offer one or who want it here and not everywhere. It can only ever add to

@@ -26,8 +26,8 @@ export const PLANS = [
       "10 GB of storage",
       "Uploads up to 1 GB per file",
       "Links that expire and can be revoked",
-      "Priority upload and download",
-      "Priority support",
+      "Google Drive import",
+      "Monthly subscription management",
     ],
   },
   {
@@ -40,12 +40,12 @@ export const PLANS = [
     includes: [
       "50 GB of storage",
       "Uploads up to 2 GB per file",
-      "Unlimited sharing",
-      "Advanced storage analytics",
-      "Premium support",
+      "Google Drive import",
+      "Monthly subscription management",
+      "Larger file support",
     ],
   },
 ];
 
 export const PRICING_FOOTNOTE =
-  "Every plan includes the command palette, in-place previews and 30-day recovery. Paid plans renew monthly.";
+  "Every plan includes the command palette, in-place previews, sharing and trash recovery until permanent deletion. Paid plans renew monthly.";

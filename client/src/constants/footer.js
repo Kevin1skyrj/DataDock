@@ -21,7 +21,6 @@ export const FOOTER_NAV = [
     links: [
       { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
-      { label: "Status", href: "/status" },
     ],
   },
   {
@@ -29,6 +28,8 @@ export const FOOTER_NAV = [
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
+      { label: "Refunds", href: "/refund-policy" },
+      { label: "Delivery", href: "/delivery-policy" },
       { label: "Security", href: "/security" },
     ],
   },

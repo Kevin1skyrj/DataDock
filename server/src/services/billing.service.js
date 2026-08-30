@@ -22,6 +22,7 @@ import {
 
 /** A subscription in any of these states is one the user still holds. */
 const OPEN_SUBSCRIPTION_STATUSES = Object.freeze([
+  "created",
   "authenticated",
   "active",
   "pending",
@@ -53,6 +54,19 @@ function toPublicSubscription(subscription) {
     currentPeriodEnd: subscription.currentPeriodEnd,
     endedAt: subscription.endedAt ?? null,
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd === true,
+  };
+}
+
+function toCheckoutSubscription(subscription, plan) {
+  return {
+    keyId: razorpayKeyId,
+    subscriptionId: subscription.razorpaySubscriptionId,
+    plan: {
+      id: plan.id,
+      name: plan.name,
+      pricePaise: plan.pricePaise,
+      currency: plan.currency,
+    },
   };
 }
 
@@ -219,9 +233,20 @@ export async function createSubscription({ userId, planId }) {
   const existingSubscription = await findOpenSubscription(userId);
 
   if (existingSubscription) {
+    // Closing Checkout does not cancel the Razorpay subscription. Reuse that
+    // unpaid subscription instead of creating duplicates on every retry.
+    if (
+      existingSubscription.status === "created" &&
+      existingSubscription.planId === plan.id
+    ) {
+      return toCheckoutSubscription(existingSubscription, plan);
+    }
+
     throw new AppError(
       existingSubscription.cancelAtPeriodEnd
         ? "Your plan is scheduled to end. You can choose a new plan once it does."
+        : existingSubscription.status === "created"
+          ? "Another plan is awaiting payment. Cancel it before choosing a different plan."
         : "You already have an active subscription",
       {
         statusCode: 409,
@@ -262,16 +287,12 @@ export async function createSubscription({ userId, planId }) {
     status: razorpaySubscription.status,
   });
 
-  return {
-    keyId: razorpayKeyId,
-    subscriptionId: razorpaySubscription.id,
-    plan: {
-      id: plan.id,
-      name: plan.name,
-      pricePaise: plan.pricePaise,
-      currency: plan.currency,
+  return toCheckoutSubscription(
+    {
+      razorpaySubscriptionId: razorpaySubscription.id,
     },
-  };
+    plan,
+  );
 }
 
 /**

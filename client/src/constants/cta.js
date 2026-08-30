@@ -8,10 +8,10 @@
 export const CTA = {
   title: "Everything you own, one keystroke away.",
   description:
-    "Start with 5 GB free. No card, no onboarding call, no migration project — drag in a folder and you are done inside a minute.",
+    "Start with 500 MB free. No card, no onboarding call, no migration project — drag in a folder and you are done inside a minute.",
   primary: { label: "Start free", href: "/register" },
   secondary: { label: "See pricing", href: "#pricing" },
 };
 
 /** Reassurance, not features. Each one answers a reason people hesitate. */
-export const CTA_POINTS = ["5 GB free forever", "No credit card", "Cancel in two clicks"];
+export const CTA_POINTS = ["500 MB free forever", "No credit card", "Cancel in two clicks"];

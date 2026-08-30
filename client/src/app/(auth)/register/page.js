@@ -6,7 +6,7 @@ import { REGISTER } from "@/constants/auth";
 
 export const metadata = {
   title: "Create your account",
-  description: "Start with 5 GB of DataDock, free forever.",
+  description: "Start with 500 MB of DataDock, free forever.",
 };
 
 export default function RegisterPage() {

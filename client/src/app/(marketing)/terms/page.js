@@ -1,0 +1,11 @@
+import { PolicyPage, PolicySection, SupportLink } from "@/components/legal/policy-page";
+export const metadata = { title: "Terms of Service", description: "Terms governing use of DataDock." };
+export default function Page() { return <PolicyPage eyebrow="Legal" title="Terms of Service" description="These terms govern your access to and use of DataDock.">
+  <PolicySection title="Using DataDock"><p>Provide accurate information, protect your credentials, and comply with applicable law. You are responsible for activity through your account.</p></PolicySection>
+  <PolicySection title="Your content"><p>You retain ownership of uploads and grant DataDock only the permission needed to store, copy, transmit, preview, and process them to provide the service. You must have the right to upload and share them.</p></PolicySection>
+  <PolicySection title="Prohibited use"><p>Do not upload unlawful, infringing, malicious, deceptive, or abusive material; attempt unauthorized access; evade limits; distribute malware; or interfere with the service.</p></PolicySection>
+  <PolicySection title="Plans"><p>Free includes 500 MB storage and 100 MB maximum files. Pro is ₹99/month with 10 GB and 1 GB files. Premium is ₹299/month with 50 GB and 2 GB files. Paid plans renew monthly through Razorpay until cancelled.</p></PolicySection>
+  <PolicySection title="Cancellation"><p>Cancellation takes effect at the end of the paid period. After downgrade, existing content remains accessible, but uploads may be blocked while usage exceeds the Free limit.</p></PolicySection>
+  <PolicySection title="Availability and enforcement"><p>Availability is not guaranteed to be uninterrupted. We may restrict access for abuse, legal requirements, security risks, non-payment, or violations. Features, limits, and pricing may change prospectively with material changes communicated or published.</p></PolicySection>
+  <PolicySection title="Liability and contact"><p>DataDock is provided on an “as available” basis. To the extent permitted by law, the operator is not liable for indirect or consequential losses. Rights that cannot legally be excluded remain unaffected. Questions: <SupportLink />.</p></PolicySection>
+</PolicyPage>; }

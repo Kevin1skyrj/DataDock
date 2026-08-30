@@ -209,7 +209,7 @@ export default function AboutPage() {
               </h2>
 
               <p className="mt-4 text-lg leading-[1.6] text-muted-foreground text-balance">
-                Start with 5&nbsp;GB, free forever. No card, no sales call.
+                Start with 500&nbsp;MB, free forever. No card, no sales call.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
