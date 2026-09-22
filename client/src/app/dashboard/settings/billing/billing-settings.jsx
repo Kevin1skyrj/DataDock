@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, CreditCard } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Check, Clock3, CreditCard, LoaderCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { SettingRow, SettingsCard, SettingsHeading } from "@/components/settings/settings-parts";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,45 @@ import {
 import { getStorageSummary } from "@/services/files";
 
 const DETAILS_BY_PLAN = Object.fromEntries(PLAN_DETAILS.map((plan) => [plan.id, plan]));
+const ACTIVATION_POLL_INTERVAL_MS = 2500;
+const ACTIVATION_TIMEOUT_MS = 60000;
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+/**
+ * Razorpay can acknowledge Checkout before its subscription reaches `active`.
+ * Keep asking our own API for the authoritative state instead of guessing from
+ * the browser callback or granting paid access optimistically.
+ */
+async function waitForPlanActivation({ planId, onBilling, isCancelled }) {
+  const deadline = Date.now() + ACTIVATION_TIMEOUT_MS;
+
+  while (!isCancelled()) {
+    try {
+      const nextBilling = await getCurrentBilling();
+      if (isCancelled()) return null;
+
+      onBilling(nextBilling);
+      if (
+        nextBilling.plan.id === planId &&
+        nextBilling.subscription?.status === "active"
+      ) {
+        return nextBilling;
+      }
+    } catch {
+      // A brief network or webhook delay should keep the safe pending state.
+      // The next poll can recover without telling the user to pay again.
+    }
+
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return null;
+    await wait(Math.min(ACTIVATION_POLL_INTERVAL_MS, remaining));
+  }
+
+  return null;
+}
 
 /**
  * A billing date, always absolute and always spelled out.
@@ -118,19 +157,32 @@ function PlanSkeleton() {
 export function BillingSettings() {
   const session = useSession();
   const updateSession = session.update;
+  const mountedRef = useRef(true);
   const [plans, setPlans] = useState(null);
   const [billing, setBilling] = useState(null);
   const [summary, setSummary] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState(null);
+  const [activation, setActivation] = useState(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  const applyBilling = useCallback(({ plans: nextPlans, billing: nextBilling, summary: nextSummary }) => {
-    setPlans(nextPlans);
+  const applyCurrentBilling = useCallback((nextBilling) => {
     setBilling(nextBilling);
-    setSummary(nextSummary);
     updateSession({ plan: nextBilling.plan.name });
   }, [updateSession]);
+
+  const applyBilling = useCallback(({ plans: nextPlans, billing: nextBilling, summary: nextSummary }) => {
+    setPlans(nextPlans);
+    setSummary(nextSummary);
+    applyCurrentBilling(nextBilling);
+  }, [applyCurrentBilling]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,33 +212,72 @@ export function BillingSettings() {
   const status = subscription ? STATUS_LABELS[subscription.status] : null;
 
   const choosePlan = async (plan) => {
-    if (plan.id === "free" || plan.id === billing?.plan.id) return;
+    if (
+      plan.id === "free" ||
+      plan.id === billing?.plan.id ||
+      loadingPlan ||
+      activation
+    ) return;
 
     setLoadingPlan(plan.id);
+    let paymentVerified = false;
+
     try {
       const checkout = await createSubscription(plan.id);
       const payment = await openRazorpayCheckout({ checkout, account: session });
       if (!payment) return;
 
       await verifySubscription(payment);
-      const nextBilling = await fetchBillingData();
-      applyBilling(nextBilling);
+      paymentVerified = true;
+      setActivation({ plan, phase: "activating" });
+      notify({
+        title: "Payment successful",
+        description: `Activating your ${plan.name} plan now.`,
+        timeout: 6000,
+      });
 
-      if (nextBilling.billing.plan.id === plan.id) {
+      const activatedBilling = await waitForPlanActivation({
+        planId: plan.id,
+        onBilling: applyCurrentBilling,
+        isCancelled: () => !mountedRef.current,
+      });
+
+      if (!mountedRef.current) return;
+
+      if (!activatedBilling) {
+        setActivation({ plan, phase: "delayed" });
         notify({
-          title: `${plan.name} is active`,
-          description: `Your storage allowance is now ${formatBytes(plan.storageQuotaBytes)}.`,
+          title: "Activation is taking longer than expected",
+          description: "Your payment is safe. We will apply the plan as soon as Razorpay confirms it.",
+          timeout: 8000,
+        });
+        return;
+      }
+
+      try {
+        applyBilling(await fetchBillingData());
+      } catch {
+        applyCurrentBilling(activatedBilling);
+      }
+
+      setActivation(null);
+      notify({
+        title: `${plan.name} is active`,
+        description: `Your storage allowance is now ${formatBytes(plan.storageQuotaBytes)}.`,
+      });
+    } catch (error) {
+      if (paymentVerified) {
+        setActivation({ plan, phase: "delayed" });
+        notify({
+          title: "Plan activation is delayed",
+          description: "Your payment was verified. Refresh shortly or contact support if the plan does not update.",
+          timeout: 8000,
         });
       } else {
-        notify({
-          title: "Payment verified",
-          description: "Razorpay is finishing the subscription activation.",
-        });
+        notify({ title: "Payment was not completed", description: error.message, type: "error" });
       }
-    } catch (error) {
-      notify({ title: "Payment was not completed", description: error.message, type: "error" });
     } finally {
-      setLoadingPlan(null);
+      if (mountedRef.current) setLoadingPlan(null);
     }
   };
 
@@ -285,6 +376,32 @@ export function BillingSettings() {
         title="Plans"
         description="Prices are charged monthly in Indian rupees through Razorpay."
       >
+        {activation ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mx-4 mt-4 flex items-start gap-3 rounded-lg border border-brand/25 bg-brand-tint/35 px-4 py-3"
+          >
+            {activation.phase === "activating" ? (
+              <LoaderCircle className="mt-0.5 size-4 shrink-0 animate-spin text-brand" />
+            ) : (
+              <Clock3 className="mt-0.5 size-4 shrink-0 text-brand" />
+            )}
+            <div className="min-w-0">
+              <p className="text-base font-medium text-foreground">
+                {activation.phase === "activating"
+                  ? `Activating your ${activation.plan.name} plan…`
+                  : `${activation.plan.name} activation is taking longer than expected`}
+              </p>
+              <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                {activation.phase === "activating"
+                  ? "Payment is confirmed. This page will update automatically when Razorpay finishes activation."
+                  : "Your payment is safe. Refresh shortly or contact support if your plan does not update."}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {!plans || !billing ? (
           <PlanSkeleton />
         ) : (
@@ -330,7 +447,7 @@ export function BillingSettings() {
                     className="mt-5 w-full"
                     variant={plan.id === "pro" ? "primary" : "secondary"}
                     loading={loadingPlan === plan.id}
-                    disabled={current || locked}
+                    disabled={current || locked || Boolean(loadingPlan) || Boolean(activation)}
                     onClick={() => choosePlan(plan)}
                   >
                     <CreditCard className="size-3.5" />
