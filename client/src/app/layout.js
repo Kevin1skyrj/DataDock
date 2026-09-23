@@ -5,6 +5,10 @@ import { AppProviders } from "@/providers/app-providers";
 import "./globals.css";
 
 export const metadata = {
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+  },
   title: {
     default: "DataDock — Store smarter. Organize beautifully.",
     template: "%s · DataDock",
