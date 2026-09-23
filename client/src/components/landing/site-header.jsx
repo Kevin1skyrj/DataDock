@@ -91,10 +91,14 @@ export function SiteHeader() {
         const mm = gsap.matchMedia();
 
         mm.add("(prefers-reduced-motion: no-preference)", () => {
-          if (hasSeenEntrance()) return;
-
           const items = gsap.utils.toArray("[data-animate='nav']", root);
           if (!items.length) return;
+
+          if (hasSeenEntrance()) {
+            items.forEach((item) => item.removeAttribute("data-animate"));
+            gsap.set(items, { clearProps: "all" });
+            return;
+          }
 
           gsap.to(items, {
             opacity: 1,

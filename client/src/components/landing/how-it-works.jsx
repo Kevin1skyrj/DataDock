@@ -124,6 +124,7 @@ export function HowItWorks() {
       if (!root) return undefined;
 
       const rails = gsap.utils.toArray("[data-rail]", root);
+      gsap.killTweensOf(rails);
       gsap.set(rails, { scaleY: 0 });
 
       const rail = rails[active];
@@ -165,6 +166,7 @@ export function HowItWorks() {
       });
 
       return () => {
+        gsap.killTweensOf(rails);
         tweenRef.current = null;
         mm.revert();
       };
