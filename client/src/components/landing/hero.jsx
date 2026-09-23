@@ -29,13 +29,19 @@ export function Hero({ children }) {
   useGSAP(
     () => {
       const root = scope.current;
-      if (!root || hasSeenEntrance()) return undefined;
+      if (!root) return undefined;
+
+      const animated = gsap.utils.toArray("[data-animate]", root);
+      if (hasSeenEntrance()) {
+        animated.forEach((element) => element.removeAttribute("data-animate"));
+        gsap.set(animated, { clearProps: "all" });
+        return undefined;
+      }
 
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduced) return undefined;
 
       try {
-        const animated = gsap.utils.toArray("[data-animate]", root);
         const timeline = gsap.timeline({
           defaults: { ease: EASE.entrance },
           onComplete: () => {

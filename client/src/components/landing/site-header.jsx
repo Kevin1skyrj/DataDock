@@ -1,13 +1,12 @@
 "use client";
 
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { HEADER_GUTTER, HeaderIsland } from "@/components/common/header-island";
+import { AccentPicker } from "@/components/common/accent-picker";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +16,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { BEAT, EASE } from "@/constants/motion";
 import { MARKETING_NAV } from "@/constants/nav";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { hasSeenEntrance } from "@/lib/entrance";
 import { cn } from "@/lib/utils";
-
-gsap.registerPlugin(useGSAP);
 
 /** Underline that grows from the cursor's side and retreats the way it came. */
 const NAV_LINK =
@@ -56,7 +51,6 @@ const NAV_LINK =
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const scope = useRef(null);
   const sentinelRef = useRef(null);
   const pathname = usePathname();
 
@@ -78,50 +72,6 @@ export function SiteHeader() {
   // page locked behind a panel that is no longer visible.
   const compact = useMediaQuery("(max-width: 1023.98px)");
   const sheetOpen = menuOpen && compact;
-
-  // The header settles in first, before anything in the hero. Its initial
-  // state is CSS gated on data-motion, so a JavaScript failure leaves a fully
-  // composed header rather than an invisible one.
-  useGSAP(
-    () => {
-      const root = scope.current;
-      if (!root) return;
-
-      try {
-        const mm = gsap.matchMedia();
-
-        mm.add("(prefers-reduced-motion: no-preference)", () => {
-          const items = gsap.utils.toArray("[data-animate='nav']", root);
-          if (!items.length) return;
-
-          if (hasSeenEntrance()) {
-            items.forEach((item) => item.removeAttribute("data-animate"));
-            gsap.set(items, { clearProps: "all" });
-            return;
-          }
-
-          gsap.to(items, {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            stagger: 0.06,
-            delay: BEAT.nav,
-            ease: EASE.entrance,
-            onComplete: () => {
-              items.forEach((item) => item.removeAttribute("data-animate"));
-              gsap.set(items, { clearProps: "all" });
-            },
-          });
-        });
-
-        return () => mm.revert();
-      } catch {
-        document.documentElement.removeAttribute("data-motion");
-        return undefined;
-      }
-    },
-    { scope },
-  );
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -145,7 +95,7 @@ export function SiteHeader() {
       {/* `fixed`, not `sticky`. The header is rendered outside the page content
           so it remains anchored to the viewport. The hero carries matching top
           padding because a fixed header occupies no space in document flow. */}
-      <header ref={scope} className={cn("fixed inset-x-0 top-0 z-50", HEADER_GUTTER)}>
+      <header className={cn("fixed inset-x-0 top-0 z-50", HEADER_GUTTER)}>
         <HeaderIsland
           scrolled={scrolled}
           className="rounded-xl border-line-2 bg-bg-deep/95 backdrop-blur-none"
@@ -159,7 +109,6 @@ export function SiteHeader() {
               return (
                 <Tag
                   href={href}
-                  data-animate="nav"
                   className="text-xl font-semibold tracking-tight text-foreground hover:text-foreground"
                 >
                   DataDock
@@ -173,7 +122,7 @@ export function SiteHeader() {
               {MARKETING_NAV.map((item) => {
                 const { Tag, href } = linkFor(item.href);
                 return (
-                  <Tag key={item.href} href={href} data-animate="nav" className={NAV_LINK}>
+                  <Tag key={item.href} href={href} className={NAV_LINK}>
                     {item.label}
                   </Tag>
                 );
@@ -181,7 +130,8 @@ export function SiteHeader() {
             </nav>
           </div>
 
-          <div data-animate="nav" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <AccentPicker />
             <ThemeToggle className="hidden sm:inline-flex" />
 
             {/* A real route, so it remains a client-side Next navigation. */}
