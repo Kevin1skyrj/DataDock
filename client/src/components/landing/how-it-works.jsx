@@ -183,11 +183,11 @@ export function HowItWorks() {
             How it works
           </Badge>
 
-          <h2 className="mt-5 text-display-md font-semibold tracking-tighter text-balance sm:text-display-lg lg:text-display-xl">
+          <h2 className="mt-6 text-display-md font-semibold tracking-tighter text-balance sm:text-display-lg lg:text-display-xl">
             From drop to shared link in four steps.
           </h2>
 
-          <p className="mt-4 text-lg leading-[1.6] text-muted-foreground text-balance sm:text-2xl">
+          <p className="mt-5 text-lg leading-[1.65] text-muted-foreground text-balance sm:text-xl">
             No setup, no folder taxonomy to design, no admin console. The common path is the
             fastest one — here it is, start to finish.
           </p>
@@ -231,43 +231,43 @@ export function HowItWorks() {
                   onClick={() => select(index)}
                   data-hiw="step"
                   className={cn(
-                    "group relative rounded-lg py-4 pr-4 pl-6 text-left",
-                    "transition-all duration-200 ease-standard",
-                    "border border-transparent",
+                    "group relative rounded-xl py-5 pr-4 pl-6 text-left",
+                    "transition-all duration-300 ease-standard",
+                    "border-2 border-transparent",
                     selected 
-                      ? "bg-surface/80 border-line-strong/60" 
-                      : "hover:bg-surface/40 hover:border-line/20",
+                      ? "bg-surface shadow-md border-brand/20" 
+                      : "hover:bg-surface/50 hover:border-line/30",
                   )}
                 >
                   {/* Track and fill are separate elements: one is the shape of
                       the step, the other is how much of it has elapsed. */}
                   <span
                     aria-hidden="true"
-                    className="absolute inset-y-3 left-0 w-1 rounded-full bg-line/40"
+                    className="absolute inset-y-2 left-0 w-1.5 rounded-full bg-line/30"
                   />
                   <span
                     data-rail
                     aria-hidden="true"
-                    className="absolute inset-y-3 left-0 w-1 origin-top rounded-full bg-brand"
+                    className="absolute inset-y-2 left-0 w-1.5 origin-top rounded-full bg-brand shadow-sm"
                     style={{ transform: "scaleY(0)" }}
                   />
 
                   <span className="flex items-start gap-3.5">
                     <span
                       className={cn(
-                        "mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg transition-colors duration-200 ease-standard",
+                        "mt-0.5 grid size-10 shrink-0 place-items-center rounded-lg transition-all duration-300 ease-standard",
                         selected
-                          ? "bg-brand-tint text-brand ring-1 ring-brand/25 ring-inset"
-                          : "bg-surface-2 text-dim",
+                          ? "bg-brand text-brand-contrast shadow-md scale-105"
+                          : "bg-surface-2 text-dim group-hover:scale-110",
                       )}
                     >
-                      <Icon className="size-4" />
+                      <Icon className="size-5" />
                     </span>
 
                     <span className="min-w-0">
                       <span
                         className={cn(
-                          "block text-xl font-semibold transition-colors duration-200 ease-standard",
+                          "block text-lg font-semibold transition-colors duration-300 ease-standard",
                           selected ? "text-foreground" : "text-muted-foreground",
                         )}
                       >
@@ -275,7 +275,7 @@ export function HowItWorks() {
                       </span>
                       <span
                         className={cn(
-                          "mt-1 block text-md leading-[1.6] transition-colors duration-200 ease-standard",
+                          "mt-1.5 block text-sm leading-[1.65] transition-colors duration-300 ease-standard",
                           selected ? "text-muted-foreground" : "text-dim",
                         )}
                       >
@@ -294,7 +294,7 @@ export function HowItWorks() {
             id={panelId}
             aria-labelledby={tabId(active)}
             tabIndex={0}
-            className="relative min-h-76 overflow-hidden rounded-2xl border border-line-2 bg-overlay p-6 shadow-elevated sm:min-h-84 sm:p-8"
+            className="relative min-h-76 overflow-hidden rounded-2xl border-2 border-line-2 bg-surface p-6 shadow-lg sm:min-h-84 sm:p-8"
           >
             {/* The same light as the hero, kept faint — this panel is a stage,
                 not a second product frame. */}
