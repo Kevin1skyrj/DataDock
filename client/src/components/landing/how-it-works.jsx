@@ -195,7 +195,7 @@ export function HowItWorks() {
 
         <div
           data-hiw="body"
-          className="mt-14 grid gap-8 lg:mt-18 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-center lg:gap-14"
+          className="mt-12 grid gap-8 lg:mt-16 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-center lg:gap-14"
         >
           <div
             role="tablist"
@@ -232,20 +232,23 @@ export function HowItWorks() {
                   data-hiw="step"
                   className={cn(
                     "group relative rounded-lg py-4 pr-4 pl-6 text-left",
-                    "transition-colors duration-200 ease-standard",
-                    selected ? "bg-surface/60" : "hover:bg-surface/40",
+                    "transition-all duration-200 ease-standard",
+                    "border border-transparent",
+                    selected 
+                      ? "bg-surface/80 border-line-strong/60" 
+                      : "hover:bg-surface/40 hover:border-line/20",
                   )}
                 >
                   {/* Track and fill are separate elements: one is the shape of
                       the step, the other is how much of it has elapsed. */}
                   <span
                     aria-hidden="true"
-                    className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-line"
+                    className="absolute inset-y-3 left-0 w-1 rounded-full bg-line/40"
                   />
                   <span
                     data-rail
                     aria-hidden="true"
-                    className="absolute inset-y-3 left-0 w-0.5 origin-top rounded-full bg-brand"
+                    className="absolute inset-y-3 left-0 w-1 origin-top rounded-full bg-brand"
                     style={{ transform: "scaleY(0)" }}
                   />
 
@@ -264,7 +267,7 @@ export function HowItWorks() {
                     <span className="min-w-0">
                       <span
                         className={cn(
-                          "block text-xl font-medium transition-colors duration-200 ease-standard",
+                          "block text-xl font-semibold transition-colors duration-200 ease-standard",
                           selected ? "text-foreground" : "text-muted-foreground",
                         )}
                       >

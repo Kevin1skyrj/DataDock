@@ -217,8 +217,8 @@ export function CommandShowcase() {
               }
             }}
             className={cn(
-              "overflow-hidden rounded-2xl border border-line-2 bg-overlay shadow-elevated",
-              "focus-within:border-brand/40 focus-within:shadow-[var(--elevation),0_16px_50px_-18px_var(--brand-glow)]",
+              "overflow-hidden rounded-2xl border-2 border-line-2 bg-surface",
+              "focus-within:border-brand/50 focus-within:shadow-[var(--elevation),0_16px_50px_-18px_var(--brand-glow)]",
               "transition-[border-color,box-shadow] duration-300 ease-standard",
             )}
           >
@@ -262,7 +262,7 @@ export function CommandShowcase() {
                 <div key={group.id} role="group" aria-labelledby={`${baseId}-${group.id}`}>
                   <p
                     id={`${baseId}-${group.id}`}
-                    className="px-2.5 pt-2 pb-1 text-2xs tracking-widest text-dim uppercase"
+                    className="px-2.5 pt-2 pb-1 text-2xs tracking-widest text-muted-foreground uppercase"
                   >
                     {group.label}
                   </p>
@@ -288,7 +288,7 @@ export function CommandShowcase() {
                           "transition-colors duration-150 ease-standard",
                           selected
                             ? "bg-brand-tint text-foreground ring-1 ring-brand/25 ring-inset"
-                            : "text-muted-foreground",
+                            : "text-foreground hover:bg-surface-2",
                         )}
                       >
                         <Icon
@@ -351,7 +351,7 @@ export function CommandShowcase() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: reduced ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] }}
-                  className="inline-flex items-center gap-2 rounded-full border border-line/70 bg-surface px-3.5 py-1.5 text-xs text-muted-foreground"
+                  className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3.5 py-1.5 text-xs font-medium text-foreground"
                 >
                   <Check className="size-3.5 text-success" />
                   {result.text}
@@ -371,7 +371,7 @@ export function CommandShowcase() {
                   setCursor(0);
                   inputRef.current?.focus();
                 }}
-                className="rounded-md border border-line px-2 py-0.5 font-mono text-2xs text-muted-foreground transition-colors duration-200 ease-standard hover:border-brand/40 hover:text-brand"
+                className="rounded-md border border-line px-2 py-0.5 font-mono text-2xs text-muted-foreground transition-colors duration-200 ease-standard hover:border-brand/60 hover:text-brand hover:bg-brand-tint/50"
               >
                 {suggestion}
               </button>
