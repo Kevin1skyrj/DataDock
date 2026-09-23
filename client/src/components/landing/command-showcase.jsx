@@ -196,7 +196,7 @@ export function CommandShowcase() {
   );
 
   return (
-    <section id="command" className="relative scroll-mt-24 pt-12 pb-24 sm:pt-16 sm:pb-32">
+    <section id="command" className="relative scroll-mt-24 pt-12 pb-20 sm:pt-16 sm:pb-28">
       <div ref={scope} className="mx-auto max-w-page px-5 sm:px-10">
         <SectionHeading
           eyebrow="Command palette"

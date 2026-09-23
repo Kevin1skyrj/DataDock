@@ -1,17 +1,33 @@
 /**
- * The page's closing argument.
+ * The final call-to-action section on the landing page.
  *
- * Every section above this one has been about the product. This one is about
- * the visitor: what changes for them, and how little stands between here and
- * there. No feature is named — by this point they have been named enough.
+ * A clear, direct invitation to sign up without unnecessary complexity.
+ * Matches the "Calm Precision" design direction: professional, focused, and
+ * outcome-driven rather than decorative.
  */
 export const CTA = {
-  title: "Everything you own, one keystroke away.",
+  title: "Start organizing your files today.",
   description:
-    "Start with 500 MB free. No card, no onboarding call, no migration project — drag in a folder and you are done inside a minute.",
-  primary: { label: "Start free", href: "/register" },
-  secondary: { label: "See pricing", href: "#pricing" },
+    "Join thousands of users who trust DataDock to keep their files organized, secure, and always within reach. Get 500 MB free—no credit card required.",
+  primary: {
+    label: "Create your free account",
+    href: "/signup",
+  },
+  secondary: {
+    label: "View pricing",
+    href: "/#pricing",
+  },
 };
 
-/** Reassurance, not features. Each one answers a reason people hesitate. */
-export const CTA_POINTS = ["500 MB free forever", "No credit card", "Cancel in two clicks"];
+/**
+ * Trust signals and benefits that accompany the final CTA.
+ *
+ * These are quick wins that remove friction and build confidence in the decision
+ * to sign up. Each point is kept to ~4–6 words for instant scanning.
+ */
+export const CTA_POINTS = [
+  "No credit card required",
+  "500 MB free storage",
+  "Takes 30 seconds to sign up",
+  "Secure and private by default",
+];

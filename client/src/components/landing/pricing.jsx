@@ -18,14 +18,14 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 function Price({ plan }) {
   return (
-    <div className="mt-6">
+    <div className="mt-7">
       <p className="flex items-baseline gap-1.5">
         <span className="text-display-lg font-semibold tracking-tighter text-foreground tabular-nums">
           ₹{plan.monthly}
         </span>
         <span className="text-md text-dim">/ month</span>
       </p>
-      <p className="mt-2 text-xs text-dim">
+      <p className="mt-2 text-base text-dim">
         {plan.monthly === 0 ? "Free forever" : "Billed monthly"}
       </p>
     </div>
@@ -52,25 +52,24 @@ export function Pricing() {
   );
 
   return (
-    <section id="pricing" className="relative scroll-mt-24 pt-12 pb-24 sm:pt-16 sm:pb-32">
+    <section id="pricing" className="relative scroll-mt-24 pt-12 pb-20 sm:pt-16 sm:pb-28">
       <div ref={scope} className="mx-auto max-w-page px-5 sm:px-10">
         <SectionHeading
           eyebrow="Pricing"
-          title="Start free. Upgrade when your drive says so."
-          description="No seat minimums, annual lock-in or sales call. Choose the room your files need."
+          title="Simple plans that grow with your files."
+          description="Start free and upgrade only when you need more storage. Every paid plan renews monthly with no annual commitment."
         />
 
-        <div data-plan-grid className="mt-12 grid gap-5 lg:mt-14 lg:grid-cols-3 lg:items-center">
+        <div data-plan-grid className="mt-10 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
           {PLANS.map((plan) => (
             <article
               key={plan.id}
               data-plan
               className={cn(
-                "group relative flex flex-col rounded-2xl p-6 sm:p-7",
-                "transition-[border-color,transform,box-shadow] duration-300 ease-standard hover:-translate-y-1",
+                "relative flex h-full flex-col rounded-2xl border bg-bg-deep p-6 transition-colors duration-300 ease-standard sm:p-7",
                 plan.featured
-                  ? "border border-brand/35 bg-overlay shadow-[var(--elevation),0_20px_60px_-24px_var(--brand-glow)] lg:py-10 hover:border-brand/55 hover:shadow-[var(--elevation-hover),0_28px_70px_-24px_var(--brand-glow)]"
-                  : "border border-line bg-surface shadow-[0_1px_0_var(--lit)_inset] hover:border-brand/30 hover:shadow-elevated",
+                  ? "border-brand/45 bg-surface hover:border-brand/65"
+                  : "border-line-2 hover:border-line-strong hover:bg-surface",
               )}
             >
               {plan.featured ? (
@@ -80,25 +79,27 @@ export function Pricing() {
               ) : null}
 
               <h3 className="text-xl font-medium text-foreground">{plan.name}</h3>
-              <p className="mt-1.5 text-md leading-[1.6] text-muted-foreground">{plan.tagline}</p>
+              <p className="mt-2 min-h-11 text-base leading-[1.65] text-muted-foreground">
+                {plan.tagline}
+              </p>
               <Price plan={plan} />
 
               <Button
                 size="lg"
                 variant={plan.featured ? "primary" : "secondary"}
                 render={<Link href="/register" />}
-                className={cn("mt-6 w-full", plan.featured && "dd-shine")}
+                className="mt-7 w-full"
               >
                 {plan.cta}
               </Button>
 
               <div className="mt-7 border-t border-line/70 pt-6">
-                <p className="text-xs tracking-widest text-dim uppercase">
+                <p className="text-sm tracking-widest text-dim uppercase">
                   {plan.inherits ? `Everything in ${plan.inherits}, plus` : "Includes"}
                 </p>
                 <ul className="mt-4 flex flex-col gap-3">
                   {plan.includes.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-md text-muted-foreground">
+                    <li key={item} className="flex items-start gap-2.5 text-base leading-[1.55] text-muted-foreground">
                       <span className={cn("mt-0.5 grid size-4 shrink-0 place-items-center rounded-full", plan.featured ? "bg-brand-tint text-brand" : "bg-surface-2 text-dim")}>
                         <Check className="size-2.5" strokeWidth={3} />
                       </span>

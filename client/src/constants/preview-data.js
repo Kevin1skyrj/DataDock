@@ -110,8 +110,6 @@ export const PREVIEW_STORAGE = {
   used: "6.12 GB",
   total: "10 GB",
   percent: 61,
-  /** The idle loop creeps toward this, as a background upload would. */
-  ceiling: 64,
 };
 
 /** What the palette demo types, and the actions it offers alongside results. */

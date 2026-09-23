@@ -7,9 +7,9 @@
  * nothing at all. `/#pricing` names the page as well as the place, so the link
  * works from anywhere.
  *
- * The header still treats them differently: when the target page is the one you
- * are already on, the smoother scrolls to it; otherwise it is a navigation that
- * happens to land at a hash.
+ * The header still treats them differently: a target on the current page uses
+ * a native anchor, while any other target is a real navigation that happens to
+ * land at a hash.
  */
 export const MARKETING_NAV = [
   { label: "How it works", href: "/#how" },

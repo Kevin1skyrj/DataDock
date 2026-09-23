@@ -2,238 +2,83 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "lucide-react";
 import { useRef } from "react";
 
 import { AmbientBackdrop } from "@/components/landing/ambient-backdrop";
-import { HeroScene } from "@/components/landing/hero-scene";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
 import { BEAT, EASE } from "@/constants/motion";
 import { hasSeenEntrance, markEntranceSeen } from "@/lib/entrance";
-import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+gsap.registerPlugin(useGSAP);
 
 const HEADLINE = [
   ["Store", "smarter."],
   ["Organize", "beautifully."],
 ];
 
-/** How far a magnetic control leans toward the pointer, in px. */
-const MAGNET_RANGE = 7;
-
+/**
+ * A product-led hero with one clear reading path: promise, explanation, action,
+ * and then the live DataDock preview. Motion is limited to the first entrance;
+ * normal scrolling and pointer movement do not run hero animation work.
+ */
 export function Hero({ children }) {
   const scope = useRef(null);
 
   useGSAP(
     () => {
       const root = scope.current;
-      if (!root) return;
+      if (!root || hasSeenEntrance()) return undefined;
 
-      // Every entrance target starts hidden via CSS gated on data-motion. If
-      // anything below throws, dropping the attribute restores the composed
-      // page rather than leaving a blank hero behind.
-      const restore = () => document.documentElement.removeAttribute("data-motion");
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduced) return undefined;
 
       try {
-        const mm = gsap.matchMedia();
-
-        mm.add(
-          {
-            animate: "(prefers-reduced-motion: no-preference)",
-            finePointer: "(pointer: fine)",
+        const animated = gsap.utils.toArray("[data-animate]", root);
+        const timeline = gsap.timeline({
+          defaults: { ease: EASE.entrance },
+          onComplete: () => {
+            animated.forEach((element) => element.removeAttribute("data-animate"));
+            gsap.set(animated, { clearProps: "all" });
+            markEntranceSeen();
           },
-          (context) => {
-            const { animate, finePointer } = context.conditions;
-            if (!animate) return undefined;
+        });
 
-            // On a repeat view within the session the boot script withheld
-            // data-motion, so nothing is hidden and there is nothing to reveal.
-            // Everything below the entrance — parallax, handoff, pointer work —
-            // still applies; only the choreography is skipped.
-            if (!hasSeenEntrance()) {
-              const animated = gsap.utils.toArray("[data-animate]", root);
-
-              const timeline = gsap.timeline({
-                defaults: { ease: EASE.entrance },
-                onComplete: () => {
-                  // Hand the elements back to CSS: drop the hook so the initial
-                  // state no longer matches, then clear GSAP's inline styles.
-                  // Leaving a blur filter behind would soften the text forever.
-                  animated.forEach((element) => element.removeAttribute("data-animate"));
-                  gsap.set(animated, { clearProps: "all" });
-                  markEntranceSeen();
-                },
-              });
-
-              timeline
-                .to("[data-animate='glow']", { opacity: 1, scale: 1, duration: 1.4 }, BEAT.ambient)
-                .to(
-                  "[data-animate='rise'][data-step='badge']",
-                  { opacity: 1, y: 0, duration: 0.6 },
-                  BEAT.badge,
-                );
-
-              // Line by line, not word by word across the whole headline: the
-              // second clause should land as a reply to the first, which a
-              // single continuous stagger flattens into one long sweep.
-              HEADLINE.forEach((_, line) => {
-                timeline.to(
-                  `[data-line='${line}'] [data-animate='word']`,
-                  // Transform only. Animating a filter alongside it would
-                  // re-rasterise the word every frame for an effect the mask
-                  // already sells.
-                  { y: 0, duration: 0.95, stagger: 0.07 },
-                  BEAT.headline + line * BEAT.headlineLine,
-                );
-              });
-
-              timeline
-                .to(
-                  "[data-animate='rise'][data-step='copy']",
-                  { opacity: 1, y: 0, duration: 0.7 },
-                  BEAT.copy,
-                )
-                .to(
-                  "[data-animate='cta']",
-                  { opacity: 1, y: 0, scale: 1, duration: 0.6, stagger: 0.06 },
-                  BEAT.cta,
-                )
-                // The glow lands after the buttons, so the CTA reads as powering
-                // on rather than fading in.
-                .to(
-                  "[data-animate='rise'][data-step='cta-glow']",
-                  { opacity: 1, duration: 0.8 },
-                  BEAT.ctaGlow,
-                )
-                .to(
-                  "[data-animate='rise'][data-step='hint']",
-                  { opacity: 1, y: 0, duration: 0.7 },
-                  BEAT.ctaGlow,
-                );
-            }
-
-            // Ambient layers drift against the scroll so the hero reads as
-            // stacked planes. Scrubbed, never a scroll listener.
-            gsap.utils.toArray("[data-parallax]", root).forEach((layer) => {
-              gsap.to(layer, {
-                yPercent: (parseFloat(layer.dataset.parallax) || 0.2) * 26,
-                ease: "none",
-                scrollTrigger: {
-                  trigger: root,
-                  start: "top top",
-                  end: "bottom top",
-                  scrub: 0.5,
-                },
-              });
-            });
-
-            // The handoff into the product preview. The copy steps back as the
-            // device comes forward, so the two read as one continuous move
-            // rather than a section ending and another beginning.
-            const copy = root.querySelector("[data-hero-copy]");
-
-            if (copy) {
-              gsap.to(copy, {
-                opacity: 0.4,
-                y: -26,
-                ease: "none",
-                scrollTrigger: {
-                  // Anchored to the copy leaving rather than the preview
-                  // arriving: keyed to the preview, a tall viewport would start
-                  // the fade already partly applied on first paint.
-                  trigger: copy,
-                  start: "bottom 45%",
-                  end: "bottom 5%",
-                  scrub: 0.6,
-                },
-              });
-            }
-
-            // Looping idle motion — ambient drift, the frame's edge light — is
-            // real GPU work whether or not it is on screen. Parked while the
-            // hero is scrolled past, so the rest of the page is not paying for
-            // animation nobody can see.
-            const idle = gsap.utils.toArray("[data-idle-motion]", root);
-
-            if (idle.length) {
-              ScrollTrigger.create({
-                trigger: root,
-                start: "top bottom",
-                end: "bottom top",
-                onToggle: ({ isActive }) => {
-                  idle.forEach((element) => {
-                    element.style.animationPlayState = isActive ? "running" : "paused";
-                  });
-                },
-              });
-            }
-
-            if (!finePointer) return undefined;
-
-            const spotlight = root.querySelector("[data-spotlight]");
-            const cleanups = [];
-
-            if (spotlight) {
-              gsap.to(spotlight, { opacity: 0.5, duration: 1.6, delay: 0.6 });
-
-              // quickTo interpolates on GSAP's ticker, so pointer events never
-              // write styles directly and the work stays on one rAF per frame.
-              // Short enough that the light stops when the cursor does — a long
-              // tail here reads as lag, not smoothness.
-              const moveX = gsap.quickTo(spotlight, "x", { duration: 0.5, ease: EASE.pointer });
-              const moveY = gsap.quickTo(spotlight, "y", { duration: 0.5, ease: EASE.pointer });
-
-              const onPointerMove = (event) => {
-                const bounds = root.getBoundingClientRect();
-                moveX(((event.clientX - bounds.left) / Math.max(bounds.width, 1) - 0.5) * 140);
-                moveY((event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 60);
-              };
-
-              window.addEventListener("pointermove", onPointerMove, { passive: true });
-              cleanups.push(() => window.removeEventListener("pointermove", onPointerMove));
-            }
-
-            // Magnetic call to action. The lean lives on a wrapper rather than
-            // the button so it never fights the button's own hover transform,
-            // and so the entrance's clearProps cannot wipe it mid-gesture.
-            gsap.utils.toArray("[data-magnetic]", root).forEach((target) => {
-              const toX = gsap.quickTo(target, "x", { duration: 0.4, ease: EASE.pointer });
-              const toY = gsap.quickTo(target, "y", { duration: 0.4, ease: EASE.pointer });
-
-              const onMove = (event) => {
-                const bounds = target.getBoundingClientRect();
-                toX(((event.clientX - bounds.left) / bounds.width - 0.5) * MAGNET_RANGE * 2);
-                toY(((event.clientY - bounds.top) / bounds.height - 0.5) * MAGNET_RANGE);
-              };
-
-              const onLeave = () => {
-                toX(0);
-                toY(0);
-              };
-
-              target.addEventListener("pointermove", onMove, { passive: true });
-              target.addEventListener("pointerleave", onLeave);
-              // Keyboard users get the same resting geometry as everyone else.
-              target.addEventListener("focusout", onLeave);
-
-              cleanups.push(() => {
-                target.removeEventListener("pointermove", onMove);
-                target.removeEventListener("pointerleave", onLeave);
-                target.removeEventListener("focusout", onLeave);
-              });
-            });
-
-            return () => cleanups.forEach((off) => off());
-          },
+        timeline.to(
+          "[data-animate='rise'][data-step='badge']",
+          { opacity: 1, y: 0, duration: 0.55 },
+          BEAT.badge,
         );
 
-        return () => mm.revert();
+        HEADLINE.forEach((_, line) => {
+          timeline.to(
+            `[data-line='${line}'] [data-animate='word']`,
+            { y: 0, duration: 0.8, stagger: 0.06 },
+            BEAT.headline + line * BEAT.headlineLine,
+          );
+        });
+
+        timeline
+          .to(
+            "[data-animate='rise'][data-step='copy']",
+            { opacity: 1, y: 0, duration: 0.6 },
+            BEAT.copy,
+          )
+          .to(
+            "[data-animate='cta']",
+            { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.06 },
+            BEAT.cta,
+          )
+          .to(
+            "[data-animate='rise'][data-step='hint']",
+            { opacity: 1, y: 0, duration: 0.55 },
+            BEAT.ctaGlow,
+          );
+
+        return () => timeline.kill();
       } catch {
-        restore();
+        document.documentElement.removeAttribute("data-motion");
         return undefined;
       }
     },
@@ -241,66 +86,29 @@ export function Hero({ children }) {
   );
 
   return (
-    // The bottom padding is the transition: it gives the ambient light empty
-    // space to resolve in, rather than dying against the next section's edge.
     <section ref={scope} id="top" className="relative isolate overflow-hidden pb-16 sm:pb-24">
       <AmbientBackdrop />
 
-      {/*
-        One row, two columns, from `lg` up.
-
-        Stacked, the dock became a second hero: the copy ended, the section
-        appeared to end with it, and the object began again underneath. Side by
-        side there is one composition, the section keeps the height it had
-        before the scene existed, and — the part that matters most visually —
-        the dock finally gets a frame close to square. It is a *tall* object,
-        three platters and a column inside a cage, and every version of it in a
-        wide shallow band was the wrong shape for the thing being drawn.
-
-        The copy takes the larger share (1.12 : 1). That ratio exists to protect
-        the headline: it has two authored lines and a mask reveal built around
-        them, so it must not be allowed to wrap to three.
-
-        Below `lg` this collapses back to one centred column — a phone has no
-        room for two, and stacking there reads as ordinary vertical rhythm
-        rather than as two competing sections.
-      */}
       <div
         data-hero-copy
-        className={cn(
-          // Top padding carries the header's height as well as its own. The
-          // header is `fixed` now, so it occupies no space — 76px at base,
-          // 80px from `sm`, being its 64px island plus the gutter above it.
-          "relative mx-auto grid max-w-page items-center gap-8 px-5 pt-39 sm:px-10 sm:pt-48",
-          "lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] lg:gap-12 lg:pt-44",
-        )}
+        className="relative mx-auto flex max-w-5xl flex-col items-center px-5 pt-36 text-center sm:px-10 sm:pt-44 lg:pt-48"
       >
-        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
         <div data-animate="rise" data-step="badge">
           <Badge variant="brand" pill size="md">
             Now in early access — 500 MB free
           </Badge>
         </div>
 
-        {/* The centred hero ran to 76px because it had the whole page. In a
-            column a little over half that width, 76px breaks "Organize
-            beautifully." onto a third line and the mask reveal — which animates
-            two authored lines — comes apart. These are the largest steps that
-            still fit on two. `text-balance` is dropped from `lg`: the lines are
-            authored, so balancing is the browser second-guessing them. */}
-        <h1 className="mt-7 max-w-225 text-display-lg leading-[1.02] font-semibold tracking-hero text-balance sm:text-display-2xl lg:max-w-none lg:text-[3.25rem] lg:text-wrap xl:text-[3.75rem]">
-          {HEADLINE.map((line, index) => (
+        <h1 className="mt-7 max-w-4xl text-[2.75rem] leading-[1.02] font-semibold tracking-hero text-balance sm:text-[3.75rem] lg:text-[4.5rem]">
+          {HEADLINE.map((line, lineIndex) => (
             <span
               key={line.join(" ")}
-              data-line={index}
-              // Padding opens the clip below the baseline so descenders survive
-              // the mask; the matching negative margin keeps the line box
-              // unchanged. Both in em, so it holds at every breakpoint.
-              className="block overflow-hidden pb-[0.14em] mb-[-0.14em]"
+              data-line={lineIndex}
+              className="mb-[-0.14em] block overflow-hidden pb-[0.14em]"
             >
-              {line.map((word, index) => (
+              {line.map((word, wordIndex) => (
                 <span key={word}>
-                  {index > 0 ? " " : null}
+                  {wordIndex > 0 ? " " : null}
                   <span data-animate="word" className="inline-block will-change-transform">
                     {word}
                   </span>
@@ -313,89 +121,45 @@ export function Hero({ children }) {
         <p
           data-animate="rise"
           data-step="copy"
-          // The hero's second voice, not body copy: 15 → 17.5 → 20px against a
-          // 36 → 76px headline. An explicit leading, because the type ladder
-          // pairs no line-height and `normal` is too tight at 20px.
-          className="mt-6 max-w-165 text-lg leading-[1.55] text-muted-foreground text-balance sm:text-2xl lg:text-display-xs"
+          className="mt-7 max-w-2xl text-xl leading-[1.7] text-muted-foreground text-balance sm:text-2xl lg:text-[1.125rem]"
         >
-          A cloud drive that behaves like a desktop app. Upload, find, and share files in seconds —
-          without the clutter of an enterprise suite.
+          A fast, secure cloud drive for everyday work. Upload, organize, find, and share your
+          files without the clutter of an enterprise suite.
         </p>
 
-        <div className="relative mt-9 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-          <div
-            data-animate="rise"
-            data-step="cta-glow"
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-x-10 -inset-y-8 -z-10 rounded-full opacity-0 blur-2xl"
-            style={{
-              background: "radial-gradient(ellipse, var(--brand-glow) 0%, transparent 70%)",
-            }}
-          />
-
+        <div className="mt-9 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
           <div data-animate="cta" className="w-full sm:w-auto">
-            <div data-magnetic className="w-full sm:w-auto">
-              <Button
-                size="lg"
-                render={<a href="#pricing" />}
-                className="group/cta dd-shine w-full sm:w-auto"
-              >
-                Start free
-                {/* The arrow leans out on hover — the button acknowledges the
-                    pointer before the click, which is what makes it feel
-                    tactile rather than merely styled. */}
-                <ArrowRight className="transition-transform duration-300 ease-out-expo group-hover/cta:translate-x-0.5" />
-              </Button>
-            </div>
+            <Button
+              size="lg"
+              render={<a href="#pricing" />}
+              className="group/cta h-12 w-full px-6 text-md sm:w-auto"
+            >
+              Start free
+              <ArrowRight className="transition-transform duration-200 ease-standard group-hover/cta:translate-x-0.5" />
+            </Button>
           </div>
 
           <div data-animate="cta" className="w-full sm:w-auto">
-            <div data-magnetic className="w-full sm:w-auto">
-              <Button
-                size="lg"
-                variant="secondary"
-                render={<a href="#how" />}
-                className="w-full sm:w-auto"
-              >
-                See how it works
-              </Button>
-            </div>
+            <Button
+              size="lg"
+              variant="secondary"
+              render={<a href="#features" />}
+              className="h-12 w-full px-6 text-md sm:w-auto"
+            >
+              Explore features
+            </Button>
           </div>
         </div>
 
-        {/* The shortcut sits with the actions it belongs to. Stranded under the
-            preview it was a caption on something already scrolled past, and it
-            left the section ending on a line of small grey text. */}
         <p
           data-animate="rise"
           data-step="hint"
-          className="mt-5 flex items-center gap-1.5 text-base text-dim"
+          className="mt-5 text-md text-muted-foreground"
         >
-          Or press
-          <Kbd variant="inline">⌘K</Kbd>— search works right here.
+          No credit card required · Upgrade only when you need more space
         </p>
-        </div>
-
-        {/*
-          The dock's column. Nothing is written over it at any width, so the
-          overlap this replaced cannot come back by tuning a number.
-
-          The height is expressed twice on purpose. On a phone it is a band
-          under the copy, sized in `vh` so it takes a predictable slice of the
-          screen. From `lg` it is a column beside the copy, clamped in `rem` so
-          it holds a near-square frame instead of stretching to whatever the
-          copy happens to measure that breakpoint.
-        */}
-        <div
-          data-animate="glow"
-          className="relative h-[34vh] max-h-96 min-h-56 lg:h-[clamp(24rem,44vh,32rem)] lg:max-h-none"
-        >
-          <HeroScene className="absolute inset-0" />
-        </div>
       </div>
 
-      {/* The product preview mounts here, inside the hero's light and parallax
-          rather than as a separate section below it. */}
       {children}
     </section>
   );

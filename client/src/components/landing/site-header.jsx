@@ -7,8 +7,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { AccentPicker } from "@/components/common/accent-picker";
-import { CommandTrigger } from "@/components/common/command-trigger";
 import { HEADER_GUTTER, HeaderIsland } from "@/components/common/header-island";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -29,7 +27,7 @@ gsap.registerPlugin(useGSAP);
 
 /** Underline that grows from the cursor's side and retreats the way it came. */
 const NAV_LINK =
-  "relative text-base text-muted-foreground transition-colors duration-200 ease-standard hover:text-foreground " +
+  "relative text-md text-muted-foreground transition-colors duration-200 ease-standard hover:text-foreground " +
   "after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-full after:origin-right after:scale-x-0 " +
   "after:bg-brand after:transition-transform after:duration-300 after:ease-out-expo " +
   "hover:after:origin-left hover:after:scale-x-100 focus-visible:after:origin-left focus-visible:after:scale-x-100";
@@ -37,10 +35,8 @@ const NAV_LINK =
 /**
  * The marketing header.
  *
- * A floating island rather than a bar pinned to the top edge. A full-width bar
- * cuts the page in two at the very moment the hero is trying to open; an island
- * sits *in* the page instead of across it, and the ambient light carries on
- * around and behind it.
+ * A compact navigation surface aligned with the page container. It remains
+ * visually solid so navigation stays clear over every marketing section.
  *
  * The island is always present rather than materialising on scroll — it reads
  * as a piece of chrome, and chrome that appears out of nothing is a trick. What
@@ -67,11 +63,8 @@ export function SiteHeader() {
   /**
    * A section on *this* page is an anchor; anything else is a navigation.
    *
-   * `next/link` attaches its own click handler through React, which runs before
-   * a listener on `document` — so routing a same-page hash through `Link` means
-   * the router acts first and the smooth scroller's `preventDefault` arrives
-   * too late to matter. A plain anchor leaves the click for the scroller, which
-   * is the one that knows how to move this page.
+   * Same-page sections use a native anchor, while links from another marketing
+   * page use Next navigation so the destination route is loaded correctly.
    */
   const linkFor = (href) => {
     const samePage = href.startsWith("/#") && pathname === "/";
@@ -145,14 +138,14 @@ export function SiteHeader() {
     <Sheet open={sheetOpen} onOpenChange={setMenuOpen}>
       <div ref={sentinelRef} aria-hidden="true" className="absolute top-0 h-px w-full" />
 
-      {/* `fixed`, not `sticky`. Sticky needs the element to sit in the flow it
-          sticks within, and this header is now rendered outside the scrolling
-          content — ScrollSmoother transforms that content, and a transformed
-          ancestor would make the header scroll away with it. Out here it holds
-          the viewport for real. The hero carries matching top padding, since a
-          fixed header no longer occupies space of its own. */}
+      {/* `fixed`, not `sticky`. The header is rendered outside the page content
+          so it remains anchored to the viewport. The hero carries matching top
+          padding because a fixed header occupies no space in document flow. */}
       <header ref={scope} className={cn("fixed inset-x-0 top-0 z-50", HEADER_GUTTER)}>
-        <HeaderIsland scrolled={scrolled}>
+        <HeaderIsland
+          scrolled={scrolled}
+          className="rounded-xl border-line-2 bg-bg-deep/95 backdrop-blur-none"
+        >
           <div className="flex items-center gap-10">
             {/* Home, wherever you are. As a bare `#top` it resolved against the
                 current page, so from `/about` the wordmark pointed at
@@ -171,11 +164,8 @@ export function SiteHeader() {
             })()}
 
             <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
-              {/* All `Link`, because every href now names a page. The smooth
-                  scroller intercepts the ones that point at the page you are
-                  already on; the rest are real navigations. A plain `<a>` would
-                  tear the document down and rebuild it — new paint, new fonts,
-                  the scroller and the ambient light starting over. */}
+              {/* Same-page destinations become anchors; links from another
+                  marketing route remain client-side navigations. */}
               {MARKETING_NAV.map((item) => {
                 const { Tag, href } = linkFor(item.href);
                 return (
@@ -188,15 +178,9 @@ export function SiteHeader() {
           </div>
 
           <div data-animate="nav" className="flex items-center gap-2">
-            <CommandTrigger label="Search or jump to…" className="hidden w-56 md:flex" />
-
-            <AccentPicker className="hidden sm:inline-flex" />
             <ThemeToggle className="hidden sm:inline-flex" />
 
-            {/* A real route, so a real Link. An `<a>` here would tear the whole
-                document down and rebuild it — new paint, new fonts, the ambient
-                light restarting — which is precisely the seam the authentication
-                screens are built to avoid. */}
+            {/* A real route, so it remains a client-side Next navigation. */}
             <Button variant="ghost" size="sm" render={<Link href="/login" />} className="hidden sm:inline-flex">
               Log in
             </Button>
@@ -313,10 +297,7 @@ export function SiteHeader() {
 
           <div className="flex items-center justify-between pt-1">
             <span className="text-sm text-dim">Appearance</span>
-            <div className="flex items-center gap-2">
-              <AccentPicker />
-              <ThemeToggle />
-            </div>
+            <ThemeToggle />
           </div>
         </div>
       </SheetContent>

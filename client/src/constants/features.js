@@ -58,14 +58,3 @@ export const FEATURES = [
     description: "Documents, images, video, audio and code render in place, on any device.",
   },
 ];
-
-/**
- * Where each card's light sits, as a percentage across its top edge.
- *
- * The reference this pattern comes from gives every card its own hue. That
- * cannot work here: DataDock has one switchable accent, so six fixed colours
- * would abandon the palette for anyone who is not on blue. Varying the origin
- * of a brand-derived wash gives the cards the same individuality while every
- * one of them still answers the accent switch.
- */
-export const CARD_LIGHT = [22, 55, 80, 38, 68, 48];

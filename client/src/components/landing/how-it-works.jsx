@@ -176,7 +176,7 @@ export function HowItWorks() {
     // Top padding is deliberately lighter than the bottom: the hero already
     // contributes its own trailing space, and stacking two full section
     // paddings left a dead band between them.
-    <section id="how" className="relative scroll-mt-24 pt-12 pb-24 sm:pt-16 sm:pb-32">
+    <section id="how" className="relative scroll-mt-24 pt-12 pb-20 sm:pt-16 sm:pb-28">
       <div ref={scope} className="mx-auto max-w-page px-5 sm:px-10">
         <div data-hiw="lede" className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <Badge variant="neutral" pill size="md" className="tracking-wider uppercase">

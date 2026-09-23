@@ -50,7 +50,7 @@ export function PreviewSidebar({ storage }) {
           <div key={group.label} className="flex flex-col gap-0.5">
             <p
               data-preview="item"
-              className="px-2.5 pb-1.5 text-xs tracking-widest text-dim uppercase"
+              className="px-2.5 pb-1.5 text-sm tracking-widest text-dim uppercase"
             >
               {group.label}
             </p>
@@ -62,7 +62,7 @@ export function PreviewSidebar({ storage }) {
                   key={item.id}
                   data-preview="item"
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors duration-200 ease-standard",
+                    "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-base transition-colors duration-200 ease-standard",
                     // Selection and hover both read in the live accent, so the
                     // preview responds to the palette switch rather than
                     // staying a neutral grey regardless of it.
@@ -73,7 +73,7 @@ export function PreviewSidebar({ storage }) {
                 >
                   <Icon className={cn("size-4 shrink-0", item.active && "text-brand")} />
                   <span className="flex-1 truncate">{item.label}</span>
-                  {item.count ? <span className="text-xs text-dim">{item.count}</span> : null}
+                  {item.count ? <span className="text-sm text-dim">{item.count}</span> : null}
                 </div>
               );
             })}
@@ -124,12 +124,12 @@ export function PreviewFileRow({ file, active, dimmed, onActivate }) {
 
       <span className="flex min-w-0 items-center gap-2.5">
         <Icon className={cn("size-4 shrink-0", active ? "text-brand" : "text-dim")} />
-        <span className="truncate text-sm text-foreground">{file.name}</span>
+        <span className="truncate text-base text-foreground">{file.name}</span>
       </span>
 
-      <span className="text-right font-mono text-xs text-dim sm:text-left">{file.size}</span>
-      <span className="hidden text-xs text-dim sm:block">{file.modified}</span>
-      <span className="hidden text-xs xl:block">
+      <span className="text-right font-mono text-sm text-dim sm:text-left">{file.size}</span>
+      <span className="hidden text-sm text-dim sm:block">{file.modified}</span>
+      <span className="hidden text-sm xl:block">
         {file.shared ? <span className="text-brand">{file.shared}</span> : <span className="text-dim">—</span>}
       </span>
     </button>
@@ -141,7 +141,7 @@ export function PreviewFileHeader() {
     <div
       data-preview="item"
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_76px] gap-3 border-b border-line/70 px-2.5 pb-2.5 text-xs tracking-wide text-dim uppercase",
+        "grid grid-cols-[minmax(0,1fr)_76px] gap-3 border-b border-line/70 px-2.5 pb-2.5 text-sm tracking-wide text-dim uppercase",
         "sm:grid-cols-[minmax(0,1fr)_84px_108px] xl:grid-cols-[minmax(0,1fr)_84px_108px_64px]",
       )}
     >
@@ -163,7 +163,7 @@ export function PreviewDetails({ file }) {
     // product is alive — hovering a row moves it — so it is the last thing that
     // should be dropped as the frame narrows, not the first.
     <aside className="hidden min-w-0 flex-col gap-4 border-l border-line/70 p-4 lg:flex xl:gap-5 xl:p-5">
-      <p className="text-xs tracking-widest text-dim uppercase">Details</p>
+      <p className="text-sm tracking-widest text-dim uppercase">Details</p>
 
       <div className="flex aspect-4/3 items-center justify-center rounded-lg border border-line/70 bg-surface">
         <Icon className="size-8 text-dim xl:size-9" />
@@ -172,15 +172,15 @@ export function PreviewDetails({ file }) {
       <div className="flex flex-col gap-1">
         {/* Keyed on the file so the panel cross-fades as the selection moves,
             rather than swapping text abruptly. */}
-        <p key={`${file.id}-name`} className="animate-[dd-detail_260ms_ease-out] truncate text-sm font-medium text-foreground">
+        <p key={`${file.id}-name`} className="animate-[dd-detail_260ms_ease-out] truncate text-base font-medium text-foreground">
           {file.name}
         </p>
-        <p key={`${file.id}-meta`} className="animate-[dd-detail_260ms_ease-out] text-xs text-dim">
+        <p key={`${file.id}-meta`} className="animate-[dd-detail_260ms_ease-out] text-sm text-dim">
           {file.meta}
         </p>
       </div>
 
-      <dl key={`${file.id}-fields`} className="flex animate-[dd-detail_260ms_ease-out] flex-col gap-2.5 text-xs">
+      <dl key={`${file.id}-fields`} className="flex animate-[dd-detail_260ms_ease-out] flex-col gap-2.5 text-sm">
         {[
           ["Modified", file.modified],
           ["Owner", file.owner],
@@ -208,7 +208,7 @@ export function PreviewDetails({ file }) {
         ].map(([label, Glyph]) => (
           <span
             key={label}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line/70 bg-surface py-2 text-xs text-muted-foreground"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line/70 bg-surface py-2 text-sm text-muted-foreground"
           >
             <Glyph className="size-3.5" />
             {label}
@@ -234,16 +234,16 @@ export function PreviewChrome() {
       </span>
 
       <span className="hidden items-center gap-1.5 sm:flex">
-        <span className="rounded-md bg-brand-tint px-2.5 py-1.5 text-xs text-foreground ring-1 ring-brand/25 ring-inset">
+        <span className="rounded-md bg-brand-tint px-2.5 py-1.5 text-sm text-foreground ring-1 ring-brand/25 ring-inset">
           Client work
         </span>
-        <span className="rounded-md px-2.5 py-1.5 text-xs text-dim transition-colors duration-200 ease-standard hover:bg-brand-tint/55 hover:text-foreground">
+        <span className="rounded-md px-2.5 py-1.5 text-sm text-dim transition-colors duration-200 ease-standard hover:bg-brand-tint/55 hover:text-foreground">
           Invoices 2026
         </span>
       </span>
 
       <span className="ml-auto flex items-center gap-2 rounded-md border border-line/70 bg-surface px-3 py-1.5">
-        <span className="font-mono text-xs text-dim">datadock.app</span>
+        <span className="font-mono text-sm text-dim">datadock.app</span>
         <Kbd variant="bare" className="text-dim">
           ⌘K
         </Kbd>

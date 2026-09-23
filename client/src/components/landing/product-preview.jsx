@@ -2,8 +2,6 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { ScrollSmoother } from "gsap/ScrollSmoother";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CornerDownLeft, Grid2x2, Rows3, Search, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -17,21 +15,20 @@ import {
 } from "@/components/landing/preview-parts";
 import { Kbd } from "@/components/ui/kbd";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
-import { BEAT, EASE, PALETTE_HOLD_MS } from "@/constants/motion";
+import { BEAT, EASE } from "@/constants/motion";
 import { PALETTE_DEMO, PREVIEW_FILES, PREVIEW_STORAGE } from "@/constants/preview-data";
 import { hasSeenEntrance } from "@/lib/entrance";
 import { OPEN_PALETTE_EVENT } from "@/lib/palette-event";
 import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(useGSAP, ScrollSmoother, ScrollTrigger);
+gsap.registerPlugin(useGSAP);
 
 /**
  * The living product preview.
  *
- * Three things make it read as software rather than a screenshot: the file rows
- * drive the details panel on hover, the palette demo types and filters against
- * the same data the table renders, and the whole pane tilts and catches light
- * as though it were a physical surface.
+ * File rows drive the details panel on hover, and the command palette filters
+ * the same data the table renders. The surrounding frame stays calm and solid
+ * so those product interactions remain the focus.
  */
 export function ProductPreview() {
   const scope = useRef(null);
@@ -40,7 +37,6 @@ export function ProductPreview() {
   const [typed, setTyped] = useState("");
 
   const reduced = usePrefersReducedMotion();
-  const dismissRef = useRef(null);
 
   // Reduced motion skips the typing, not the palette: pressing ⌘K still opens
   // it, fully typed. Derived rather than written from an effect.
@@ -51,46 +47,17 @@ export function ProductPreview() {
   const matches = PREVIEW_FILES.filter((file) => file.name.toLowerCase().includes(query));
   const filtering = paletteOpen && query.length >= 2;
 
-  const cancelDismiss = useCallback(() => {
-    if (dismissRef.current) {
-      window.clearTimeout(dismissRef.current);
-      dismissRef.current = null;
-    }
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false);
   }, []);
 
-  // Closing by hand also cancels any pending auto-dismiss, so a demo still in
-  // flight cannot reopen or re-close underneath the visitor.
-  const closePalette = useCallback(() => {
-    cancelDismiss();
-    setPaletteOpen(false);
-  }, [cancelDismiss]);
-
-  // Opened by the visitor — ⌘K, or the header's command bar. It stays open
-  // until they close it; only the demo dismisses itself.
+  // Opened deliberately by the visitor with ⌘K and left open until dismissed.
   const openPalette = useCallback(() => {
-    cancelDismiss();
     setTyped("");
     setPaletteOpen(true);
-  }, [cancelDismiss]);
+  }, []);
 
-  // Opened by the entrance. Types itself, holds long enough to be read, then
-  // hands the frame back to the file table — which is the hero's resting
-  // state, and the only state in which the row-to-details interaction is
-  // reachable at all.
-  const playPaletteDemo = useCallback(() => {
-    cancelDismiss();
-    setTyped("");
-    setPaletteOpen(true);
-    dismissRef.current = window.setTimeout(() => {
-      dismissRef.current = null;
-      setPaletteOpen(false);
-    }, PALETTE_HOLD_MS);
-  }, [cancelDismiss]);
-
-  useEffect(() => cancelDismiss, [cancelDismiss]);
-
-  // The palette types itself in, then holds. Re-runs whenever it reopens, so
-  // the demo replays on demand rather than only once on load.
+  // The palette types only after the visitor opens it.
   useEffect(() => {
     if (!paletteOpen || reduced) return undefined;
 
@@ -111,23 +78,9 @@ export function ProductPreview() {
       const target = scope.current;
       if (!target) return;
 
-      /*
-       * Through the smoother, not through the browser.
-       *
-       * `scrollIntoView` moves the document, but ScrollSmoother owns the
-       * document's scroll: it normalises the wheel and drives the content's
-       * transform from its own loop. A native scroll request lands in the
-       * middle of that and the two stop agreeing — the page either refuses to
-       * move at all or ends up at a position the smoother will not let you
-       * leave in one direction.
-       *
-       * `get()` returns nothing when there is no smoother, which is the case
-       * for anyone who asked for reduced motion. There the native call is
-       * correct and is what runs.
-       */
-      const smoother = ScrollSmoother.get();
-      if (smoother) smoother.scrollTo(target, true, "center center");
-      else target.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Move only this explicit navigation request smoothly; normal wheel and
+      // touch scrolling remains entirely native and immediately responsive.
+      target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
 
       openPalette();
     };
@@ -148,7 +101,7 @@ export function ProductPreview() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(OPEN_PALETTE_EVENT, reveal);
     };
-  }, [openPalette, closePalette]);
+  }, [openPalette, closePalette, reduced]);
 
   useGSAP(
     () => {
@@ -156,170 +109,67 @@ export function ProductPreview() {
       if (!root) return undefined;
 
       try {
-        const mm = gsap.matchMedia();
+        const bars = gsap.utils.toArray("[data-storage-bar]", root);
+        const pcts = gsap.utils.toArray("[data-storage-pct]", root);
+        const writePct = (value) => {
+          const text = `${Math.round(value)}%`;
+          pcts.forEach((node) => {
+            node.textContent = text;
+          });
+        };
 
-        mm.add(
-          {
-            animate: "(prefers-reduced-motion: no-preference)",
-            finePointer: "(pointer: fine)",
+        if (reduced || hasSeenEntrance()) {
+          gsap.set(bars, { scaleX: PREVIEW_STORAGE.percent / 100 });
+          writePct(PREVIEW_STORAGE.percent);
+          return undefined;
+        }
+
+        const parts = gsap.utils.toArray("[data-preview]", root);
+        const counter = { value: 0 };
+        const timeline = gsap.timeline({
+          delay: BEAT.frame,
+          defaults: { ease: EASE.entrance },
+          onComplete: () => {
+            parts.forEach((element) => element.removeAttribute("data-preview"));
+            gsap.set(parts, { clearProps: "opacity,transform" });
           },
-          (context) => {
-            const { animate, finePointer } = context.conditions;
+        });
 
-            const frame = root.querySelector("[data-tilt]");
-            // Two meters exist — sidebar above lg, inline below it — and only
-            // one is visible at a time. Both are driven, so the storage beat
-            // lands at every width.
-            const bars = gsap.utils.toArray("[data-storage-bar]", root);
-            const pcts = gsap.utils.toArray("[data-storage-pct]", root);
-            const writePct = (value) => {
-              const text = `${Math.round(value)}%`;
-              pcts.forEach((node) => {
-                node.textContent = text;
-              });
-            };
+        timeline
+          .to("[data-preview='frame']", { opacity: 1, y: 0, scale: 1, duration: 0.8 }, 0)
+          .to(
+            "[data-preview='item']",
+            { opacity: 1, y: 0, duration: 0.45, stagger: 0.025 },
+            BEAT.chrome - BEAT.frame,
+          )
+          .to(
+            "[data-preview='row']",
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.03 },
+            BEAT.rows - BEAT.frame,
+          )
+          .to(
+            bars,
+            { scaleX: PREVIEW_STORAGE.percent / 100, duration: 0.9, ease: EASE.glide },
+            BEAT.storage - BEAT.frame,
+          )
+          .to(
+            counter,
+            {
+              value: PREVIEW_STORAGE.percent,
+              duration: 0.9,
+              ease: EASE.glide,
+              onUpdate: () => writePct(counter.value),
+            },
+            BEAT.storage - BEAT.frame,
+          );
 
-            if (!animate) {
-              gsap.set(bars, { scaleX: PREVIEW_STORAGE.percent / 100 });
-              writePct(PREVIEW_STORAGE.percent);
-              return undefined;
-            }
-
-            const parts = gsap.utils.toArray("[data-preview]", root);
-            const counter = { value: 0 };
-            const replay = hasSeenEntrance();
-
-            // The preview runs on the same clock as the header and the hero
-            // copy; `frame` is its cue, and everything below is relative to it.
-            // On a repeat view there is nothing hidden to reveal, so the
-            // timeline collapses to its end state and the demo plays alone.
-            const timeline = gsap.timeline({
-              delay: replay ? 0 : BEAT.frame,
-              defaults: { ease: EASE.entrance },
-              onComplete: () => {
-                // Nothing to clean up when nothing was hidden. Returning to
-                // this page from another leaves `parts` empty — an earlier run
-                // already stripped the attributes — and `gsap.set` on an empty
-                // array is what prints "GSAP target not found" once per visit.
-                if (!parts.length) return;
-                parts.forEach((element) => element.removeAttribute("data-preview"));
-                gsap.set(parts, { clearProps: "opacity,transform" });
-              },
-            });
-
-            if (replay) {
-              // No entrance, and no demo either. A page that renders instantly
-              // and then covers itself 700ms later is more disruptive than the
-              // sequence it replaced. ⌘K is still there for anyone who wants it.
-              gsap.set(bars, { scaleX: PREVIEW_STORAGE.percent / 100 });
-              writePct(PREVIEW_STORAGE.percent);
-              counter.value = PREVIEW_STORAGE.percent;
-            } else {
-              timeline
-                .to("[data-preview='frame']", { opacity: 1, y: 0, scale: 1, duration: 0.95 }, 0)
-                // The shell arrives first, then it fills itself in — the pane
-                // assembles rather than appearing.
-                .to(
-                  "[data-preview='item']",
-                  { opacity: 1, y: 0, duration: 0.55, stagger: 0.03 },
-                  BEAT.chrome - BEAT.frame,
-                )
-                .to(
-                  "[data-preview='row']",
-                  { opacity: 1, y: 0, duration: 0.45, stagger: 0.035 },
-                  BEAT.rows - BEAT.frame,
-                )
-                .to(
-                  bars,
-                  { scaleX: PREVIEW_STORAGE.percent / 100, duration: 1.2, ease: EASE.glide },
-                  BEAT.storage - BEAT.frame,
-                )
-                .to(
-                  counter,
-                  {
-                    value: PREVIEW_STORAGE.percent,
-                    duration: 1.2,
-                    ease: EASE.glide,
-                    onUpdate: () => writePct(counter.value),
-                  },
-                  BEAT.storage - BEAT.frame,
-                )
-                .call(playPaletteDemo, null, BEAT.palette - BEAT.frame);
-            }
-
-            // Storage creeps the way a real drive does while a background
-            // upload finishes — then stops, rather than looping forever.
-            const creep = window.setInterval(() => {
-              if (document.hidden) return;
-              counter.value = Math.min(counter.value + 0.9, PREVIEW_STORAGE.ceiling);
-              writePct(counter.value);
-              gsap.to(bars, { scaleX: counter.value / 100, duration: 1.4, ease: EASE.glide });
-              // A brief lift on the bar as the number moves. Without it the
-              // creep is invisible unless you happen to be reading the digits,
-              // and a change nobody notices communicates nothing.
-              gsap.fromTo(
-                bars,
-                { filter: "brightness(1)" },
-                { filter: "brightness(1.45)", duration: 0.35, yoyo: true, repeat: 1, ease: "power2.inOut" },
-              );
-              if (counter.value >= PREVIEW_STORAGE.ceiling) window.clearInterval(creep);
-            }, 9000);
-
-            // The frame's edge light is a continuously running GPU layer. The
-            // hero parks it when the section scrolls out of view.
-            if (!frame) return () => window.clearInterval(creep);
-
-            // Tilt: the pane starts leaning back and rights itself as it
-            // reaches reading position.
-            // GSAP names these rotationX / rotationY — `rotateX` is not an
-            // alias, it is treated as an unknown CSS property and silently
-            // does nothing.
-            gsap.fromTo(
-              frame,
-              { rotationX: 7 },
-              {
-                rotationX: 0,
-                ease: "none",
-                scrollTrigger: { trigger: root, start: "top bottom", end: "center center", scrub: 0.6 },
-              },
-            );
-
-            if (!finePointer) return () => window.clearInterval(creep);
-
-            const specular = root.querySelector("[data-specular]");
-            const rotateTo = gsap.quickTo(frame, "rotationY", { duration: 0.6, ease: EASE.pointer });
-            const lightX = gsap.quickTo(specular, "x", { duration: 0.5, ease: EASE.pointer });
-            const lightY = gsap.quickTo(specular, "y", { duration: 0.5, ease: EASE.pointer });
-
-            const onPointerMove = (event) => {
-              const bounds = frame.getBoundingClientRect();
-              const withinX = (event.clientX - bounds.left) / Math.max(bounds.width, 1);
-              const withinY = (event.clientY - bounds.top) / Math.max(bounds.height, 1);
-              rotateTo((withinX - 0.5) * 5);
-
-              const inside = withinX >= 0 && withinX <= 1 && withinY >= 0 && withinY <= 1;
-              gsap.to(specular, { opacity: inside ? 1 : 0, duration: 0.4 });
-              if (!inside) return;
-              lightX(event.clientX - bounds.left);
-              lightY(event.clientY - bounds.top);
-            };
-
-            window.addEventListener("pointermove", onPointerMove, { passive: true });
-
-            return () => {
-              window.clearInterval(creep);
-              window.removeEventListener("pointermove", onPointerMove);
-            };
-          },
-        );
-
-        return () => mm.revert();
+        return () => timeline.kill();
       } catch {
         document.documentElement.removeAttribute("data-motion");
         return undefined;
       }
     },
-    { scope },
+    { scope, dependencies: [reduced], revertOnUpdate: true },
   );
 
   return (
@@ -332,10 +182,8 @@ export function ProductPreview() {
      * visitor's own, which is noise at best and misleading at worst; the hero's
      * copy beside it is what actually explains the product, and that stays.
      *
-     * It also runs a looping demonstration in which a command palette opens
-     * over the drive and dims it. Text behind a scrim is text nobody is being
-     * asked to read, exactly as with a real modal — so measuring it as though
-     * it were body copy reports a problem that is not one.
+     * The command palette remains available through ⌘K, but never covers the
+     * preview automatically.
      */
     <div
       ref={scope}
@@ -348,33 +196,12 @@ export function ProductPreview() {
       aria-hidden="true"
       className="relative mt-16 px-5 sm:mt-20 sm:px-10"
     >
-      <div className="mx-auto max-w-7xl perspective-[1600px]">
-        <div data-tilt data-preview="frame" className="relative isolate transform-3d">
-          {/* The same revolving light, blurred, spilling past the frame. It is
-              clipped to just outside the border before the blur runs, so the
-              glow hugs the edge instead of washing across the whole pane. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-px -z-10 overflow-hidden rounded-2xl opacity-60 blur-[11px]"
-          >
-            <span data-idle-motion className="dd-beam" />
-          </div>
-
-          {/* Padding is the border: the beam fills this box, the opaque panel
-              below covers everything but the 3px rim. */}
-          <div className="relative overflow-hidden rounded-2xl bg-line-2 p-0.75 shadow-elevated">
-            <span data-idle-motion className="dd-beam" />
-
-            <div className="relative overflow-hidden rounded-xl bg-overlay">
-              {/* Specular highlight — the pane catching room light as you move. */}
-              <div
-                data-specular
-                aria-hidden="true"
-                className="pointer-events-none absolute -top-40 -left-40 z-20 size-80 rounded-full opacity-0 blur-2xl"
-                style={{ background: "radial-gradient(circle, var(--sheen) 0%, transparent 70%)" }}
-              />
-
-              <PreviewChrome />
+      <div className="mx-auto max-w-7xl">
+        <div
+          data-preview="frame"
+          className="relative overflow-hidden rounded-2xl border border-line-2 bg-overlay shadow-[0_1px_0_var(--lit)_inset]"
+        >
+          <PreviewChrome />
 
               {/* Three panes from lg, not xl: the details panel is the proof
                   the product is alive, so it earns its place before the extra
@@ -387,13 +214,13 @@ export function ProductPreview() {
                     data-preview="item"
                     className="mb-4 flex items-center justify-between gap-3"
                   >
-                    <p className="truncate text-xs text-dim">
+                    <p className="truncate text-sm text-muted-foreground">
                       All files <span className="px-1">/</span>
                       <span className="text-muted-foreground">Client work</span>
                     </p>
 
                     <span className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 rounded-md bg-brand px-2.5 py-1.5 text-xs text-brand-contrast">
+                      <span className="flex items-center gap-1.5 rounded-md bg-brand px-2.5 py-1.5 text-sm text-brand-contrast">
                         <Upload className="size-3.5" />
                         Upload
                       </span>
@@ -422,7 +249,7 @@ export function ProductPreview() {
                     ))}
                   </div>
 
-                  <p data-preview="item" className="mt-4 text-xs text-dim">
+                  <p data-preview="item" className="mt-4 text-sm text-dim">
                     {filtering ? `${matches.length} results` : "6 items · 620.4 MB"}
                     <span className="float-right hidden sm:inline">Sorted by modified</span>
                   </p>
@@ -441,8 +268,6 @@ export function ProductPreview() {
 
                 <PreviewDetails file={activeFile} />
               </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

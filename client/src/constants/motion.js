@@ -7,11 +7,9 @@
  * read the rhythm, one place to change it, and no drifting magic numbers.
  *
  * Values are seconds from the moment the page becomes interactive. The order
- * is deliberate: light, then chrome, then the promise, then the proof.
+ * is deliberate: navigation, promise, action, then product proof.
  */
 export const BEAT = {
-  /** The light arrives before anything readable does. */
-  ambient: 0,
   nav: 0.06,
   badge: 0.18,
   /** Second line trails the first, so the headline reads rather than lands. */
@@ -27,16 +25,7 @@ export const BEAT = {
   chrome: 1.1,
   rows: 1.26,
   storage: 1.44,
-  /** Last, and alone on stage — this is the beat we want remembered. */
-  palette: 1.8,
 };
-
-/**
- * How long the palette demo holds before it dismisses itself: enough to finish
- * typing and be read, then gone. The hero's resting state is the working file
- * table, not a modal sitting on top of it.
- */
-export const PALETTE_HOLD_MS = 3100;
 
 /**
  * Named curves, so no component reaches for a library default.

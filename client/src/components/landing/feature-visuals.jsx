@@ -25,8 +25,8 @@ import { cn } from "@/lib/utils";
  * that shows the thing working is a stronger claim than one that describes it.
  */
 
-const ROW = "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm";
-const PANEL = "rounded-lg border border-line/70 bg-bg-deep/60 p-2 backdrop-blur-[2px]";
+const ROW = "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-base";
+const PANEL = "rounded-lg border border-line/70 bg-surface p-2";
 
 /* ---------------------------------------------------------------- search -- */
 
@@ -41,11 +41,11 @@ function SearchVisual() {
     <div className={PANEL}>
       <div className="mb-1.5 flex items-center gap-2.5 border-b border-line/70 px-2.5 pb-2.5">
         <Search className="size-3.5 shrink-0 text-dim" />
-        <span className="flex-1 text-sm text-foreground">
+        <span className="flex-1 text-base text-foreground">
           invo
           <span className="ml-px inline-block h-3 w-px translate-y-0.5 animate-[dd-caret_1.05s_steps(1,end)_infinite] bg-brand" />
         </span>
-        <span className="font-mono text-2xs text-dim">3</span>
+        <span className="font-mono text-sm text-dim">3</span>
       </div>
 
       {results.map((result, index) => (
@@ -83,10 +83,10 @@ function ShareVisual() {
     <div className={cn(PANEL, "p-3.5")}>
       <div className="flex items-center gap-2 rounded-md border border-line/70 bg-surface px-2.5 py-2">
         <Link2 className="size-3.5 shrink-0 text-brand" />
-        <span className="flex-1 truncate font-mono text-2xs text-brand">
+        <span className="flex-1 truncate font-mono text-sm text-brand">
           datadock.app/s/9fK2xQ
         </span>
-        <span className="inline-flex shrink-0 items-center gap-1 text-2xs text-dim">
+        <span className="inline-flex shrink-0 items-center gap-1 text-sm text-dim">
           <Check className="size-3 text-success" />
           Copied
         </span>
@@ -97,10 +97,10 @@ function ShareVisual() {
           [Globe, "Anyone with the link", "Can view"],
           [Clock, "Expires in 14 days", "Editable"],
         ].map(([Icon, label, value]) => (
-          <div key={label} className="flex items-center gap-2.5 text-sm">
+          <div key={label} className="flex items-center gap-2.5 text-base">
             <Icon className="size-3.5 shrink-0 text-dim" />
             <span className="flex-1 truncate text-muted-foreground">{label}</span>
-            <span className="shrink-0 text-2xs text-dim">{value}</span>
+            <span className="shrink-0 text-sm text-dim">{value}</span>
           </div>
         ))}
       </div>
@@ -110,13 +110,13 @@ function ShareVisual() {
           {["A", "M", "R"].map((initial) => (
             <span
               key={initial}
-              className="grid size-6 place-items-center rounded-full border border-line-2 bg-surface-2 text-2xs text-muted-foreground"
+              className="grid size-6 place-items-center rounded-full border border-line-2 bg-surface-2 text-sm text-muted-foreground"
             >
               {initial}
             </span>
           ))}
         </span>
-        <span className="text-2xs text-dim">3 people opened this link</span>
+        <span className="text-sm text-dim">3 people opened this link</span>
       </div>
     </div>
   );
@@ -190,10 +190,10 @@ function StorageVisual() {
 
       <div className="mt-3.5 flex flex-col gap-2">
         {breakdown.map((slice) => (
-          <div key={slice.label} className="flex items-center gap-2.5 text-sm">
+          <div key={slice.label} className="flex items-center gap-2.5 text-base">
             <span className={cn("size-2 shrink-0 rounded-full", slice.tone)} />
             <span className="flex-1 truncate text-muted-foreground">{slice.label}</span>
-            <span className="shrink-0 font-mono text-2xs text-dim tabular-nums">
+            <span className="shrink-0 font-mono text-sm text-dim tabular-nums">
               {slice.share}%
             </span>
           </div>
@@ -229,11 +229,11 @@ function TrashVisual() {
           />
           <span className="min-w-0 flex-1">
             <span className="block truncate">{item.name}</span>
-            <span className="block truncate text-2xs text-dim">{item.left}</span>
+            <span className="block truncate text-sm text-dim">{item.left}</span>
           </span>
 
           {item.first ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-brand px-2 py-1 text-2xs text-brand-contrast">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-brand px-2 py-1 text-sm text-brand-contrast">
               <RotateCcw className="size-3" />
               Restore
             </span>
@@ -268,13 +268,13 @@ function PreviewVisual() {
             )}
           >
             <Icon className={cn("size-5", index === 0 ? "text-brand" : "text-dim")} />
-            <span className="font-mono text-2xs text-dim">{kind}</span>
-            <span className="text-2xs text-dim">{hint}</span>
+            <span className="font-mono text-sm text-dim">{kind}</span>
+            <span className="text-sm text-dim">{hint}</span>
           </div>
         ))}
       </div>
 
-      <p className="mt-3 flex items-center justify-center gap-2 text-2xs text-dim">
+      <p className="mt-3 flex items-center justify-center gap-2 text-sm text-dim">
         <Kbd variant="inline">space</Kbd>
         to preview, without downloading
       </p>

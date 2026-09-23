@@ -135,7 +135,6 @@
      arc reads as light rather than paint, but kept mostly brand so it still
      answers the accent switch. Light mode needs far less lift — a near-white
      core on a pale page reads as a gap in the border, not a highlight. */
-  --beam-core: color-mix(in oklab, var(--brand) 84%, #ffffff);
   /* A light version of the accent for selected and hovered surfaces.
      `brand-soft` is the design's wash of the *pure* accent, which on a large
      surface reads as a stain of the brand rather than a tint of it. On a pale
@@ -193,7 +192,6 @@
   --dim: #969ba8;
   --lit: rgba(255, 255, 255, 0.07);
   --sheen: rgba(255, 255, 255, 0.26);
-  --beam-core: color-mix(in oklab, var(--brand) 52%, #ffffff);
   /* The wash is the accent itself, not the accent lifted towards white.
      Lifting it produced a *pale* chip on a dark panel, and `text-brand` is what
      sits on these chips — the avatar badge, the storage figure, the settings
@@ -539,64 +537,57 @@
   }
 }
 
-/* ------------------------------- border beam ------------------------------
-   A light that revolves around the product preview's edge, continuously.
+/* ------------------------- marketing hero grid ---------------------------
+   The grid itself stays still. Randomly selected intersections fade in and out,
+   giving the surface a measured signal-like rhythm without moving the page. */
 
-   The gradient rides an oversized square rather than the frame itself: a conic
-   gradient on a wide rectangle sweeps its long sides far faster than its short
-   ones, so the beam would visibly stall in the corners. On a square it travels
-   at a constant rate. The parent's padding plus an opaque inner panel are what
-   turn the sweep into a border.
+@keyframes dd-grid-node-pulse {
+  0% {
+    opacity: 0;
+    scale: 0.72;
+  }
 
-   Rotating a transform keeps the work on the compositor. Animating the
-   gradient's own `from` angle instead would re-raster the whole panel on every
-   frame, which is the usual reason these borders jank.
-   --------------------------------------------------------------------------- */
+  18%,
+  62% {
+    opacity: 1;
+    scale: 1;
+  }
 
-@keyframes dd-beam-spin {
-  to {
-    rotate: 1turn;
+  100% {
+    opacity: 0;
+    scale: 0.72;
   }
 }
 
-.dd-beam {
+.dd-grid-node {
+  z-index: 1;
+  background: var(--foreground);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--foreground) 28%, transparent),
+    0 0 14px 3px color-mix(in oklab, var(--foreground) 36%, transparent);
+  animation: dd-grid-node-pulse 5.2s var(--ease-standard) both;
+}
+
+.dd-grid-node::before,
+.dd-grid-node::after {
   position: absolute;
   top: 50%;
   left: 50%;
-  /* Square, and wide enough to cover the frame's diagonal at every aspect
-     ratio it takes. 200% carries the portrait frame on phones; from tablet up
-     the frame is much wider than it is tall, so this can drop and save a
-     large amount of compositor memory. */
-  width: 200%;
-  aspect-ratio: 1;
+  content: "";
   translate: -50% -50%;
-  animation: dd-beam-spin 11s linear infinite;
-
-  /* Two arcs, opposite each other, so no edge of the frame is ever unlit.
-     The ramps are kept short and their falloff faint: a wide, half-lit ramp
-     is what makes these borders look hazy rather than lit. */
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg 74deg,
-    color-mix(in oklab, var(--brand) 22%, transparent) 82deg,
-    var(--brand) 88deg,
-    var(--beam-core) 90deg,
-    var(--brand) 92deg,
-    color-mix(in oklab, var(--brand) 22%, transparent) 98deg,
-    transparent 106deg 254deg,
-    color-mix(in oklab, var(--brand) 22%, transparent) 262deg,
-    var(--brand) 268deg,
-    var(--beam-core) 270deg,
-    var(--brand) 272deg,
-    color-mix(in oklab, var(--brand) 22%, transparent) 278deg,
-    transparent 286deg 360deg
-  );
+  opacity: 0.42;
 }
 
-@media (min-width: 900px) {
-  .dd-beam {
-    width: 135%;
-  }
+.dd-grid-node::before {
+  width: calc(var(--grid-unit) * 1.5);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--foreground), transparent);
+}
+
+.dd-grid-node::after {
+  width: 1px;
+  height: calc(var(--grid-unit) * 1.5);
+  background: linear-gradient(transparent, var(--foreground), transparent);
 }
 
 /* A horizontal card rail. The scrollbar is hidden because the rail carries its
