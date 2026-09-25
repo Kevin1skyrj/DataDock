@@ -108,7 +108,6 @@ export function HowItWorks() {
         // never runs the content is simply already in place.
         revealOnScroll("[data-hiw='lede'] > *", "head", { scope: root, trigger: root });
         revealOnScroll("[data-hiw='step']", "body", { scope: root, trigger: "[data-hiw='body']" });
-        revealOnScroll("[data-hiw='stage']", "panel", { scope: root, trigger: "[data-hiw='body']" });
       });
 
       return () => mm.revert();
@@ -291,7 +290,6 @@ export function HowItWorks() {
           </div>
 
           <div
-            data-hiw="stage"
             role="tabpanel"
             id={panelId}
             aria-labelledby={tabId(active)}

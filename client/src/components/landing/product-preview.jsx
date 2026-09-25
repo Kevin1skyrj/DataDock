@@ -109,6 +109,7 @@ export function ProductPreview() {
       if (!root) return undefined;
 
       try {
+        const parts = gsap.utils.toArray("[data-preview]", root);
         const bars = gsap.utils.toArray("[data-storage-bar]", root);
         const pcts = gsap.utils.toArray("[data-storage-pct]", root);
         const writePct = (value) => {
@@ -119,12 +120,18 @@ export function ProductPreview() {
         };
 
         if (reduced || hasSeenEntrance()) {
+          // The boot script keeps `[data-preview]` elements hidden so their
+          // first entrance can animate. On a client-side return from /login,
+          // that entrance has already been seen, so reveal the preview and
+          // remove its animation hooks instead of leaving the CSS start state
+          // applied forever.
+          parts.forEach((element) => element.removeAttribute("data-preview"));
+          gsap.set(parts, { clearProps: "opacity,transform" });
           gsap.set(bars, { scaleX: PREVIEW_STORAGE.percent / 100 });
           writePct(PREVIEW_STORAGE.percent);
           return undefined;
         }
 
-        const parts = gsap.utils.toArray("[data-preview]", root);
         const counter = { value: 0 };
         const timeline = gsap.timeline({
           delay: BEAT.frame,
