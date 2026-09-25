@@ -142,7 +142,7 @@ export function FileRow({
       {...dropProps}
       className={cn(
         FILE_GRID,
-        "group relative min-h-10 cursor-default rounded-md px-2 select-none",
+        "group relative min-h-10 cursor-pointer rounded-md px-2 select-none",
         "transition-[background-color,box-shadow,opacity] duration-150 ease-standard",
         // Inset, because an outward ring in a dense list draws on the row above.
         "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand",
@@ -170,6 +170,7 @@ export function FileRow({
       {/* -------------------------------------------------------- select -- */}
       <div role="gridcell" className="flex items-center justify-center">
         <Checkbox
+          data-touch-reveal
           checked={selected}
           onCheckedChange={() => onToggleSelect?.(item)}
           // Stops the row's own click from running and collapsing a multi
@@ -212,6 +213,7 @@ export function FileRow({
               pointing at is a list of names rather than a field of controls. */}
           {onToggleStar ? (
             <button
+              data-touch-reveal
               type="button"
               aria-label={item.starred ? `Unstar ${item.name}` : `Star ${item.name}`}
               aria-pressed={item.starred}
@@ -271,6 +273,7 @@ export function FileRow({
       {/* ------------------------------------------------------- actions -- */}
       <div role="gridcell" className="flex items-center justify-end">
         <button
+          data-touch-reveal
           type="button"
           aria-label={`Actions for ${item.name}`}
           onClick={(event) => {

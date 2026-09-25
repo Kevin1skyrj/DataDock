@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  * clipped by the nav list's own scrolling, and the alternative was a popover
  * primitive for eight rows.
  */
-export function SidebarNavItem({ item, Icon, active, collapsed, onNavigate }) {
+export function SidebarNavItem({ item, Icon, active, onNavigate }) {
   const hasCount = item.count != null;
   const description = hasCount ? `${item.label}, ${item.count} items` : item.label;
 
@@ -32,7 +32,7 @@ export function SidebarNavItem({ item, Icon, active, collapsed, onNavigate }) {
       data-shell="nav-item"
       aria-label={description}
       aria-current={active ? "page" : undefined}
-      title={collapsed ? description : undefined}
+      title={description}
       onClick={onNavigate}
       className={cn(
         "relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-md",

@@ -87,7 +87,7 @@ export function DashboardShell({ children }) {
   }, [toggleable]);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    <div data-dashboard-shell className="flex h-dvh overflow-hidden bg-background">
       {/* Every application should be operable without walking through its
           navigation first. Visually hidden until focused, then a real control. */}
       <a

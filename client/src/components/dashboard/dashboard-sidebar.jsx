@@ -13,6 +13,7 @@ import {
   Trash2,
   Upload,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
@@ -159,6 +160,17 @@ export function DashboardSidebar({
           {SHELL.wordmark}
         </Link>
 
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onNavigate}
+          aria-label={SHELL.closeMenu}
+          title={SHELL.closeMenu}
+          className="md:hidden"
+        >
+          <X />
+        </Button>
+
         {/* Only offered where the choice exists. Below `lg` the width is
             decided by the viewport, and a control that appears to do nothing is
             worse than no control. */}
@@ -229,7 +241,6 @@ export function DashboardSidebar({
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href)
                 }
-                collapsed={collapsed}
                 onNavigate={onNavigate}
               />
             ))}

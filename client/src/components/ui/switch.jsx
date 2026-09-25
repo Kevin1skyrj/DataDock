@@ -17,7 +17,7 @@ export function Switch({ className, ...props }) {
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5",
+        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5",
         "bg-surface-2 transition-colors duration-200 ease-standard",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         "data-checked:bg-brand",

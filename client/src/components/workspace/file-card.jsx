@@ -60,7 +60,7 @@ export function FileCard({
       onContextMenu={(event) => onContextMenu?.(item, event)}
       {...dropProps}
       className={cn(
-        "group relative flex cursor-default flex-col gap-2 rounded-lg border p-2.5 select-none",
+        "group relative flex cursor-pointer flex-col gap-2 rounded-lg border p-2.5 select-none",
         "transition-[background-color,border-color,box-shadow,opacity] duration-150 ease-standard",
         "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand",
         selected
@@ -101,6 +101,7 @@ export function FileCard({
       {/* Controls float over the well rather than taking rows of their own, so
           a card at rest is a thumbnail and a name and nothing else. */}
       <div
+        data-touch-reveal
         className={cn(
           "absolute top-3.5 left-3.5 transition-opacity duration-150 ease-standard",
           selected || selectionActive
@@ -124,6 +125,7 @@ export function FileCard({
         ) : null}
 
         <button
+          data-touch-reveal
           type="button"
           aria-label={item.starred ? `Unstar ${item.name}` : `Star ${item.name}`}
           aria-pressed={item.starred}
@@ -144,6 +146,7 @@ export function FileCard({
         </button>
 
         <button
+          data-touch-reveal
           type="button"
           aria-label={`Actions for ${item.name}`}
           onClick={(event) => {

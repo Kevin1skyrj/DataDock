@@ -58,8 +58,10 @@ export function FileToolbar() {
     // control can become unreachable.
     <div
       className={cn(
-        "flex h-13 shrink-0 items-center gap-2 border-b border-line px-3",
-        "overflow-x-auto scrollbar-none",
+        "flex shrink-0 gap-2 border-b border-line px-3",
+        selecting
+          ? "min-h-13 flex-col py-2 sm:h-13 sm:flex-row sm:items-center sm:py-0"
+          : "h-13 items-center overflow-x-auto scrollbar-none",
       )}
     >
       {selecting ? <SelectionBar /> : <BrowseBar />}
@@ -249,7 +251,7 @@ function ViewToggle() {
           aria-label={label}
           onClick={() => setViewMode(id)}
           className={cn(
-            "grid size-6 place-items-center rounded-sm transition-colors duration-150 ease-standard",
+            "grid size-8 cursor-pointer place-items-center rounded-sm transition-colors duration-150 ease-standard sm:size-6",
             "focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-brand",
             mode === id ? "bg-surface-2 text-foreground" : "text-dim hover:text-foreground",
           )}
@@ -289,25 +291,33 @@ function SelectionBar() {
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={WORKSPACE.clearSelection}
-        onClick={selection.clear}
-      >
-        <X />
-      </Button>
+      <div className="flex w-full items-center gap-2 sm:contents">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={WORKSPACE.clearSelection}
+          title={WORKSPACE.clearSelection}
+          onClick={selection.clear}
+        >
+          <X />
+        </Button>
 
-      <span aria-live="polite" className="mr-1 text-md font-medium text-foreground">
-        {selection.count} selected
-      </span>
+        <span
+          aria-live="polite"
+          className="whitespace-nowrap text-md font-medium text-foreground sm:mr-1"
+        >
+          {selection.count} selected
+        </span>
+      </div>
 
-      <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
+      <div className="flex w-full min-w-0 items-center gap-1.5 overflow-x-auto scrollbar-none sm:w-auto sm:flex-1">
         {primary.map((action) => (
           <Button
             key={action.id}
             variant={action.danger ? "destructive" : "secondary"}
             size="sm"
+            aria-label={action.label}
+            title={action.label}
             onClick={() => action.run(selection.selected, handlers)}
           >
             <action.icon />
@@ -341,7 +351,7 @@ function SelectionBar() {
         ) : null}
       </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto hidden items-center gap-1.5 sm:flex">
         <ViewToggle />
         <DetailsToggle />
       </div>

@@ -85,7 +85,7 @@ export function SheetContent({ className, children, side, size, showClose = true
           <DialogPrimitive.Close
             aria-label="Close menu"
             className={cn(
-              "absolute top-5 right-5 inline-flex size-9 items-center justify-center rounded-md",
+              "absolute top-5 right-5 inline-flex size-9 cursor-pointer items-center justify-center rounded-md",
               "text-muted-foreground transition-colors duration-200 ease-standard",
               "hover:bg-surface-2 hover:text-foreground",
             )}

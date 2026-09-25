@@ -349,6 +349,12 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Native controls should advertise that they are interactive just as the
+     shared Button does. Disabled controls deliberately do not. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
   /* Keyboard users get a visible ring; pointer users do not. */
   :focus-visible {
     @apply outline-brand outline-2 outline-offset-2;
@@ -725,6 +731,15 @@
 [data-density="compact"] [data-workspace="card"] {
   gap: 0.375rem;
   padding: 0.375rem;
+}
+
+/* Hover-only actions are invisible on touch hardware. Keep the quieter hover
+   treatment for a mouse, but reveal the same controls wherever hover does not
+   exist so selection and file actions stay discoverable on phones/tablets. */
+@media (hover: none) {
+  [data-dashboard-shell] [data-touch-reveal] {
+    opacity: 1 !important;
+  }
 }
 
 .legal-copy { color: var(--muted-foreground); font-size: 1rem; line-height: 1.75; }

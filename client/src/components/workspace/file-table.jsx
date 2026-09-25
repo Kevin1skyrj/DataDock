@@ -150,6 +150,7 @@ export function FileTable() {
         >
           <span role="columnheader" className="flex items-center justify-center">
             <Checkbox
+              data-touch-reveal
               checked={selection.all}
               indeterminate={selection.some}
               onCheckedChange={(checked) => (checked ? selection.selectAll() : selection.clear())}

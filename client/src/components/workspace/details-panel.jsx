@@ -51,14 +51,24 @@ export function DetailsPanel() {
   }, [open, selection.count, folderId, items.length]);
 
   return (
-    <aside
-      data-workspace="details"
-      aria-label="Details"
+    <>
+      {open ? (
+        <button
+          type="button"
+          aria-label="Close details"
+          onClick={() => setDetailsOpen(false)}
+          className="absolute inset-0 z-10 bg-[color-mix(in_oklab,var(--background)_72%,transparent)] backdrop-blur-[2px] xl:hidden"
+        />
+      ) : null}
+
+      <aside
+        data-workspace="details"
+        aria-label="Details"
       // Never focusable while closed. The panel is still in the tree — that is
       // what lets it animate — so without this its controls stay tabbable from
       // a zero-width column.
-      inert={!open}
-      className={cn(
+        inert={!open}
+        className={cn(
         "flex min-h-0 flex-col overflow-hidden border-line bg-bg-deep",
         "xl:border-l",
         // Below xl it is an overlay rather than a column: three panes do not fit,
@@ -68,9 +78,9 @@ export function DetailsPanel() {
         open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
         "xl:static xl:z-auto xl:w-auto xl:max-w-none xl:translate-x-0 xl:opacity-100 xl:shadow-none",
         "xl:transition-none",
-      )}
-    >
-      <div className="flex h-13 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
+        )}
+      >
+        <div className="flex h-13 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
         <span className="text-md font-medium text-foreground">Details</span>
         <Button
           variant="ghost"
@@ -80,14 +90,15 @@ export function DetailsPanel() {
         >
           <X />
         </Button>
-      </div>
+        </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {one ? <SingleDetails item={one} /> : null}
         {selection.count > 1 ? <ManyDetails items={selection.selected} /> : null}
         {selection.count === 0 ? <FolderDetails summary={summary} /> : null}
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   );
 }
 

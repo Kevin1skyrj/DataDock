@@ -18,7 +18,7 @@ export const ContextMenuTrigger = ContextMenuPrimitive.Trigger;
 export const ContextMenuGroup = ContextMenuPrimitive.Group;
 
 const ITEM = [
-  "flex cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-base text-muted-foreground",
+  "flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-base text-muted-foreground",
   "transition-colors duration-150 ease-standard outline-none select-none",
   // Base UI sets this for the keyboard as well as the pointer, so one rule
   // covers hover and arrow-key navigation and they cannot drift apart.

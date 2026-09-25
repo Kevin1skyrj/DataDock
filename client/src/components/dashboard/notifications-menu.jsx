@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -73,7 +72,7 @@ export function NotificationsMenu() {
             const Icon = ICONS[event.type] ?? Bell;
 
             return (
-              <DropdownMenuItem key={event.id} className="items-start gap-3 py-2">
+              <div key={event.id} className="flex items-start gap-3 rounded-md px-2 py-2">
                 <span
                   className={cn(
                     "mt-0.5 grid size-7 shrink-0 place-items-center rounded-md",
@@ -96,7 +95,7 @@ export function NotificationsMenu() {
                 </span>
 
                 <span className="shrink-0 text-xs text-dim">{formatDate(event.at)}</span>
-              </DropdownMenuItem>
+              </div>
             );
           })}
         </DropdownMenuGroup>

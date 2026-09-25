@@ -61,8 +61,14 @@ export function PanelSkeleton({ rows = 4 }) {
 /* -------------------------------------------------------------- overview -- */
 
 export function StorageOverview({ summary }) {
-  const usedPercent = (summary.used / summary.quota) * 100;
-  const trashPercent = (summary.trashed / summary.quota) * 100;
+  const usedPercent = summary.quota > 0 ? (summary.used / summary.quota) * 100 : 0;
+  const trashPercent = summary.quota > 0 ? (summary.trashed / summary.quota) * 100 : 0;
+  const occupied = summary.used + summary.trashed;
+  const occupiedPercent = summary.quota > 0 ? (occupied / summary.quota) * 100 : 0;
+  const usageLabel =
+    occupied > 0 && occupiedPercent < 0.1
+      ? "<0.1% used"
+      : `${Math.min(occupiedPercent, 100).toFixed(1)}% used`;
 
   return (
     <div className="flex flex-col gap-5 p-5">
@@ -94,15 +100,23 @@ export function StorageOverview({ summary }) {
       {/* Trash is drawn as part of the bar rather than left out of it. Space the
           bin is holding is space you do not have, and a meter that says
           otherwise is why nobody can find their missing gigabytes. */}
-      <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2">
+      <div
+        role="progressbar"
+        aria-label="Storage used"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.min(occupiedPercent, 100)}
+        aria-valuetext={`${formatBytes(occupied)} of ${formatBytes(summary.quota)} used`}
+        className="flex h-2.5 overflow-hidden rounded-full bg-surface-2"
+      >
         <div
           className="bg-brand transition-[width] duration-300 ease-standard"
-          style={{ width: `${usedPercent}%` }}
+          style={{ width: `${usedPercent}%`, minWidth: summary.used > 0 ? "3px" : undefined }}
           title={`Files — ${formatBytes(summary.used)}`}
         />
         <div
           className="bg-brand/30 transition-[width] duration-300 ease-standard"
-          style={{ width: `${trashPercent}%` }}
+          style={{ width: `${trashPercent}%`, minWidth: summary.trashed > 0 ? "3px" : undefined }}
           title={`Trash — ${formatBytes(summary.trashed)}`}
         />
       </div>
@@ -112,7 +126,7 @@ export function StorageOverview({ summary }) {
         <Legend tone="bg-brand/30" label="Trash" value={formatBytes(summary.trashed)} />
         <Legend tone="bg-surface-2" label="Free" value={formatBytes(summary.available)} />
         <span className="ml-auto font-mono text-dim tabular-nums">
-          {usedPercent.toFixed(1)}% used
+          {usageLabel}
         </span>
       </div>
     </div>

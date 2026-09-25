@@ -87,7 +87,7 @@ export function DialogContent({ className, children, size, position, showClose =
             <DialogPrimitive.Close
               aria-label="Close dialog"
               className={cn(
-                "absolute top-4 right-4 inline-flex size-8 items-center justify-center rounded-md",
+                "absolute top-4 right-4 inline-flex size-8 cursor-pointer items-center justify-center rounded-md",
                 "text-muted-foreground transition-colors duration-200 ease-standard",
                 "hover:bg-surface-2 hover:text-foreground",
               )}

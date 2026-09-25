@@ -25,7 +25,7 @@ export function Checkbox({ className, indicatorClassName, ...props }) {
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        "grid size-4 shrink-0 place-items-center rounded-xs border border-line-2 bg-surface",
+        "grid size-4 shrink-0 cursor-pointer place-items-center rounded-xs border border-line-2 bg-surface",
         "transition-[background-color,border-color,color] duration-150 ease-standard",
         "hover:border-brand/50",
         "focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-brand",

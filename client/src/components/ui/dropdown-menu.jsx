@@ -65,7 +65,7 @@ export function DropdownMenuLabel({ className, ...props }) {
  * an arrow key, and the two can never drift apart.
  */
 const ITEM = [
-  "flex cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-base text-muted-foreground",
+  "flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-base text-muted-foreground",
   "transition-colors duration-150 ease-standard outline-none select-none",
   "data-highlighted:bg-surface-2 data-highlighted:text-foreground",
   "data-disabled:pointer-events-none data-disabled:opacity-50",
