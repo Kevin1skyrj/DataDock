@@ -1,4 +1,5 @@
 import { VerifyEmail } from "@/components/auth/verify-email";
+import { safeDashboardNext } from "@/lib/auth-next";
 
 export const metadata = {
   title: "Verify your email",
@@ -16,6 +17,7 @@ export default async function VerifyEmailPage({ searchParams }) {
 
   const email = typeof params.email === "string" ? params.email : "";
   const flow = params.flow === "reset" ? "reset" : "verify";
+  const nextPath = safeDashboardNext(params.next);
 
-  return <VerifyEmail email={email} flow={flow} />;
+  return <VerifyEmail email={email} flow={flow} nextPath={nextPath} />;
 }

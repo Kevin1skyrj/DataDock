@@ -8,7 +8,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FileIcon } from "@/components/workspace/file-icon";
 import { Button } from "@/components/ui/button";
@@ -25,12 +25,7 @@ import {
 } from "@/lib/upload-store";
 import { cn } from "@/lib/utils";
 
-const formatEta = (seconds) => {
-  if (seconds == null) return null;
-  if (seconds < 60) return `${seconds}s left`;
-  const minutes = Math.round(seconds / 60);
-  return `${minutes} min left`;
-};
+const SUCCESS_DISMISS_MS = 4000;
 
 /**
  * The upload manager.
@@ -44,22 +39,25 @@ const formatEta = (seconds) => {
  * folder of two hundred photos keep uploading while you browse into Settings.
  * The queue itself lives in a module store for the same reason.
  *
- * Progress is reported in bytes throughout and converted only for display,
- * because overall progress across files of different sizes is a sum of bytes
- * and nothing else. Averaging percentages would say a 4 KB file and a 600 MB
- * file are half the job each.
+ * Each file owns one progress bar and one combined bytes-and-percentage readout.
+ * That keeps a multi-file queue understandable without repeating the same
+ * progress in a second aggregate bar above it.
  */
 export function UploadManager() {
   const uploads = useUploads();
   const [collapsed, setCollapsed] = useState(false);
-
-  if (uploads.length === 0) return null;
-
-  const { active, queued, failed, done, inFlight, total, loaded, speed, eta } =
-    summarise(uploads);
+  const { active, queued, failed, done, inFlight } = summarise(uploads);
 
   const busy = inFlight > 0;
-  const percent = total > 0 ? Math.round((loaded / total) * 100) : 100;
+
+  useEffect(() => {
+    if (busy || done.length === 0) return undefined;
+
+    const timeout = window.setTimeout(clearFinished, SUCCESS_DISMISS_MS);
+    return () => window.clearTimeout(timeout);
+  }, [busy, done.length]);
+
+  if (uploads.length === 0) return null;
 
   const heading = busy
     ? `Uploading ${inFlight} ${inFlight === 1 ? "file" : "files"}`
@@ -96,12 +94,6 @@ export function UploadManager() {
           </Button>
         ) : null}
 
-        {!busy ? (
-          <Button variant="ghost" size="sm" onClick={clearFinished}>
-            Clear
-          </Button>
-        ) : null}
-
         <Button
           variant="ghost"
           size="icon-sm"
@@ -121,28 +113,6 @@ export function UploadManager() {
           <X />
         </Button>
       </header>
-
-      {busy ? (
-        <div className="flex items-center gap-3 border-b border-line px-3.5 py-2 text-xs text-dim">
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-2">
-            <div
-              className="h-full origin-left rounded-full bg-brand transition-transform duration-200 ease-standard"
-              style={{ transform: `scaleX(${percent / 100})` }}
-            />
-          </div>
-          <span className="shrink-0 font-mono tabular-nums">
-            {formatBytes(loaded)} / {formatBytes(total)}
-          </span>
-        </div>
-      ) : null}
-
-      {busy && (speed > 0 || eta != null) ? (
-        <p className="border-b border-line px-3.5 py-1.5 text-xs text-dim">
-          {speed > 0 ? `${formatBytes(speed)}/s` : null}
-          {speed > 0 && eta != null ? " · " : null}
-          {formatEta(eta)}
-        </p>
-      ) : null}
 
       {/* Collapsed with `grid-template-rows` rather than by unmounting, so the
           panel folds smoothly and the list keeps its scroll position. */}
@@ -179,7 +149,7 @@ function UploadRow({ item }) {
           </span>
           <span className="shrink-0 font-mono text-2xs text-dim tabular-nums">
             {item.status === "uploading"
-              ? `${Math.round(percent)}%`
+              ? `${formatBytes(item.loaded)} / ${formatBytes(item.size)} · ${Math.round(percent)}%`
               : formatBytes(item.size)}
           </span>
         </div>
@@ -190,7 +160,14 @@ function UploadRow({ item }) {
         {folder ? <p className="truncate text-2xs text-dim">{folder}</p> : null}
 
         {item.status === "uploading" || item.status === "queued" ? (
-          <div className="h-0.5 overflow-hidden rounded-full bg-surface-2">
+          <div
+            role="progressbar"
+            aria-label={`Uploading ${item.name}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(percent)}
+            className="h-1 overflow-hidden rounded-full bg-surface-2"
+          >
             <div
               className="h-full origin-left rounded-full bg-brand transition-transform duration-200 ease-standard"
               style={{ transform: `scaleX(${percent / 100})` }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, MoreHorizontal, Star } from "lucide-react";
+import { MoreHorizontal, Star } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileIcon } from "@/components/workspace/file-icon";
@@ -118,12 +118,6 @@ export function FileCard({
       </div>
 
       <div className="absolute top-3.5 right-3.5 flex items-center gap-0.5">
-        {item.share ? (
-          <span className="grid size-6 place-items-center rounded-sm bg-overlay/80 text-dim">
-            <Link2 aria-label="Shared with a link" className="size-3.5" />
-          </span>
-        ) : null}
-
         <button
           data-touch-reveal
           type="button"

@@ -14,6 +14,7 @@ import { PasswordStrength } from "@/components/auth/password-strength";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { REGISTER } from "@/constants/auth";
+import { authPath } from "@/lib/auth-next";
 import { registerSchema } from "@/lib/validation/auth";
 import { continueWithGoogle, signUp } from "@/services/auth";
 
@@ -34,7 +35,7 @@ const LEGAL_LINK =
  * hands the visitor to the verification screen with their address in tow, which
  * is why the success copy says "Account created" rather than "Welcome".
  */
-export function RegisterForm() {
+export function RegisterForm({ nextPath = "/dashboard" }) {
   const router = useRouter();
   const [status, setStatus] = useState("idle");
 
@@ -60,7 +61,10 @@ export function RegisterForm() {
       setStatus("done");
       // The code was sent to an address the next screen has no other way of
       // knowing. Carried in the URL so a reload does not strand them.
-      router.push(`/verify-email?email=${encodeURIComponent(account.email)}`);
+      const verifyPath = authPath("/verify-email", nextPath);
+      router.push(
+        `${verifyPath}${nextPath === "/dashboard" ? "?" : "&"}email=${encodeURIComponent(account.email)}`,
+      );
     } catch (error) {
       if (error.field) {
         setError(error.field, { message: error.message });
@@ -78,7 +82,7 @@ export function RegisterForm() {
       setStatus("done");
       // Google has already vouched for the address, so there is nothing to
       // verify — this one goes straight in.
-      router.push("/dashboard");
+      router.push(nextPath);
     } catch (error) {
       setStatus("idle");
       setError("root", { message: error.message });

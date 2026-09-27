@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, MoreHorizontal, Star } from "lucide-react";
+import { MoreHorizontal, Star } from "lucide-react";
 
 import { FileIcon } from "@/components/workspace/file-icon";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -116,7 +116,6 @@ export function FileRow({
 }) {
   const [stem, extension] = splitName(item.name, item.type);
   const isFolder = item.type === "folder";
-  const shared = Boolean(item.share);
 
   // The checkbox column is always reserved, never conditionally rendered — a
   // list that reflows the moment you touch it feels broken. Only the control's
@@ -238,9 +237,6 @@ export function FileRow({
             )
           )}
 
-          {shared ? (
-            <Link2 aria-label="Shared with a link" className="size-3.5 text-dim" />
-          ) : null}
         </span>
       </div>
 

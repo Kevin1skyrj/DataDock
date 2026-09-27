@@ -154,7 +154,7 @@ function PlanSkeleton() {
   );
 }
 
-export function BillingSettings() {
+export function BillingSettings({ requestedPlan = null }) {
   const session = useSession();
   const updateSession = session.update;
   const mountedRef = useRef(true);
@@ -202,6 +202,23 @@ export function BillingSettings() {
     };
   }, [applyBilling]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const refreshStorage = () => {
+      getStorageSummary()
+        .then((nextSummary) => {
+          if (!cancelled) setSummary(nextSummary);
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener("datadock:drive-changed", refreshStorage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("datadock:drive-changed", refreshStorage);
+    };
+  }, []);
+
   const subscription = billing?.subscription ?? null;
   const canChangePlan = billing?.canChangePlan ?? false;
   const endingSoon = subscription?.cancelAtPeriodEnd === true;
@@ -210,6 +227,10 @@ export function BillingSettings() {
   const cancellable = Boolean(billing) && !canChangePlan && !endingSoon;
   const period = describePeriod(subscription);
   const status = subscription ? STATUS_LABELS[subscription.status] : null;
+  const requestedPlanDetails = plans?.find((plan) => plan.id === requestedPlan) ?? null;
+  const showPlanIntent = Boolean(
+    requestedPlanDetails && billing && billing.plan.id !== requestedPlanDetails.id,
+  );
 
   const choosePlan = async (plan) => {
     if (
@@ -311,6 +332,28 @@ export function BillingSettings() {
         title="Billing"
         description="Choose a monthly plan and keep your storage allowance visible."
       />
+
+      {showPlanIntent ? (
+        <section className="flex flex-col gap-4 rounded-xl border border-brand/35 bg-brand-tint/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-md font-medium text-foreground">
+              Continue with {requestedPlanDetails.name}
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              You are signed in. Review the plan, then continue to secure Razorpay checkout.
+            </p>
+          </div>
+          <Button
+            className="shrink-0"
+            loading={loadingPlan === requestedPlanDetails.id}
+            disabled={!canChangePlan || Boolean(loadingPlan) || Boolean(activation)}
+            onClick={() => choosePlan(requestedPlanDetails)}
+          >
+            <CreditCard className="size-3.5" />
+            Continue to payment
+          </Button>
+        </section>
+      ) : null}
 
       <SettingsCard
         title="Current plan"
@@ -414,9 +457,12 @@ export function BillingSettings() {
               return (
                 <article
                   key={plan.id}
+                  id={`plan-${plan.id}`}
                   className={cn(
                     "flex min-w-0 flex-col rounded-xl border p-4",
-                    current ? "border-brand/40 bg-brand-tint/35" : "border-line bg-surface",
+                    current || plan.id === requestedPlan
+                      ? "border-brand/40 bg-brand-tint/35"
+                      : "border-line bg-surface",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -445,7 +491,7 @@ export function BillingSettings() {
 
                   <Button
                     className="mt-5 w-full"
-                    variant={plan.id === "pro" ? "primary" : "secondary"}
+                    variant={plan.id === requestedPlan || plan.id === "pro" ? "primary" : "secondary"}
                     loading={loadingPlan === plan.id}
                     disabled={current || locked || Boolean(loadingPlan) || Boolean(activation)}
                     onClick={() => choosePlan(plan)}

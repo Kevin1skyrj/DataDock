@@ -69,6 +69,12 @@ export function StorageRoute() {
     };
   }, [nonce]);
 
+  useEffect(() => {
+    const onDriveChange = () => setNonce((current) => current + 1);
+    window.addEventListener("datadock:drive-changed", onDriveChange);
+    return () => window.removeEventListener("datadock:drive-changed", onDriveChange);
+  }, []);
+
   const refresh = () => setNonce((current) => current + 1);
 
   const trash = async (file) => {

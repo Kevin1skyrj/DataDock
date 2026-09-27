@@ -13,6 +13,7 @@ import { PasswordField } from "@/components/auth/password-field";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { LOGIN } from "@/constants/auth";
+import { authPath } from "@/lib/auth-next";
 import { loginSchema } from "@/lib/validation/auth";
 import { continueWithGoogle, signIn } from "@/services/auth";
 
@@ -30,7 +31,7 @@ import { continueWithGoogle, signIn } from "@/services/auth";
  * so a wrong password lands under the password box and an unverified account —
  * which is nobody's typo — lands above the form as a whole.
  */
-export function LoginForm() {
+export function LoginForm({ nextPath = "/dashboard" }) {
   const router = useRouter();
 
   // Not form state: whether Google is mid-flight, and whether we have already
@@ -57,7 +58,7 @@ export function LoginForm() {
     try {
       await signIn(values);
       setStatus("done");
-      router.push("/dashboard");
+      router.push(nextPath);
     } catch (error) {
       // A message under the field that caused it, or above the form when no
       // single field did. Moving focus matters more than it looks: without it
@@ -80,7 +81,7 @@ export function LoginForm() {
     try {
       await continueWithGoogle();
       setStatus("done");
-      router.push("/dashboard");
+      router.push(nextPath);
     } catch (error) {
       setStatus("idle");
       setError("root", { message: error.message });
@@ -122,7 +123,9 @@ export function LoginForm() {
               <>
                 {" "}
                 <Link
-                  href={`/verify-email?email=${encodeURIComponent(getValues("email"))}`}
+                  href={`${authPath("/verify-email", nextPath)}${
+                    nextPath === "/dashboard" ? "?" : "&"
+                  }email=${encodeURIComponent(getValues("email"))}`}
                   className="rounded-xs font-medium underline underline-offset-2 hover:text-foreground"
                 >
                   Enter your code

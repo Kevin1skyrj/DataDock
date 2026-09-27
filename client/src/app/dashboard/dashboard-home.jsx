@@ -79,6 +79,12 @@ export function DashboardHome() {
     };
   }, [nonce]);
 
+  useEffect(() => {
+    const refresh = () => setNonce((current) => current + 1);
+    window.addEventListener("datadock:drive-changed", refresh);
+    return () => window.removeEventListener("datadock:drive-changed", refresh);
+  }, []);
+
   const used = summary ? summary.used + summary.trashed : 0;
   const percent = summary ? (used / summary.quota) * 100 : 0;
 

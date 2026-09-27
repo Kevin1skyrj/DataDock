@@ -11,7 +11,7 @@ export const CTA = {
     "Join thousands of users who trust DataDock to keep their files organized, secure, and always within reach. Get 500 MB free—no credit card required.",
   primary: {
     label: "Create your free account",
-    href: "/signup",
+    href: "/register",
   },
   secondary: {
     label: "View pricing",

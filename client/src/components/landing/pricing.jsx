@@ -11,6 +11,7 @@ import { SectionHeading } from "@/components/common/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PLANS, PRICING_FOOTNOTE } from "@/constants/pricing";
+import { authPath } from "@/lib/auth-next";
 import { revealOnScroll } from "@/lib/reveal";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +88,16 @@ export function Pricing() {
               <Button
                 size="lg"
                 variant={plan.featured ? "primary" : "secondary"}
-                render={<Link href="/register" />}
+                render={
+                  <Link
+                    href={authPath(
+                      "/register",
+                      plan.id === "free"
+                        ? "/dashboard"
+                        : `/dashboard/settings/billing?plan=${plan.id}`,
+                    )}
+                  />
+                }
                 className="mt-7 w-full"
               >
                 {plan.cta}

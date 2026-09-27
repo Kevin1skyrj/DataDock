@@ -2,6 +2,9 @@ import { BillingSettings } from "@/app/dashboard/settings/billing/billing-settin
 
 export const metadata = { title: "Billing" };
 
-export default function BillingPage() {
-  return <BillingSettings />;
+export default async function BillingPage({ searchParams }) {
+  const params = await searchParams;
+  const requestedPlan = ["pro", "premium"].includes(params.plan) ? params.plan : null;
+
+  return <BillingSettings requestedPlan={requestedPlan} />;
 }

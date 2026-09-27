@@ -47,6 +47,12 @@ export function FileContextMenu({ target, children }) {
     target && selection.isSelected(target.id) && selection.count > 1
       ? `${selection.count} items`
       : target?.name;
+  const hasContent = Boolean((!target && view.canCreate) || scope || groups.length);
+
+  // Read-only views have no action for empty canvas space. Returning the
+  // workspace unchanged avoids opening an empty menu (and preserves the
+  // browser's normal context menu) in Recent, Starred, Shared and Trash.
+  if (!hasContent) return children;
 
   return (
     <ContextMenu>

@@ -91,11 +91,13 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
   // view of, so they belong in the key rather than in an effect watching for
   // them. A file finishing elsewhere changes nothing here and refetches
   // nothing — which an effect on "did any upload complete" could not manage.
-  const landed = useUploadsLandedIn(folderId);
+  // Directory uploads also count against their starting workspace so the new
+  // top-level folder becomes visible when its first child finishes.
+  const uploadChanges = useUploadsLandedIn(folderId);
 
   const requestKey = useMemo(
-    () => JSON.stringify({ view: view.id, folderId, scope, sort, kinds, query, nonce, landed }),
-    [view.id, folderId, scope, sort, kinds, query, nonce, landed],
+    () => JSON.stringify({ view: view.id, folderId, scope, sort, kinds, query, nonce, uploadChanges }),
+    [view.id, folderId, scope, sort, kinds, query, nonce, uploadChanges],
   );
 
   const stale = data.key !== requestKey;
@@ -200,6 +202,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
           }));
         }
         if (message) notify(message);
+        window.dispatchEvent(new Event("datadock:drive-changed"));
         return updated;
       } catch (failure) {
         notify({ title: failure.message ?? "That did not work.", type: "error" });

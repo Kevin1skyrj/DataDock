@@ -71,16 +71,21 @@ export function useUploads() {
 }
 
 /**
- * How many uploads have landed in a folder.
+ * How many uploads have changed a folder's visible contents.
  *
- * The workspace folds this into the key its listing is fetched against, so a
- * finished upload refreshes the folder it landed in without an effect watching
- * for it and without touching any folder it did not.
+ * A normal file affects the folder it lands in. A folder upload also affects
+ * the workspace where it began, because its files land inside newly-created
+ * descendants while the new top-level folder must appear in the original
+ * listing. Tracking both ids fixes that without refreshing unrelated views.
  */
 export function useUploadsLandedIn(parentId) {
   return useSyncExternalStore(
     subscribe,
-    () => items.filter((item) => item.status === "done" && item.parentId === parentId).length,
+    () =>
+      items.filter(
+        (item) =>
+          item.status === "done" && (item.parentId === parentId || item.rootId === parentId),
+      ).length,
     () => 0,
   );
 }

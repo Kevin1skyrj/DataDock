@@ -13,6 +13,7 @@ import { OtpInput } from "@/components/auth/otp-input";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { RESEND_SECONDS, SUCCESS, VERIFY } from "@/constants/auth";
+import { authPath } from "@/lib/auth-next";
 import { verifyOtpSchema } from "@/lib/validation/auth";
 import { resendOtp, verifyOtp } from "@/services/auth";
 
@@ -30,7 +31,7 @@ import { resendOtp, verifyOtp } from "@/services/auth";
  * unambiguously finished — but the button stays, because auto-submit that fails
  * has to leave something to press again.
  */
-export function VerifyEmail({ email, flow }) {
+export function VerifyEmail({ email, flow, nextPath = "/dashboard" }) {
   const router = useRouter();
   const copy = VERIFY[flow];
 
@@ -100,7 +101,23 @@ export function VerifyEmail({ email, flow }) {
     }
   };
 
-  if (verified) return <AuthSuccess {...SUCCESS.verified} />;
+  if (verified) {
+    const continuingToBilling = nextPath.startsWith("/dashboard/settings/billing");
+    return (
+      <AuthSuccess
+        {...SUCCESS.verified}
+        description={
+          continuingToBilling
+            ? "Your email is confirmed. Continue to review your plan and payment."
+            : SUCCESS.verified.description
+        }
+        action={{
+          label: continuingToBilling ? "Continue to billing" : SUCCESS.verified.action.label,
+          href: nextPath,
+        }}
+      />
+    );
+  }
 
   return (
     <AuthPanel
@@ -115,7 +132,7 @@ export function VerifyEmail({ email, flow }) {
         <>
           {copy.alternative.prompt}{" "}
           <Link
-            href={copy.alternative.href}
+            href={flow === "verify" ? authPath(copy.alternative.href, nextPath) : copy.alternative.href}
             className="rounded-xs font-medium text-foreground transition-colors duration-200 ease-standard hover:text-brand"
           >
             {copy.alternative.label}

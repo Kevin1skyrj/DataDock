@@ -123,6 +123,7 @@ export function ShareDialog({ item, open, onClose, onChanged }) {
     try {
       const next = await work();
       setOverride({ id: item.id, share: next ?? null });
+      window.dispatchEvent(new Event("datadock:drive-changed"));
       onChanged?.();
     } catch (failure) {
       notify({ title: failure.message, type: "error" });

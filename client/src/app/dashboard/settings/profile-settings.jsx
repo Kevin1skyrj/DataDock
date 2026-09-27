@@ -105,11 +105,6 @@ export function ProfileSettings() {
             </span>
           }
         />
-        <SettingRow
-          label="Account ID"
-          hint="Quote this if you contact support."
-          control={<span className="font-mono text-base text-dim">{session.id}</span>}
-        />
       </SettingsCard>
 
     </>
