@@ -294,18 +294,8 @@ export function HowItWorks() {
             id={panelId}
             aria-labelledby={tabId(active)}
             tabIndex={0}
-            className="relative min-h-76 overflow-hidden rounded-2xl border-2 border-line-2 bg-surface p-6 shadow-lg sm:min-h-84 sm:p-8"
+            className="relative min-h-76 overflow-hidden rounded-2xl border-2 border-line-2 bg-bg-deep p-6 shadow-lg sm:min-h-84 sm:p-8"
           >
-            {/* The same light as the hero, kept faint — this panel is a stage,
-                not a second product frame. */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 -top-24 h-48 opacity-60"
-              style={{
-                background: "radial-gradient(ellipse 60% 100% at 50% 100%, var(--brand-glow), transparent 70%)",
-              }}
-            />
-
             <div className="relative h-full">
               <HowItWorksStage step={step.id} status={step.status} reduced={reduced} />
             </div>

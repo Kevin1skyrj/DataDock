@@ -89,19 +89,8 @@ export default function AboutPage() {
 
           {/* The claim, restated as a surface rather than another paragraph. */}
           <div className="mx-auto mt-12 max-w-3xl">
-            <Card variant="raised" padding="lg" className="relative overflow-hidden">
-              {/* One soft light behind the panel, in the accent, so the card
-                  belongs to the same room as the hero rather than sitting on
-                  the page as a grey box. */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -top-24 left-1/2 size-80 -translate-x-1/2 rounded-full opacity-45 blur-2xl"
-                style={{
-                  background: "radial-gradient(circle, var(--brand-glow) 0%, transparent 70%)",
-                }}
-              />
-
-              <p className="relative text-lg leading-[1.6] text-foreground sm:text-xl">
+            <Card variant="raised" padding="lg">
+              <p className="text-lg leading-[1.6] text-foreground sm:text-xl">
                 DataDock is a reply to that. Not a shorter feature list for its own sake — a drive
                 built around the handful of things people genuinely do every day, made fast enough
                 that they stop thinking about the drive at all.
@@ -194,16 +183,8 @@ export default function AboutPage() {
 
         {/* --------------------------------------------------------- cta -- */}
         <section className="mx-auto mt-24 max-w-page px-5 sm:mt-28 sm:px-10">
-          <Card variant="raised" padding="lg" className="relative overflow-hidden text-center">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -bottom-32 left-1/2 size-125 -translate-x-1/2 rounded-full opacity-40 blur-2xl"
-              style={{
-                background: "radial-gradient(circle, var(--brand-glow) 0%, transparent 70%)",
-              }}
-            />
-
-            <div className="relative mx-auto flex max-w-2xl flex-col items-center py-4">
+          <Card variant="raised" padding="lg" className="text-center">
+            <div className="mx-auto flex max-w-2xl flex-col items-center py-4">
               <h2 className="text-display-sm font-semibold tracking-tighter text-balance sm:text-display-md">
                 Store smarter. Organize beautifully.
               </h2>

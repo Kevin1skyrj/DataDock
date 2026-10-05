@@ -5,13 +5,10 @@ import { cn } from "@/lib/utils";
 const cardVariants = cva("relative rounded-xl border shadow-[0_1px_0_var(--lit)_inset]", {
   variants: {
     variant: {
-      // The design's card: a soft top-down wash over the surface tint, so the
-      // card catches light at its top edge the way a physical panel would.
-      default:
-        "border-line bg-surface bg-[linear-gradient(180deg,var(--surface),transparent_60%)]",
-      // Sits on top of the page background rather than tinting it — used for
-      // panels that need to read as a separate plane.
-      raised: "border-line bg-bg-deep",
+      // Solid surfaces keep text and controls clear against the page.
+      default: "border-line bg-bg-deep",
+      // A distinct plane for featured or long-form content.
+      raised: "border-line-2 bg-overlay",
     },
     padding: {
       none: "",

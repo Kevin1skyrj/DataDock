@@ -37,7 +37,7 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Backdrop
           className={cn(
-            "fixed inset-0 z-50 bg-[color-mix(in_oklab,var(--background)_62%,transparent)] backdrop-blur-[6px]",
+            "fixed inset-0 z-50 bg-scrim",
             "transition-opacity duration-220 ease-standard",
             "data-starting-style:opacity-0 data-ending-style:opacity-0",
           )}

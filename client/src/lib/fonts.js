@@ -1,14 +1,18 @@
-import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
-export const instrumentSans = Instrument_Sans({
+export const instrumentSans = localFont({
+  src: "../assets/fonts/instrument-sans-latin.woff2",
   variable: "--font-instrument-sans",
-  subsets: ["latin"],
+  weight: "400 700",
+  style: "normal",
   display: "swap",
 });
 
-export const jetbrainsMono = JetBrains_Mono({
+export const jetbrainsMono = localFont({
+  src: "../assets/fonts/jetbrains-mono-latin.woff2",
   variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
+  weight: "100 800",
+  style: "normal",
   display: "swap",
 });
 

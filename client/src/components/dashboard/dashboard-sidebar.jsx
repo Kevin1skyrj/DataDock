@@ -57,6 +57,7 @@ const NAV_ICONS = {
  * what keeps the accent present when the rail has hidden everything else.
  */
 export function DashboardSidebar({
+  initialStorage,
   collapsed,
   mobileOpen,
   drawer,
@@ -68,7 +69,8 @@ export function DashboardSidebar({
   const shortcut = useShortcut("B");
   const sidebarId = useId();
   const session = useSession();
-  const [storage, setStorage] = useState(undefined);
+  const [storage, setStorage] = useState(initialStorage ?? undefined);
+  const skipInitialFetch = useRef(Boolean(initialStorage));
 
   useEffect(() => {
     let cancelled = false;
@@ -78,16 +80,17 @@ export function DashboardSidebar({
           if (!cancelled) setStorage(summary);
         })
         .catch(() => {
-          if (!cancelled) setStorage(null);
+          if (!cancelled) setStorage((current) => current ?? null);
         });
     };
-    refresh();
+    if (skipInitialFetch.current) skipInitialFetch.current = false;
+    else refresh();
     window.addEventListener("datadock:drive-changed", refresh);
     return () => {
       cancelled = true;
       window.removeEventListener("datadock:drive-changed", refresh);
     };
-  }, [pathname]);
+  }, [pathname, session.id]);
 
   const counts = storage
     ? {

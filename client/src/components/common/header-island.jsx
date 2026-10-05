@@ -24,24 +24,20 @@ export const HEADER_GUTTER = "px-5 pt-3 sm:px-10 sm:pt-4";
  * a filled button, which brings its own visual mass and looks marooned with a
  * matching inset.
  *
- * `scrolled` only deepens it. The island is always there — chrome that
- * materialises out of nothing is a trick — but once content is passing beneath
- * it, the surface firms up, the hairline strengthens and it lifts onto the
- * elevation shadow so it is unambiguously in front.
+ * The surface stays opaque as content passes beneath it. `scrolled` strengthens
+ * the hairline and shadow so the header reads as a separate plane without a
+ * blurred, translucent layer over the page.
  */
 export function HeaderIsland({ scrolled = false, className, children }) {
   return (
     <div
       className={cn(
-        "mx-auto flex h-16 max-w-page items-center justify-between gap-8 rounded-2xl border",
+        "mx-auto flex h-16 max-w-page items-center justify-between gap-8 rounded-2xl border bg-bg-deep",
         "pl-4 pr-3 sm:pl-10 sm:pr-4",
-        // Constant. Animating a backdrop-filter re-rasterises the whole island
-        // on every frame of the transition, for a change nobody can see happen.
-        "backdrop-blur-[14px]",
-        "transition-[background-color,border-color,box-shadow] duration-300 ease-standard",
+        "transition-[border-color,box-shadow] duration-300 ease-standard",
         scrolled
-          ? "border-line-2 bg-[color-mix(in_oklab,var(--overlay)_88%,transparent)] shadow-[0_1px_0_var(--lit)_inset,var(--elevation)]"
-          : "border-line bg-[color-mix(in_oklab,var(--overlay)_66%,transparent)] shadow-[0_1px_0_var(--lit)_inset]",
+          ? "border-line-2 shadow-[0_1px_0_var(--lit)_inset,var(--elevation)]"
+          : "border-line shadow-[0_1px_0_var(--lit)_inset]",
         className,
       )}
     >

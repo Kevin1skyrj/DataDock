@@ -92,6 +92,7 @@
      `accent` stays the subtle hover surface it expects. */
   --color-bg-deep: var(--bg-deep);
   --color-overlay: var(--overlay);
+  --color-scrim: var(--scrim);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-line: var(--line);
@@ -117,6 +118,7 @@
 :root {
   --background: #fbfbfc;
   --bg-deep: #ffffff;
+  --scrim: color-mix(in oklab, var(--background) 78%, transparent);
   /* Floating surfaces — dialogs, dropdowns, tooltips, popovers. The design
      lifts these slightly off the page so they read as a separate plane. */
   --overlay: #ffffff;
@@ -627,17 +629,6 @@
 
 .dd-rail::-webkit-scrollbar {
   display: none;
-}
-
-/* Tiled fractal noise. Large dark gradients band visibly on 8-bit displays;
-   a couple of percent of noise dithers the steps away. */
-.dd-noise::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* --------------------------------------------------------------- shell -- */

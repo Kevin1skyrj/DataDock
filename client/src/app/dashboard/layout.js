@@ -23,11 +23,11 @@ export const metadata = {
  * not from repeating the marketing light show.
  */
 export default async function DashboardLayout({ children }) {
-  const session = await requireSession();
+  const { initialStorage, ...session } = await requireSession({ includeStorage: true });
 
   return (
     <SessionProvider session={session}>
-      <DashboardShell>{children}</DashboardShell>
+      <DashboardShell initialStorage={initialStorage}>{children}</DashboardShell>
     </SessionProvider>
   );
 }
