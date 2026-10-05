@@ -18,8 +18,20 @@ const nextConfigSource = await readFile(
 test("public auth routes survive a failed existing-session probe", () => {
   assert.match(
     sessionSource,
-    /if \(error instanceof ApiError\) return null;/,
+    /export async function getExistingSession\(\)[\s\S]*?catch \{\s*\/\/[\s\S]*?return null;/,
   );
+});
+
+test("dashboard authentication does not depend on billing availability", () => {
+  assert.match(
+    sessionSource,
+    /const account = await apiRequest\("\/auth\/me"/,
+  );
+  assert.match(
+    sessionSource,
+    /catch \{\s*return \{ \.\.\.account, plan: account\.plan \?\? "Free" \};\s*\}/,
+  );
+  assert.doesNotMatch(sessionSource, /Promise\.all\(\[/);
 });
 
 test("API transport and invalid response failures become handled ApiErrors", () => {
