@@ -14,20 +14,17 @@ export async function getExistingSession() {
   }
 }
 
-export async function requireSession({ includeStorage = false } = {}) {
+export async function requireSession() {
   const cookieHeader = (await cookies()).toString();
 
   try {
     const headers = { Cookie: cookieHeader };
-    const [account, billing, initialStorage] = await Promise.all([
+    const [account, billing] = await Promise.all([
       apiRequest("/auth/me", { headers }),
       apiRequest("/billing/current", { headers }),
-      includeStorage
-        ? apiRequest("/storage/summary", { headers }).catch(() => null)
-        : Promise.resolve(null),
     ]);
 
-    return { ...account, plan: billing.plan.name, initialStorage };
+    return { ...account, plan: billing.plan.name };
   } catch (error) {
     if (error instanceof ApiError && error.statusCode === 401) {
       redirect("/login");

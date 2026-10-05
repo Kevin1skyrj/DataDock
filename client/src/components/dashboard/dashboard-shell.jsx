@@ -12,7 +12,6 @@ import { SHELL } from "@/constants/dashboard";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { toggleSidebar, useSidebarCollapsed } from "@/lib/sidebar";
 import { cn } from "@/lib/utils";
-import { useSession } from "@/providers/session-provider";
 
 const DRAWER_QUERY = "(max-width: 767.98px)";
 
@@ -39,8 +38,7 @@ const TOGGLEABLE_QUERY = "(min-width: 1024px)";
  * than 220ms. GSAP is not imported anywhere in the dashboard, so it is not in
  * this bundle at all.
  */
-export function DashboardShell({ children, initialStorage }) {
-  const session = useSession();
+export function DashboardShell({ children }) {
   const pathname = usePathname();
   const collapsed = useSidebarCollapsed();
   const drawer = useMediaQuery(DRAWER_QUERY);
@@ -103,8 +101,6 @@ export function DashboardShell({ children, initialStorage }) {
       </a>
 
       <DashboardSidebar
-        key={session.id}
-        initialStorage={initialStorage}
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         drawer={drawer}

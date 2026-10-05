@@ -425,7 +425,9 @@
   transform: scale(0.92);
 }
 
-[data-motion="ready"] [data-preview] {
+/* Only the landing mockup enters hidden. StorageMeter and preview parts are
+   shared with the dashboard and auth screens, where they must stay visible. */
+[data-motion="ready"] [data-preview="frame"] [data-preview] {
   opacity: 0;
   transform: translateY(14px);
 }
