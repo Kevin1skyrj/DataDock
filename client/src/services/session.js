@@ -3,6 +3,17 @@ import { redirect } from "next/navigation";
 
 import { ApiError, apiRequest } from "./api/api-client";
 
+export async function getExistingSession() {
+  const cookieHeader = (await cookies()).toString();
+
+  try {
+    return await apiRequest("/auth/me", { headers: { Cookie: cookieHeader } });
+  } catch (error) {
+    if (error instanceof ApiError && error.statusCode === 401) return null;
+    throw error;
+  }
+}
+
 export async function requireSession({ includeStorage = false } = {}) {
   const cookieHeader = (await cookies()).toString();
 

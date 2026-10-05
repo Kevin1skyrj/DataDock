@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AuthPanel } from "@/components/auth/auth-panel";
 import { LoginForm } from "@/components/auth/login-form";
 import { LOGIN } from "@/constants/auth";
 import { authPath, safeDashboardNext } from "@/lib/auth-next";
+import { getExistingSession } from "@/services/session";
 
 export const metadata = {
   title: "Log in",
@@ -13,6 +15,7 @@ export const metadata = {
 export default async function LoginPage({ searchParams }) {
   const params = await searchParams;
   const nextPath = safeDashboardNext(params.next);
+  if (await getExistingSession()) redirect(nextPath);
 
   return (
     <AuthPanel
