@@ -11,6 +11,23 @@ export function hasPaidAccess(subscription, now = new Date()) {
   );
 }
 
+/**
+ * Subscriptions created before payment-proof fields were introduced were
+ * already activated through Razorpay's signed checkout and provider sync.
+ * They can be recognized because the fields are absent, while every new row
+ * stores both fields as null until capture is verified. This compatibility
+ * path expires with the stored paid period and cannot grant a new cycle.
+ */
+export function hasLegacyPaidAccess(subscription, now = new Date()) {
+  return (
+    subscription?.status === "active" &&
+    subscription.currentPeriodEnd instanceof Date &&
+    subscription.currentPeriodEnd > now &&
+    !Object.hasOwn(subscription, "paidThrough") &&
+    !Object.hasOwn(subscription, "verifiedPaymentId")
+  );
+}
+
 export function invoiceCoversPeriod(invoice, razorpaySubscription, plan) {
   const start = razorpaySubscription.current_start;
   const end = razorpaySubscription.current_end;

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  hasLegacyPaidAccess,
   hasPaidAccess,
   invoiceCoversPeriod,
   paymentMatchesInvoice,
@@ -56,6 +57,19 @@ test("active status alone never grants paid access", () => {
     verifiedPaymentId: "pay_example",
     status: "cancelled",
   }, now), false);
+});
+
+test("only pre-migration active subscriptions receive temporary legacy access", () => {
+  const legacy = { status: "active", currentPeriodEnd: periodEnd };
+
+  assert.equal(hasLegacyPaidAccess(legacy, now), true);
+  assert.equal(hasLegacyPaidAccess({ ...legacy, paidThrough: null }, now), false);
+  assert.equal(hasLegacyPaidAccess({ ...legacy, verifiedPaymentId: null }, now), false);
+  assert.equal(hasLegacyPaidAccess({
+    ...legacy,
+    currentPeriodEnd: new Date("2026-10-01T00:00:00Z"),
+  }, now), false);
+  assert.equal(hasLegacyPaidAccess({ ...legacy, status: "created" }, now), false);
 });
 
 test("invoice must be paid, full price, and for the current cycle", () => {

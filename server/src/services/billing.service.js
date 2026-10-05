@@ -22,10 +22,12 @@ import {
   verifyWebhookSignature,
 } from "../utils/razorpay-signature.js";
 import {
+  hasLegacyPaidAccess,
   hasPaidAccess,
   invoiceCoversPeriod,
   paymentMatchesInvoice,
 } from "../utils/billing-entitlement.js";
+import { logError } from "../utils/log-error.js";
 
 /** A subscription in any of these states is one the user still holds. */
 const OPEN_SUBSCRIPTION_STATUSES = Object.freeze([
@@ -54,7 +56,8 @@ function paymentModeAllowsPaidAccess() {
 }
 
 function hasPaidEntitlement(subscription) {
-  return paymentModeAllowsPaidAccess() && hasPaidAccess(subscription);
+  return paymentModeAllowsPaidAccess() &&
+    (hasPaidAccess(subscription) || hasLegacyPaidAccess(subscription));
 }
 
 function toPublicPlan({ razorpayPlanId, ...plan }) {
@@ -192,6 +195,21 @@ async function syncSubscription(subscription) {
   });
 }
 
+async function reconcileSubscriptionForRead(subscription) {
+  try {
+    return {
+      subscription: await syncSubscription(subscription),
+      succeeded: true,
+    };
+  } catch (error) {
+    // Dashboard, storage and billing reads must remain available during a
+    // temporary Razorpay outage or while old records are being backfilled.
+    // Mutating payment operations still use strict provider synchronization.
+    logError("Billing reconciliation deferred", error);
+    return { subscription, succeeded: false };
+  }
+}
+
 function needsSync(subscription) {
   if (!subscription) return false;
   if (PENDING_SYNC_STATUSES.includes(subscription.status)) return true;
@@ -239,7 +257,10 @@ async function resolveBilling(userId) {
     latestSubscription.currentPeriodEnd instanceof Date &&
     latestSubscription.currentPeriodEnd <= new Date()
   ) {
-    latestSubscription = await syncSubscription(latestSubscription);
+    const reconciliation = await reconcileSubscriptionForRead(
+      latestSubscription,
+    );
+    latestSubscription = reconciliation.subscription;
     if (
       latestSubscription.status === "active" &&
       latestSubscription.currentPeriodEnd instanceof Date &&
@@ -252,7 +273,10 @@ async function resolveBilling(userId) {
   // Backfill existing paid accounts, and verify the first paid cycle even if
   // the webhook arrived before Checkout's verification request.
   if (activeSubscription && !hasPaidAccess(activeSubscription)) {
-    activeSubscription = await syncSubscription(activeSubscription);
+    const reconciliation = await reconcileSubscriptionForRead(
+      activeSubscription,
+    );
+    activeSubscription = reconciliation.subscription;
     if (latestSubscription?.razorpaySubscriptionId ===
         activeSubscription.razorpaySubscriptionId) {
       latestSubscription = activeSubscription;
@@ -284,8 +308,12 @@ export async function getCurrentBilling(userId) {
   let resolved = await resolveBilling(userId);
 
   if (needsSync(resolved.subscription)) {
-    await syncSubscription(resolved.subscription);
-    resolved = await resolveBilling(userId);
+    const reconciliation = await reconcileSubscriptionForRead(
+      resolved.subscription,
+    );
+    if (reconciliation.succeeded) {
+      resolved = await resolveBilling(userId);
+    }
   }
 
   const { plan, subscription } = resolved;
