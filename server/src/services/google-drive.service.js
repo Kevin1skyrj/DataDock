@@ -23,12 +23,21 @@ import {
   getUserStorageUsage,
   insertFile,
   insertFolder,
+  findImportedItem,
 } from "../models/item.model.js";
 import { getFileKind } from "../utils/file-kind.js";
 import { decryptSecret, encryptSecret } from "../utils/secret-box.js";
 import { invalidateItemLists } from "./item-cache.service.js";
-import { getJSON, setJSON } from "./redis.service.js";
 import { getEffectivePlan } from "./billing.service.js";
+import { withDistributedLock } from "./redis.service.js";
+import { recordNotification } from "./notification.service.js";
+import {
+  claimNextImportJob,
+  findImportJob,
+  insertImportJob,
+  recoverInterruptedImportJobs,
+  updateImportJob,
+} from "../models/import-job.model.js";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const EXPORTS = {
@@ -47,7 +56,7 @@ const EXPORTS = {
   "application/vnd.google-apps.drawing": { mimeType: "image/png", extension: ".png" },
 };
 
-const jobKey = (jobId) => `datadock:drive-import:${jobId}`;
+let importWorkerRunning = false;
 
 function driveClient(refreshToken) {
   const auth = new google.auth.OAuth2({
@@ -222,6 +231,8 @@ async function importFile({
   parentId,
   remainingBytes,
   maxFileSizeBytes,
+  jobId,
+  storageQuotaBytes,
 }) {
   const format = EXPORTS[file.mimeType];
   if (file.mimeType.startsWith("application/vnd.google-apps.") && !format) {
@@ -252,7 +263,7 @@ async function importFile({
       } else callback(null, chunk);
     },
   });
-  const storageKey = `users/${ownerId}/objects/${randomUUID()}`;
+  const storageKey = `users/${ownerId}/imports/${jobId}/${file.id}`;
 
   try {
     await new Upload({
@@ -265,14 +276,24 @@ async function importFile({
       },
       leavePartsOnError: false,
     }).done();
-    const item = await insertFile({
-      ownerId,
-      name,
-      parentId,
-      kind: getFileKind(mimeType),
-      mimeType,
-      size: bytes,
-      storageKey,
+    const item = await withDistributedLock(`datadock:storage-lock:${ownerId}`, async () => {
+      if ((await getUserStorageUsage(ownerId)) + bytes > storageQuotaBytes) {
+        throw new AppError(`${file.name} exceeds the available storage limit`, {
+          statusCode: 409,
+          code: "storage-quota-exceeded",
+        });
+      }
+      return insertFile({
+        ownerId,
+        name,
+        parentId,
+        kind: getFileKind(mimeType),
+        mimeType,
+        size: bytes,
+        storageKey,
+        importJobId: jobId,
+        importSourceId: file.id,
+      });
     });
     return item.size;
   } catch (error) {
@@ -282,8 +303,7 @@ async function importFile({
 }
 
 async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
-  const owner = ownerId.toHexString();
-  const update = (value) => setJSON(jobKey(jobId), { ...value, ownerId: owner }, 24 * 60 * 60);
+  const update = (value) => updateImportJob(jobId, value);
   try {
     const { refreshToken } = await connectionFor(ownerId);
     const drive = driveClient(refreshToken);
@@ -297,6 +317,17 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
     await update({ status: "running", progress: 0, imported: 0, total: plan.length });
 
     for (const { file, parentSourceId } of plan) {
+      const alreadyImported = await findImportedItem({
+        ownerId,
+        importJobId: jobId,
+        importSourceId: file.id,
+      });
+      if (alreadyImported) {
+        if (alreadyImported.type === "folder") destinationBySource.set(file.id, alreadyImported._id);
+        completed += 1;
+        await update({ status: "running", progress: completed / plan.length, imported: completed, total: plan.length });
+        continue;
+      }
       const itemParentId = parentSourceId ? destinationBySource.get(parentSourceId) : destination;
       const name = importedName(file);
       if (await findItemByName({ ownerId, parentId: itemParentId, normalizedName: name.toLowerCase() })) {
@@ -307,7 +338,13 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
       }
 
       if (file.mimeType === FOLDER_MIME) {
-        const folder = await insertFolder({ ownerId, name, parentId: itemParentId });
+        const folder = await insertFolder({
+          ownerId,
+          name,
+          parentId: itemParentId,
+          importJobId: jobId,
+          importSourceId: file.id,
+        });
         destinationBySource.set(file.id, folder._id);
       } else {
         used += await importFile({
@@ -317,6 +354,8 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
           parentId: itemParentId,
           remainingBytes: effectivePlan.storageQuotaBytes - used,
           maxFileSizeBytes: effectivePlan.maxFileSizeBytes,
+          jobId,
+          storageQuotaBytes: effectivePlan.storageQuotaBytes,
         });
       }
       completed += 1;
@@ -330,6 +369,12 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
 
     await invalidateItemLists(ownerId);
     await update({ status: "complete", progress: 1, imported: completed, total: plan.length });
+    await recordNotification({
+      userId: ownerId,
+      type: "imported",
+      itemId: null,
+      itemName: `${completed} Google Drive ${completed === 1 ? "item" : "items"}`,
+    });
   } catch (error) {
     console.error("Google Drive import failed:", error.message);
     await update({
@@ -338,6 +383,26 @@ async function runImportJob({ jobId, ownerId, fileIds, parentId }) {
       error: error.message ?? "Google Drive import failed",
     });
   }
+}
+
+async function drainImportJobs() {
+  if (importWorkerRunning) return;
+  importWorkerRunning = true;
+  try {
+    let job;
+    while ((job = await claimNextImportJob())) {
+      await runImportJob(job);
+    }
+  } finally {
+    importWorkerRunning = false;
+  }
+}
+
+export async function startGoogleDriveImportWorker() {
+  await recoverInterruptedImportJobs();
+  queueMicrotask(() => drainImportJobs().catch((error) => {
+    console.error("Google Drive import worker failed:", error.message);
+  }));
 }
 
 export async function startGoogleDriveImport({ ownerId, fileIds, parentId }) {
@@ -350,22 +415,28 @@ export async function startGoogleDriveImport({ ownerId, fileIds, parentId }) {
   await connectionFor(ownerId);
   await resolveDestination(ownerId, parentId);
   const jobId = randomUUID();
-  await setJSON(
-    jobKey(jobId),
-    { status: "queued", progress: 0, ownerId: ownerId.toHexString() },
-    24 * 60 * 60,
-  );
-  setImmediate(() => {
-    runImportJob({ jobId, ownerId, fileIds: [...new Set(fileIds)], parentId });
+  await insertImportJob({
+    jobId,
+    ownerId,
+    fileIds: [...new Set(fileIds)],
+    parentId,
   });
+  queueMicrotask(() => drainImportJobs().catch((error) => {
+    console.error("Google Drive import worker failed:", error.message);
+  }));
   return { jobId };
 }
 
 export async function getGoogleDriveImportJob({ ownerId, jobId }) {
-  const job = await getJSON(jobKey(jobId));
-  if (!job || job.ownerId !== ownerId.toHexString()) {
+  const job = await findImportJob({ ownerId, jobId });
+  if (!job) {
     throw new AppError("Import job not found", { statusCode: 404, code: "import-not-found" });
   }
-  const { ownerId: ignored, ...publicJob } = job;
-  return publicJob;
+  return {
+    status: job.status,
+    progress: job.progress,
+    imported: job.imported,
+    total: job.total,
+    error: job.error ?? null,
+  };
 }

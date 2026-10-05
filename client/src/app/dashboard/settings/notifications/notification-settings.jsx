@@ -47,7 +47,7 @@ export function NotificationSettings() {
     <>
       <SettingsHeading
         title="Notifications"
-        description="Sent to your account email. Changes save as you make them."
+        description="Choose which updates appear in your notification center. Changes save immediately."
       />
 
       {NOTIFICATION_GROUPS.map((group) => (

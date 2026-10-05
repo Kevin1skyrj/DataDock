@@ -23,6 +23,7 @@ import {
   getPreferences,
   updatePreferences,
   updateProfile,
+  deleteAccount,
 } from "../controllers/account.controller.js";
 import {
   loginRateLimiter,
@@ -34,6 +35,7 @@ import { validateBody } from "../middleware/validate.middleware.js";
 import {
   notificationPreferencesSchema,
   updateProfileSchema,
+  deleteAccountSchema,
 } from "../validators/account.validator.js";
 import {
   emailSchema,
@@ -47,6 +49,7 @@ const authRouter = Router();
 
 authRouter.get("/me", authenticate, getCurrentUser);
 authRouter.patch("/me", authenticate, validateBody(updateProfileSchema), updateProfile);
+authRouter.delete("/me", authenticate, validateBody(deleteAccountSchema), deleteAccount);
 authRouter.get("/preferences", authenticate, getPreferences);
 authRouter.patch(
   "/preferences",

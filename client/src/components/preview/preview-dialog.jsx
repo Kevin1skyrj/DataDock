@@ -91,6 +91,7 @@ export function PreviewDialog({ open, items, index, actions, onClose, onIndex })
       <DialogContent
         size="lg"
         showClose={false}
+        viewportClassName="overflow-hidden"
         className="flex h-[min(46rem,calc(100dvh-3rem))] max-w-[min(72rem,calc(100vw-3rem))] flex-col overflow-hidden p-0"
       >
         <DialogTitle className="sr-only">{item.name}</DialogTitle>
@@ -147,7 +148,7 @@ export function PreviewDialog({ open, items, index, actions, onClose, onIndex })
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <div className="relative min-w-0 flex-1">
+          <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
             {loading ? (
               <div aria-hidden="true" className="grid h-full place-items-center bg-bg-deep">
                 <div className="h-40 w-64 rounded-lg bg-surface-2" />

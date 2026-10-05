@@ -68,7 +68,15 @@ const viewportVariants = cva(
  *     </DialogContent>
  *   </Dialog>
  */
-export function DialogContent({ className, children, size, position, showClose = true, ...props }) {
+export function DialogContent({
+  className,
+  viewportClassName,
+  children,
+  size,
+  position,
+  showClose = true,
+  ...props
+}) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
@@ -79,7 +87,7 @@ export function DialogContent({ className, children, size, position, showClose =
         )}
       />
 
-      <div className={viewportVariants({ position })}>
+      <div className={cn(viewportVariants({ position }), viewportClassName)}>
         <DialogPrimitive.Popup className={cn(popupVariants({ size }), className)} {...props}>
           {children}
 

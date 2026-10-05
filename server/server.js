@@ -18,6 +18,10 @@ import { createPasswordResetIndexes } from "./src/models/password-reset.model.js
 import { createItemIndexes } from "./src/models/item.model.js";
 import { createGoogleDriveIndexes } from "./src/models/google-drive.model.js";
 import { createSubscriptionIndexes } from "./src/models/subscription.model.js";
+import { createImportJobIndexes } from "./src/models/import-job.model.js";
+import { createNotificationIndexes } from "./src/models/notification.model.js";
+import { startGoogleDriveImportWorker } from "./src/services/google-drive.service.js";
+import { cleanupAbandonedUploads } from "./src/services/upload.service.js";
 import { logError } from "./src/utils/log-error.js";
 const port = process.env.PORT || 4000;
 let httpServer;
@@ -66,9 +70,13 @@ async function startServer() {
     await createItemIndexes();
     await createGoogleDriveIndexes();
     await createSubscriptionIndexes();
+    await createImportJobIndexes();
+    await createNotificationIndexes();
     httpServer = app.listen(port, () => {
       console.log(`Server started on port ${port}`);
     });
+    await startGoogleDriveImportWorker();
+    cleanupAbandonedUploads().catch((error) => logError("Pending upload cleanup failed", error));
   } catch (error) {
     console.log("Failed to start the server:", error.message);
     process.exit(1);

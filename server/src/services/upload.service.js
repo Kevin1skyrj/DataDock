@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
-  PutObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ObjectId } from "mongodb";
@@ -21,10 +23,12 @@ import {
   insertFile,
 } from "../models/item.model.js";
 import { getFileKind } from "../utils/file-kind.js";
+import { createUploadCommand } from "../utils/s3-upload-command.js";
 import { invalidateItemLists } from "./item-cache.service.js";
-import { deleteKey, getJSON, setJSON } from "./redis.service.js";
+import { deleteKey, getJSON, setJSON, withDistributedLock } from "./redis.service.js";
 import { toPublicItem } from "../mappers/item.mapper.js";
 import { getEffectivePlan } from "./billing.service.js";
+import { recordNotification } from "./notification.service.js";
 
 function uploadIntentKey(uploadId) {
   return `datadock:upload:${uploadId}`;
@@ -135,7 +139,7 @@ export async function createUpload({ ownerId, input }) {
   await assertQuota(ownerId, size, plan);
 
   const uploadId = randomUUID();
-  const storageKey = `users/${ownerId}/objects/${randomUUID()}`;
+  const storageKey = `users/${ownerId}/pending/${uploadId}`;
   const intent = {
     ownerId: ownerId.toHexString(),
     name,
@@ -150,10 +154,11 @@ export async function createUpload({ ownerId, input }) {
 
   const uploadUrl = await getSignedUrl(
     s3Client,
-    new PutObjectCommand({
-      Bucket: s3BucketName,
-      Key: storageKey,
-      ContentType: mimeType,
+    createUploadCommand({
+      bucket: s3BucketName,
+      storageKey,
+      mimeType,
+      size,
     }),
     { expiresIn: UPLOAD_URL_TTL_SECONDS },
   );
@@ -184,6 +189,7 @@ export async function completeUpload({ ownerId, uploadId }) {
   }
 
   let object;
+  let finalStorageKey;
   try {
     object = await s3Client.send(
       new HeadObjectCommand({ Bucket: s3BucketName, Key: intent.storageKey }),
@@ -207,39 +213,75 @@ export async function completeUpload({ ownerId, uploadId }) {
     });
   }
 
-  const parentId = intent.parentId ? new ObjectId(intent.parentId) : null;
-  const existing = await findItemByName({
-    ownerId,
-    parentId,
-    normalizedName: intent.name.toLowerCase(),
-  });
-
   try {
-    if (existing) {
-      throw new AppError("An item with this name already exists in this folder", {
-        statusCode: 409,
-        code: "name-conflict",
+    const file = await withDistributedLock(`datadock:storage-lock:${ownerId}`, async () => {
+      const parentId = intent.parentId ? new ObjectId(intent.parentId) : null;
+      const existing = await findItemByName({
+        ownerId,
+        parentId,
+        normalizedName: intent.name.toLowerCase(),
       });
-    }
 
-    await assertQuota(ownerId, intent.size);
+      if (existing) {
+        throw new AppError("An item with this name already exists in this folder", {
+          statusCode: 409,
+          code: "name-conflict",
+        });
+      }
 
-    const file = await insertFile({
-      ownerId,
-      name: intent.name,
-      parentId,
-      kind: intent.kind,
-      mimeType: intent.mimeType,
-      size: intent.size,
-      storageKey: intent.storageKey,
-    });
+      await assertQuota(ownerId, intent.size);
+
+      finalStorageKey = `users/${ownerId}/objects/${randomUUID()}`;
+      await s3Client.send(new CopyObjectCommand({
+        Bucket: s3BucketName,
+        Key: finalStorageKey,
+        CopySource: `${s3BucketName}/${encodeURIComponent(intent.storageKey).replaceAll("%2F", "/")}`,
+        ContentType: intent.mimeType,
+        MetadataDirective: "REPLACE",
+      }));
+
+      return insertFile({
+        ownerId,
+        name: intent.name,
+        parentId,
+        kind: intent.kind,
+        mimeType: intent.mimeType,
+        size: intent.size,
+        storageKey: finalStorageKey,
+      });
+    }, { ttlMs: 5 * 60_000, waitMs: 10_000 });
 
     await deleteKey(key);
+    await deleteObject(intent.storageKey);
     await invalidateItemLists(ownerId);
+    await recordNotification({ userId: ownerId, type: "uploaded", itemId: file._id, itemName: file.name });
     return toPublicItem(file);
   } catch (error) {
     await deleteObject(intent.storageKey);
+    if (finalStorageKey) await deleteObject(finalStorageKey);
     await deleteKey(key);
     throw error;
   }
+}
+
+export async function cleanupAbandonedUploads() {
+  const cutoff = Date.now() - UPLOAD_INTENT_TTL_SECONDS * 1000;
+  let continuationToken;
+  do {
+    const page = await s3Client.send(new ListObjectsV2Command({
+      Bucket: s3BucketName,
+      Prefix: "users/",
+      ContinuationToken: continuationToken,
+    }));
+    const stale = (page.Contents ?? []).filter((object) =>
+      object.Key?.includes("/pending/") && object.LastModified?.getTime() < cutoff,
+    );
+    if (stale.length) {
+      await s3Client.send(new DeleteObjectsCommand({
+        Bucket: s3BucketName,
+        Delete: { Objects: stale.map((object) => ({ Key: object.Key })), Quiet: true },
+      }));
+    }
+    continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (continuationToken);
 }

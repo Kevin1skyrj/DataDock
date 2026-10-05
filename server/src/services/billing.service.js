@@ -10,15 +10,22 @@ import {
   findActiveSubscriptionByUserId,
   findLatestSubscriptionByUserId,
   findOpenSubscriptionByUserId,
+  findSubscriptionsByUserId,
   findSubscriptionByRazorpayId,
   insertSubscription,
   releaseWebhookEvent,
   updateSubscription,
 } from "../models/subscription.model.js";
+import { withDistributedLock } from "./redis.service.js";
 import {
   verifySubscriptionSignature,
   verifyWebhookSignature,
 } from "../utils/razorpay-signature.js";
+import {
+  hasPaidAccess,
+  invoiceCoversPeriod,
+  paymentMatchesInvoice,
+} from "../utils/billing-entitlement.js";
 
 /** A subscription in any of these states is one the user still holds. */
 const OPEN_SUBSCRIPTION_STATUSES = Object.freeze([
@@ -41,6 +48,15 @@ function fromRazorpayTimestamp(value) {
     : null;
 }
 
+function paymentModeAllowsPaidAccess() {
+  return process.env.NODE_ENV !== "production" ||
+    razorpayKeyId.startsWith("rzp_live_");
+}
+
+function hasPaidEntitlement(subscription) {
+  return paymentModeAllowsPaidAccess() && hasPaidAccess(subscription);
+}
+
 function toPublicPlan({ razorpayPlanId, ...plan }) {
   return plan;
 }
@@ -49,7 +65,11 @@ function toPublicSubscription(subscription) {
   return {
     id: subscription._id.toHexString(),
     planId: subscription.planId,
-    status: subscription.status,
+    // Provider activation can precede a captured plan charge. Do not label
+    // an unpaid account Active in the billing UI.
+    status: subscription.status === "active" && !hasPaidEntitlement(subscription)
+      ? "pending"
+      : subscription.status,
     currentPeriodStart: subscription.currentPeriodStart,
     currentPeriodEnd: subscription.currentPeriodEnd,
     endedAt: subscription.endedAt ?? null,
@@ -70,14 +90,6 @@ function toCheckoutSubscription(subscription, plan) {
   };
 }
 
-function hasPaidAccess(subscription) {
-  return (
-    subscription?.status === "active" &&
-    subscription.currentPeriodEnd instanceof Date &&
-    subscription.currentPeriodEnd > new Date()
-  );
-}
-
 function assertPlanMatches(razorpaySubscription, subscription) {
   if (razorpaySubscription.plan_id !== subscription.razorpayPlanId) {
     throw new AppError("Subscription plan does not match", {
@@ -85,6 +97,36 @@ function assertPlanMatches(razorpaySubscription, subscription) {
       code: "subscription-plan-mismatch",
     });
   }
+}
+
+async function findCapturedCyclePayment(razorpaySubscription, subscription) {
+  if (razorpaySubscription.status !== "active") return null;
+
+  const plan = getPlan(subscription.planId);
+  if (!plan) return null;
+
+  // Razorpay generates invoices for each subscription charge. The checkout
+  // callback may only represent mandate authentication, so it is not proof
+  // that the monthly plan price was captured.
+  for (let skip = 0; skip < 200; skip += 100) {
+    const result = await razorpayClient.invoices.all({
+      subscription_id: subscription.razorpaySubscriptionId,
+      count: 100,
+      skip,
+    });
+    const invoices = result.items ?? [];
+
+    for (const invoice of invoices) {
+      if (!invoiceCoversPeriod(invoice, razorpaySubscription, plan)) continue;
+
+      const payment = await razorpayClient.payments.fetch(invoice.payment_id);
+      if (paymentMatchesInvoice(payment, invoice, plan)) return payment.id;
+    }
+
+    if (invoices.length < 100) break;
+  }
+
+  return null;
 }
 
 /**
@@ -133,9 +175,20 @@ async function syncSubscription(subscription) {
 
   assertPlanMatches(razorpaySubscription, subscription);
 
+  const verifiedPaymentId = await findCapturedCyclePayment(
+    razorpaySubscription,
+    subscription,
+  );
+
   return updateSubscription({
     razorpaySubscriptionId: subscription.razorpaySubscriptionId,
-    changes: toSubscriptionChanges(razorpaySubscription, subscription),
+    changes: {
+      ...toSubscriptionChanges(razorpaySubscription, subscription),
+      verifiedPaymentId,
+      paidThrough: verifiedPaymentId
+        ? fromRazorpayTimestamp(razorpaySubscription.current_end)
+        : null,
+    },
   });
 }
 
@@ -172,17 +225,46 @@ async function findOpenSubscription(userId) {
 }
 
 async function resolveBilling(userId) {
-  const [activeSubscription, latestSubscription] = await Promise.all([
+  let [activeSubscription, latestSubscription] = await Promise.all([
     findActiveSubscriptionByUserId(userId),
     findLatestSubscriptionByUserId(userId),
   ]);
+
+  // At renewal, the stored period can expire before its webhook arrives.
+  // Reconcile that one boundary here so quota checks recover automatically
+  // without requiring the user to visit Billing first.
+  if (
+    !activeSubscription &&
+    latestSubscription?.status === "active" &&
+    latestSubscription.currentPeriodEnd instanceof Date &&
+    latestSubscription.currentPeriodEnd <= new Date()
+  ) {
+    latestSubscription = await syncSubscription(latestSubscription);
+    if (
+      latestSubscription.status === "active" &&
+      latestSubscription.currentPeriodEnd instanceof Date &&
+      latestSubscription.currentPeriodEnd > new Date()
+    ) {
+      activeSubscription = latestSubscription;
+    }
+  }
+
+  // Backfill existing paid accounts, and verify the first paid cycle even if
+  // the webhook arrived before Checkout's verification request.
+  if (activeSubscription && !hasPaidAccess(activeSubscription)) {
+    activeSubscription = await syncSubscription(activeSubscription);
+    if (latestSubscription?.razorpaySubscriptionId ===
+        activeSubscription.razorpaySubscriptionId) {
+      latestSubscription = activeSubscription;
+    }
+  }
   const paidPlan = activeSubscription
     ? getPlan(activeSubscription.planId)
     : null;
 
   return {
     plan:
-      hasPaidAccess(activeSubscription) && paidPlan
+      hasPaidEntitlement(activeSubscription) && paidPlan
         ? paidPlan
         : PLANS.free,
     subscription: activeSubscription ?? latestSubscription,
@@ -221,6 +303,13 @@ export async function getCurrentBilling(userId) {
 }
 
 export async function createSubscription({ userId, planId }) {
+  if (!paymentModeAllowsPaidAccess()) {
+    throw new AppError("Live payments are not configured", {
+      statusCode: 503,
+      code: "live-payments-unavailable",
+    });
+  }
+
   const plan = getPlan(planId);
 
   if (!plan || plan.id === "free") {
@@ -230,6 +319,7 @@ export async function createSubscription({ userId, planId }) {
     });
   }
 
+  return withDistributedLock(`datadock:billing-create:${userId}`, async () => {
   const existingSubscription = await findOpenSubscription(userId);
 
   if (existingSubscription) {
@@ -293,6 +383,31 @@ export async function createSubscription({ userId, planId }) {
     },
     plan,
   );
+  }, { ttlMs: 60_000, waitMs: 8_000 });
+}
+
+export async function cancelSubscriptionsForAccountDeletion(userId) {
+  const subscriptions = await findSubscriptionsByUserId(userId);
+  const open = subscriptions.filter((subscription) =>
+    OPEN_SUBSCRIPTION_STATUSES.includes(subscription.status),
+  );
+
+  for (const subscription of open) {
+    try {
+      await razorpayClient.subscriptions.cancel(
+        subscription.razorpaySubscriptionId,
+        false,
+      );
+    } catch (error) {
+      const providerMessage = error.error?.description ?? error.description ?? "";
+      if (!/already|cancelled|completed|not found|invalid/i.test(providerMessage)) {
+        throw new AppError("The active subscription could not be cancelled", {
+          statusCode: error.statusCode ?? 502,
+          code: "subscription-cleanup-failed",
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -304,9 +419,20 @@ export async function createSubscription({ userId, planId }) {
  * flips it to `cancelled` when the period ends.
  */
 export async function cancelSubscription(userId) {
-  const subscription = await findOpenSubscription(userId);
+  let subscription = await findOpenSubscription(userId);
 
   if (!subscription) {
+    throw new AppError("There is no subscription to cancel", {
+      statusCode: 404,
+      code: "subscription-not-found",
+    });
+  }
+
+  if (subscription.status === "active" && !hasPaidEntitlement(subscription)) {
+    subscription = await syncSubscription(subscription);
+  }
+
+  if (!OPEN_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
     throw new AppError("There is no subscription to cancel", {
       statusCode: 404,
       code: "subscription-not-found",
@@ -323,7 +449,7 @@ export async function cancelSubscription(userId) {
   // At cycle end only where there is a paid cycle left to honour. A
   // subscription that was never charged has nothing to protect, and Razorpay
   // rejects `cancel_at_cycle_end` outside the active state anyway.
-  const atCycleEnd = subscription.status === "active";
+  const atCycleEnd = hasPaidEntitlement(subscription);
 
   let razorpaySubscription;
   try {
@@ -394,6 +520,7 @@ export async function verifySubscription({
   return {
     planId: updatedSubscription.planId,
     status: updatedSubscription.status,
+    paymentCaptured: hasPaidEntitlement(updatedSubscription),
     currentPeriodStart: updatedSubscription.currentPeriodStart,
     currentPeriodEnd: updatedSubscription.currentPeriodEnd,
   };
@@ -448,15 +575,7 @@ export async function processWebhook({ rawBody, signature, eventId }) {
     // lands the same set of fields and no event kind needs its own branch.
     // A cancellation therefore synchronises itself: `subscription.cancelled`
     // clears `cancelAtPeriodEnd` and writes `endedAt` without special casing.
-    const razorpaySubscription =
-      await razorpayClient.subscriptions.fetch(subscriptionId);
-
-    assertPlanMatches(razorpaySubscription, subscription);
-
-    await updateSubscription({
-      razorpaySubscriptionId: subscriptionId,
-      changes: toSubscriptionChanges(razorpaySubscription, subscription),
-    });
+    await syncSubscription(subscription);
 
     return { processed: true };
   } catch (error) {

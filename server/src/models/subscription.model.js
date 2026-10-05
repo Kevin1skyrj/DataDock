@@ -62,6 +62,8 @@ export async function insertSubscription({
     status,
     currentPeriodStart: null,
     currentPeriodEnd: null,
+    paidThrough: null,
+    verifiedPaymentId: null,
     cancelAtPeriodEnd: false,
     endedAt: null,
     createdAt: now,
@@ -137,4 +139,18 @@ export async function findOpenSubscriptionByUserId(userId, statuses) {
       { userId, status: { $in: statuses } },
       { sort: { createdAt: -1 } },
     );
+}
+
+export function findSubscriptionsByUserId(userId) {
+  return getDatabase()
+    .collection(SUBSCRIPTIONS_COLLECTION)
+    .find({ userId })
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
+export function deleteSubscriptionsByUserId(userId) {
+  return getDatabase()
+    .collection(SUBSCRIPTIONS_COLLECTION)
+    .deleteMany({ userId });
 }

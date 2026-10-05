@@ -4,6 +4,7 @@ import { AppError } from "../errors/app-error.js";
 import { findUserByEmail, insertUser } from "../models/user.model.js";
 import { createSession } from "./session.service.js";
 import { sendEmailVerificationOtp } from "./otp.service.js";
+import { recordNotification } from "./notification.service.js";
 const BCRYPT_ROUNDS = 12;
 
 export async function registerUser(input) {
@@ -76,6 +77,12 @@ export async function loginUser(input) {
   }
 
   const session = await createSession(user._id);
+  await recordNotification({
+    userId: user._id,
+    type: "security",
+    itemId: null,
+    itemName: "New sign-in to your account",
+  });
 
   return {
     user: {

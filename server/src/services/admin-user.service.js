@@ -6,10 +6,10 @@ import {
   listUsers,
   softDeleteUser,
   unblockUserById,
-  permanentlyDeleteUser,
   updateUserRole,
 } from "../models/user.model.js";
 import { deleteAllUserSessions } from "./session.service.js";
+import { permanentlyDeleteAccount } from "./account.service.js";
 
 function publicUser(user) {
   return {
@@ -138,7 +138,7 @@ export async function hardDeleteUser({ actorId, userId }) {
     });
   }
 
-  await permanentlyDeleteUser(targetId);
+  await permanentlyDeleteAccount({ userId: targetId, requirePassword: false });
   return { deleted: true };
 }
 

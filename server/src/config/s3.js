@@ -18,3 +18,7 @@ export async function verifyS3Connection() {
   await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
   console.log(`S3 connected: ${bucketName}`);
 }
+
+export function checkS3Connection() {
+  return s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+}

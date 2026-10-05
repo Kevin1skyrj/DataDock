@@ -288,6 +288,10 @@ export async function permanentlyDeleteUser(userId) {
     database.collection("otps").deleteMany({ userId }),
     database.collection("passwordResets").deleteMany({ userId }),
     database.collection("items").deleteMany({ ownerId: userId }),
+    database.collection("subscriptions").deleteMany({ userId }),
+    database.collection("googleDriveConnections").deleteMany({ userId }),
+    database.collection("importJobs").deleteMany({ ownerId: userId }),
+    database.collection("notifications").deleteMany({ userId }),
   ]);
 
   return database.collection(USERS_COLLECTION).deleteOne({ _id: userId });

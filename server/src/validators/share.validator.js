@@ -34,7 +34,11 @@ export const updateShareSchema = z
   });
 
 export const sharedFolderQuerySchema = z
-  .object({ parentId: objectId.optional() })
+  .object({
+    parentId: objectId.optional(),
+    cursor: z.string().regex(/^\d+$/, "Invalid page cursor").optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+  })
   .strict();
 
 export const sharedChildParamsSchema = z

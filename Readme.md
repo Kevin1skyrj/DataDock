@@ -14,6 +14,8 @@ DataDock is a production-deployed cloud storage SaaS for uploading, organizing, 
 
 **API health:** [https://api.datadock.me/health](https://api.datadock.me/health)
 
+**Reference:** [API contract](./API.md) · [Production operations](./OPERATIONS.md)
+
 > DataDock currently uses Razorpay Test Mode. No real payment is collected during portfolio demonstrations.
 
 ## Why DataDock?

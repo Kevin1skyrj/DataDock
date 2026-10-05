@@ -44,6 +44,8 @@ export async function listSharedFolder(req, res, next) {
     const data = await listPublicShareItems({
       token: req.params.token,
       parentId: req.validatedQuery.parentId,
+      cursor: req.validatedQuery.cursor,
+      limit: req.validatedQuery.limit,
     });
     res.status(200).json({ success: true, data });
   } catch (error) { next(error); }

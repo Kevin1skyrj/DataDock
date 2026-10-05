@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LogOut } from "lucide-react";
+import { LogOut, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
@@ -12,10 +12,11 @@ import { PasswordStrength } from "@/components/auth/password-strength";
 import { SettingRow, SettingsCard, SettingsHeading } from "@/components/settings/settings-parts";
 import { ProviderMark } from "@/components/upload/provider-mark";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { notify } from "@/components/ui/toast";
 import { currentPasswordRule, newPasswordRule } from "@/lib/validation/auth";
 import { useSession } from "@/providers/session-provider";
-import { changePassword, logoutAll } from "@/services/auth";
+import { changePassword, deleteAccount, logoutAll } from "@/services/auth";
 import { z } from "zod";
 
 const passwordSchema = z
@@ -35,6 +36,9 @@ export function SecuritySettings() {
   const session = useSession();
   const router = useRouter();
   const [loggingOutAll, setLoggingOutAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   const {
     control,
@@ -84,6 +88,21 @@ export function SecuritySettings() {
         description: error.message,
         type: "error",
       });
+    }
+  };
+
+  const removeAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccount({
+        confirmation: deleteConfirmation,
+        ...(session.hasPassword ? { password: deletePassword } : {}),
+      });
+      router.replace("/");
+      router.refresh();
+    } catch (error) {
+      setDeleting(false);
+      notify({ title: "Account could not be deleted", description: error.message, type: "error" });
     }
   };
 
@@ -175,6 +194,41 @@ export function SecuritySettings() {
           }
         />
       </SettingsCard>
+
+      {session.role !== "owner" ? (
+        <SettingsCard
+          title="Delete account"
+          description="Cancels active subscriptions and permanently removes files, imports and account data."
+        >
+          <div className="flex flex-col gap-3 px-5 py-4">
+            <Input
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              placeholder="Type DELETE to confirm"
+              aria-label="Type DELETE to confirm account deletion"
+              className="max-w-sm"
+            />
+            {session.hasPassword ? (
+              <PasswordField
+                label="Current password"
+                value={deletePassword}
+                onChange={(event) => setDeletePassword(event.target.value)}
+                className="max-w-sm"
+              />
+            ) : null}
+            <Button
+              variant="destructive"
+              className="w-fit"
+              disabled={deleteConfirmation !== "DELETE" || (session.hasPassword && !deletePassword)}
+              loading={deleting}
+              onClick={removeAccount}
+            >
+              <Trash2 className="size-3.5" />
+              Delete account permanently
+            </Button>
+          </div>
+        </SettingsCard>
+      ) : null}
     </>
   );
 }

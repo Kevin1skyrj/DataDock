@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import { getStorageActivity } from "@/services/files";
+import { getNotifications, markNotificationsRead } from "@/services/api/notifications";
 
 const ICONS = {
   share: Share2,
@@ -22,7 +22,9 @@ const ICONS = {
   modified: Pencil,
   deleted: Trash2,
   uploaded: Upload,
+  imported: Upload,
   shared: Share2,
+  viewed: Share2,
 };
 
 /**
@@ -40,9 +42,12 @@ const ICONS = {
  */
 export function NotificationsMenu() {
   const [activity, setActivity] = useState([]);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    getStorageActivity(6).then(setActivity).catch(() => setActivity([]));
+    getNotifications(10)
+      .then((page) => { setActivity(page.items); setUnread(page.unread); })
+      .catch(() => setActivity([]));
   }, []);
 
   return (
@@ -53,9 +58,16 @@ export function NotificationsMenu() {
             variant="ghost"
             size="icon-sm"
             className="relative"
-            aria-label="Recent activity"
+            aria-label={unread ? `${unread} unread notifications` : "Notifications"}
+            onClick={() => {
+              if (unread) {
+                setUnread(0);
+                markNotificationsRead().catch(() => {});
+              }
+            }}
           >
             <Bell />
+            {unread ? <span aria-hidden="true" className="absolute right-1 top-1 size-1.5 rounded-full bg-brand" /> : null}
           </Button>
         }
       />
@@ -108,8 +120,11 @@ function activityTitle(type) {
   return {
     created: "Folder created",
     uploaded: "File uploaded",
+    imported: "Import complete",
     modified: "Item updated",
     shared: "Link shared",
+    viewed: "Share link opened",
+    security: "Security alert",
     deleted: "Moved to trash",
   }[type] ?? "Activity";
 }

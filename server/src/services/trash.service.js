@@ -7,6 +7,7 @@ import {
   findFolderById,
   findItemByName,
   findItemsByIds,
+  findItemTrees,
 } from "../models/item.model.js";
 import {
   moveItemsToTrash,
@@ -17,6 +18,7 @@ import {
   deleteItemsPermanently,
 } from "../models/trash.model.js";
 import { invalidateItemLists } from "./item-cache.service.js";
+import { recordNotification } from "./notification.service.js";
 
 export async function trashItems({ ownerId, itemIds }) {
   if (!Array.isArray(itemIds) || itemIds.length === 0) {
@@ -48,12 +50,31 @@ export async function trashItems({ ownerId, itemIds }) {
     });
   }
 
-  const trashedItems = await moveItemsToTrash({
-    ownerId,
-    itemIds: objectIds,
+  const selected = new Set(objectIds.map((id) => id.toHexString()));
+  const allSelectedTrees = await findItemTrees({ ownerId, itemIds: objectIds });
+  const byId = new Map(allSelectedTrees.map((item) => [item._id.toHexString(), item]));
+  const roots = objectIds.filter((id) => {
+    let parentId = byId.get(id.toHexString())?.parentId;
+    while (parentId) {
+      if (selected.has(parentId.toHexString())) return false;
+      parentId = byId.get(parentId.toHexString())?.parentId;
+    }
+    return true;
   });
+  const trees = await Promise.all(roots.map(async (rootId) => ({
+    rootId,
+    itemIds: (await findItemTrees({ ownerId, itemIds: [rootId] })).map((item) => item._id),
+  })));
+
+  const trashedItems = await moveItemsToTrash({ ownerId, trees });
 
   await invalidateItemLists(ownerId);
+  await Promise.all(trashedItems.map((item) => recordNotification({
+    userId: ownerId,
+    type: "deleted",
+    itemId: item._id,
+    itemName: item.name,
+  })));
 
   return trashedItems.map(toPublicItem);
 }

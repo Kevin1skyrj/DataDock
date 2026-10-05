@@ -59,6 +59,11 @@ export function ImportDialog({ provider, parentId, open, onClose, onImported }) 
     let cancelled = false;
     provider.getAccount().then((result) => {
       if (!cancelled) setAccount(result);
+    }).catch((failure) => {
+      if (!cancelled) {
+        setAccount(null);
+        setActionError(failure.message ?? "The connected account could not be checked.");
+      }
     });
     return () => {
       cancelled = true;

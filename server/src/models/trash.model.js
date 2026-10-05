@@ -2,28 +2,23 @@ import { getDatabase } from "../config/db.js";
 
 const ITEMS_COLLECTION = "items";
 
-export async function moveItemsToTrash({ ownerId, itemIds }) {
+export async function moveItemsToTrash({ ownerId, trees }) {
   const database = getDatabase();
   const itemsCollection = database.collection(ITEMS_COLLECTION);
   const trashedAt = new Date();
 
-  await itemsCollection.updateMany(
-    {
-      _id: { $in: itemIds },
-      ownerId,
-      trashedAt: null,
+  await itemsCollection.bulkWrite(trees.map(({ rootId, itemIds }) => ({
+    updateMany: {
+      filter: { _id: { $in: itemIds }, ownerId, trashedAt: null },
+      update: { $set: { trashedAt, trashRootId: rootId, updatedAt: trashedAt } },
     },
-    {
-      $set: {
-        trashedAt,
-        updatedAt: trashedAt,
-      },
-    },
-  );
+  })));
+
+  const rootIds = trees.map((tree) => tree.rootId);
 
   return itemsCollection
     .find({
-      _id: { $in: itemIds },
+      _id: { $in: rootIds },
       ownerId,
       trashedAt,
     })
@@ -41,6 +36,7 @@ export async function findTrashedItems({ ownerId }) {
         $exists: true,
         $ne: null,
       },
+      $expr: { $eq: ["$_id", { $ifNull: ["$trashRootId", "$_id"] }] },
     })
     .sort({
       trashedAt: -1,
@@ -60,6 +56,7 @@ export async function findTrashedItemsByIds({ ownerId, itemIds }) {
         $exists: true,
         $ne: null,
       },
+      $expr: { $eq: ["$_id", { $ifNull: ["$trashRootId", "$_id"] }] },
     })
     .toArray();
 }
@@ -70,8 +67,11 @@ export async function restoreItemsFromTrash({ ownerId, itemIds }) {
 
   await itemsCollection.updateMany(
     {
-      _id: { $in: itemIds },
       ownerId,
+      $or: [
+        { trashRootId: { $in: itemIds } },
+        { _id: { $in: itemIds }, trashRootId: { $exists: false } },
+      ],
       trashedAt: {
         $exists: true,
         $ne: null,
@@ -82,6 +82,7 @@ export async function restoreItemsFromTrash({ ownerId, itemIds }) {
         trashedAt: null,
         updatedAt: new Date(),
       },
+      $unset: { trashRootId: "" },
     },
   );
 
@@ -103,6 +104,7 @@ export async function findPermanentDeletionCandidates({ ownerId, itemIds }) {
           _id: { $in: itemIds },
           ownerId,
           trashedAt: { $exists: true, $ne: null },
+          $expr: { $eq: ["$_id", { $ifNull: ["$trashRootId", "$_id"] }] },
         },
       },
       {

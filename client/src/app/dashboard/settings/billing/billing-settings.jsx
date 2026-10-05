@@ -248,12 +248,14 @@ export function BillingSettings({ requestedPlan = null }) {
       const payment = await openRazorpayCheckout({ checkout, account: session });
       if (!payment) return;
 
-      await verifySubscription(payment);
-      paymentVerified = true;
+      const verification = await verifySubscription(payment);
+      paymentVerified = verification.paymentCaptured;
       setActivation({ plan, phase: "activating" });
       notify({
-        title: "Payment successful",
-        description: `Activating your ${plan.name} plan now.`,
+        title: paymentVerified ? "Payment confirmed" : "Confirming payment",
+        description: paymentVerified
+          ? `Activating your ${plan.name} plan now.`
+          : "Waiting for Razorpay to confirm the captured charge.",
         timeout: 6000,
       });
 

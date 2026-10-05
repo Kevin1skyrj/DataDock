@@ -9,6 +9,7 @@ import storageRouter from "./storage.routes.js";
 import googleDriveRouter from "./google-drive.routes.js";
 import searchRouter from "./search.routes.js";
 import billingRouter from "./billing.routes.js";
+import notificationRouter from "./notification.routes.js";
 
 const apiRouter = Router();
 apiRouter.use("/items", itemRouter);
@@ -21,4 +22,5 @@ apiRouter.use("/storage", storageRouter);
 apiRouter.use("/imports/google-drive", googleDriveRouter);
 apiRouter.use("/search", searchRouter);
 apiRouter.use("/billing", billingRouter);
+apiRouter.use("/notifications", notificationRouter);
 export default apiRouter;

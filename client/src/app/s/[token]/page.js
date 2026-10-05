@@ -16,7 +16,7 @@ export default async function PublicSharePage({ params }) {
   if (!response.ok) notFound();
   const { data } = await response.json();
   let preview = null;
-  let folderItems = [];
+  let folderPage = { items: [], nextCursor: null };
 
   if (data.type === "file") {
     const previewResponse = await fetch(`${apiUrl}/shares/${encodedToken}/preview`, {
@@ -28,7 +28,7 @@ export default async function PublicSharePage({ params }) {
     const itemsResponse = await fetch(`${apiUrl}/shares/${encodedToken}/items`, {
       cache: "no-store",
     });
-    if (itemsResponse.ok) folderItems = (await itemsResponse.json()).data.items;
+    if (itemsResponse.ok) folderPage = (await itemsResponse.json()).data;
   }
 
   return (
@@ -45,7 +45,8 @@ export default async function PublicSharePage({ params }) {
             apiUrl={apiUrl}
             token={token}
             root={{ id: data.id, name: data.name }}
-            initialItems={folderItems}
+            initialItems={folderPage.items}
+            initialNextCursor={folderPage.nextCursor}
           />
         ) : null}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4">

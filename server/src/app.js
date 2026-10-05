@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import billingWebhookRouter from "./routes/billing-webhook.routes.js";
 import { apiRateLimiter } from "./middleware/rate-limit.middleware.js";
 import { protectFromCsrf } from "./middleware/csrf.middleware.js";
+import { getDependencyHealth } from "./services/health.service.js";
 const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN;
 const cookieSecret = process.env.COOKIE_SECRET;
@@ -65,8 +66,9 @@ app.use(
 );
 
 app.use("/api/v1/billing/webhook", billingWebhookRouter);
-app.get("/health", (req, res) => {
-  res.status(200).json({ success: true, data: { status: "ok" } });
+app.get("/health", async (req, res) => {
+  const data = await getDependencyHealth();
+  res.status(data.status === "ok" ? 200 : 503).json({ success: data.status === "ok", data });
 });
 app.use("/api/v1", apiRateLimiter);
 app.use("/api/v1", protectFromCsrf);

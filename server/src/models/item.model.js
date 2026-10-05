@@ -4,6 +4,15 @@ const ITEMS_COLLECTION = "items";
 
 export async function createItemIndexes() {
   await getDatabase().collection(ITEMS_COLLECTION).createIndex(
+    { ownerId: 1, parentId: 1, normalizedName: 1 },
+    {
+      name: "unique_active_name_per_folder",
+      unique: true,
+      partialFilterExpression: { trashedAt: null },
+    },
+  );
+
+  await getDatabase().collection(ITEMS_COLLECTION).createIndex(
     { "share.token": 1 },
     {
       unique: true,
@@ -19,6 +28,15 @@ export async function createItemIndexes() {
     },
   );
 
+  await getDatabase().collection(ITEMS_COLLECTION).createIndex(
+    { ownerId: 1, importJobId: 1, importSourceId: 1 },
+    {
+      name: "unique_import_source_per_job",
+      unique: true,
+      partialFilterExpression: { importJobId: { $type: "string" } },
+    },
+  );
+
   await getDatabase()
     .collection(ITEMS_COLLECTION)
     .createIndex({ ownerId: 1, type: 1, trashedAt: 1, size: -1 });
@@ -29,24 +47,46 @@ export async function findItemsByParent({
   parentId = null,
   filters = { trashedAt: null },
   sort = { type: -1, name: 1 },
+  limit,
+  skip = 0,
 }) {
   const database = getDatabase();
   const itemsCollection = database.collection(ITEMS_COLLECTION);
 
-  const items = await itemsCollection
+  const cursor = itemsCollection
     .find({ ownerId, parentId, ...filters })
     .sort(sort)
-    .toArray();
+    .skip(skip);
+
+  if (limit) cursor.limit(limit);
+
+  const items = await cursor.toArray();
 
   return items;
 }
 
-export async function findItemsByView({ ownerId, filters, sort }) {
-  return getDatabase()
+export async function findItemsByView({ ownerId, filters, sort, limit, skip = 0 }) {
+  const cursor = getDatabase()
     .collection(ITEMS_COLLECTION)
     .find({ ownerId, ...filters })
     .sort(sort)
-    .toArray();
+    .skip(skip);
+
+  if (limit) cursor.limit(limit);
+
+  return cursor.toArray();
+}
+
+export function countItemsByParent({ ownerId, parentId = null, filters }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .countDocuments({ ownerId, parentId, ...filters });
+}
+
+export function countItemsByView({ ownerId, filters }) {
+  return getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .countDocuments({ ownerId, ...filters });
 }
 
 export async function findItemByName({
@@ -64,7 +104,7 @@ export async function findItemByName({
   });
 }
 
-export async function insertFolder({ ownerId, name, parentId = null }) {
+export async function insertFolder({ ownerId, name, parentId = null, importJobId, importSourceId }) {
   const database = getDatabase();
   const itemsCollection = database.collection(ITEMS_COLLECTION);
   const now = new Date();
@@ -78,6 +118,7 @@ export async function insertFolder({ ownerId, name, parentId = null }) {
     trashedAt: null,
     createdAt: now,
     updatedAt: now,
+    ...(importJobId ? { importJobId, importSourceId } : {}),
   };
   const result = await itemsCollection.insertOne(folder);
   return {
@@ -371,6 +412,8 @@ export async function insertFile({
   mimeType,
   size,
   storageKey,
+  importJobId,
+  importSourceId,
 }) {
   const now = new Date();
   const file = {
@@ -388,10 +431,19 @@ export async function insertFile({
     createdAt: now,
     updatedAt: now,
     openedAt: null,
+    ...(importJobId ? { importJobId, importSourceId } : {}),
   };
   const result = await getDatabase().collection(ITEMS_COLLECTION).insertOne(file);
 
   return { ...file, _id: result.insertedId };
+}
+
+export function findImportedItem({ ownerId, importJobId, importSourceId }) {
+  return getDatabase().collection(ITEMS_COLLECTION).findOne({
+    ownerId,
+    importJobId,
+    importSourceId,
+  });
 }
 
 export async function getUserStorageUsage(ownerId) {
@@ -404,6 +456,17 @@ export async function getUserStorageUsage(ownerId) {
     .toArray();
 
   return result?.used ?? 0;
+}
+
+export async function getUserStorageKeys(ownerId) {
+  const items = await getDatabase()
+    .collection(ITEMS_COLLECTION)
+    .find(
+      { ownerId, type: "file", storageKey: { $type: "string" } },
+      { projection: { storageKey: 1 } },
+    )
+    .toArray();
+  return items.map((item) => item.storageKey);
 }
 
 export async function getUserStorageSummary(ownerId) {

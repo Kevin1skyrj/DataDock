@@ -1,9 +1,17 @@
 import { AppError } from "../errors/app-error.js";
+import bcrypt from "bcrypt";
+import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { s3BucketName, s3Client } from "../config/s3.js";
 import {
   findUserById,
+  permanentlyDeleteUser,
   updateUserNotificationPreferences,
   updateUserProfile,
 } from "../models/user.model.js";
+import { getUserStorageKeys } from "../models/item.model.js";
+import { cancelSubscriptionsForAccountDeletion } from "./billing.service.js";
+import { disconnectGoogleDrive } from "./google-drive.service.js";
+import { deleteAllUserSessions } from "./session.service.js";
 
 const NOTIFICATION_KEYS = new Set([
   "uploads",
@@ -50,6 +58,51 @@ export async function changeNotificationPreferences({ userId, input }) {
     preferences: { ...(user?.notificationPreferences ?? {}), ...preferences },
   });
   return updated.notificationPreferences;
+}
+
+export async function permanentlyDeleteAccount({ userId, password, requirePassword = true }) {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new AppError("Account not found", { statusCode: 404, code: "account-not-found" });
+  }
+  if (user.role === "owner" && requirePassword) {
+    throw new AppError("The configured owner account cannot delete itself", {
+      statusCode: 409,
+      code: "owner-delete-forbidden",
+    });
+  }
+  if (requirePassword && user.passwordHash) {
+    if (!password || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new AppError("Your current password is incorrect", {
+        statusCode: 401,
+        code: "current-password-incorrect",
+      });
+    }
+  }
+
+  await cancelSubscriptionsForAccountDeletion(userId);
+  await disconnectGoogleDrive(userId);
+
+  const storageKeys = await getUserStorageKeys(userId);
+  for (let index = 0; index < storageKeys.length; index += 1000) {
+    const result = await s3Client.send(new DeleteObjectsCommand({
+      Bucket: s3BucketName,
+      Delete: {
+        Objects: storageKeys.slice(index, index + 1000).map((Key) => ({ Key })),
+        Quiet: true,
+      },
+    }));
+    if (result.Errors?.length) {
+      throw new AppError("Some stored files could not be deleted", {
+        statusCode: 502,
+        code: "storage-delete-failed",
+      });
+    }
+  }
+
+  await deleteAllUserSessions(userId);
+  await permanentlyDeleteUser(userId);
+  return { deleted: true };
 }
 
 export function publicAccount(user) {

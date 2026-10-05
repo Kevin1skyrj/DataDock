@@ -1,5 +1,6 @@
 import {
   changePassword,
+  deleteAccount,
   logout,
   logoutAll,
   requestPasswordReset,
@@ -15,6 +16,7 @@ import { continueWithGoogle } from "./api/google-auth";
 export {
   continueWithGoogle,
   changePassword,
+  deleteAccount,
   logout,
   logoutAll,
   requestPasswordReset,

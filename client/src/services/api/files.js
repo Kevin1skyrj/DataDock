@@ -4,6 +4,8 @@ export async function listItems({
   parentId = null,
   sort,
   filter = {},
+  limit,
+  cursor,
 } = {}) {
   const query = new URLSearchParams();
 
@@ -18,6 +20,8 @@ export async function listItems({
   if (filter.query) query.set("q", filter.query);
   if (sort?.field) query.set("sort", sort.field);
   if (sort?.direction) query.set("direction", sort.direction);
+  if (limit) query.set("limit", String(limit));
+  if (cursor) query.set("cursor", cursor);
 
   const queryString = query.toString();
 

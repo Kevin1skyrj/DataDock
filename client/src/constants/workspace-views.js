@@ -44,8 +44,8 @@ export const WORKSPACE_VIEWS = {
   files: {
     id: "files",
     label: "All files",
-    fetch: ({ folderId = null } = {}, { sort, kinds, query }) =>
-      listItems({ parentId: folderId, sort, filter: { kinds, query } }),
+    fetch: ({ folderId = null } = {}, { sort, kinds, query, cursor }) =>
+      listItems({ parentId: folderId, sort, filter: { kinds, query }, cursor }),
     columns: ["size", "modified", "shared"],
     actions: FULL_ACTIONS,
     sort: { field: "name", direction: "asc" },
@@ -65,8 +65,8 @@ export const WORKSPACE_VIEWS = {
   recent: {
     id: "recent",
     label: "Recent",
-    fetch: (scope, { sort, kinds, query }) =>
-      listItems({ sort, filter: { recent: true, kinds, query } }),
+    fetch: (scope, { sort, kinds, query, cursor }) =>
+      listItems({ sort, filter: { recent: true, kinds, query }, cursor }),
     columns: ["size", "opened"],
     actions: FULL_ACTIONS,
     sort: { field: "openedAt", direction: "desc" },
@@ -78,8 +78,8 @@ export const WORKSPACE_VIEWS = {
   starred: {
     id: "starred",
     label: "Starred",
-    fetch: (scope, { sort, kinds, query }) =>
-      listItems({ sort, filter: { starred: true, kinds, query } }),
+    fetch: (scope, { sort, kinds, query, cursor }) =>
+      listItems({ sort, filter: { starred: true, kinds, query }, cursor }),
     columns: ["size", "modified", "shared"],
     actions: FULL_ACTIONS,
     sort: { field: "updatedAt", direction: "desc" },
@@ -91,8 +91,8 @@ export const WORKSPACE_VIEWS = {
   shared: {
     id: "shared",
     label: "Shared",
-    fetch: (scope, { sort, kinds, query }) =>
-      listItems({ sort, filter: { shared: true, kinds, query } }),
+    fetch: (scope, { sort, kinds, query, cursor }) =>
+      listItems({ sort, filter: { shared: true, kinds, query }, cursor }),
     columns: ["size", "modified", "shared"],
     actions: [...FULL_ACTIONS, "copyLink", "revokeShare"],
     sort: { field: "updatedAt", direction: "desc" },
@@ -111,7 +111,7 @@ export const WORKSPACE_VIEWS = {
   search: {
     id: "search",
     label: "Search results",
-    fetch: (scope, { sort }) => searchDrive({ ...scope, sort }),
+    fetch: (scope, { sort, cursor }) => searchDrive({ ...scope, sort, cursor }),
     columns: ["size", "modified", "shared"],
     actions: FULL_ACTIONS,
     sort: { field: "name", direction: "asc" },
@@ -127,8 +127,8 @@ export const WORKSPACE_VIEWS = {
   trash: {
     id: "trash",
     label: "Trash",
-    fetch: (scope, { sort, kinds, query }) =>
-      listItems({ sort, filter: { trashed: true, kinds, query } }),
+    fetch: (scope, { sort, kinds, query, cursor }) =>
+      listItems({ sort, filter: { trashed: true, kinds, query }, cursor }),
     columns: ["size", "deleted"],
     /** A different set entirely — nothing in the bin can be renamed or shared. */
     actions: ["restore", "deleteForever"],

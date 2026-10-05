@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { FileIcon } from "@/components/workspace/file-icon";
 import { formatBytes } from "@/lib/format";
 
-export function SharedFolderBrowser({ apiUrl, token, root, initialItems }) {
+export function SharedFolderBrowser({ apiUrl, token, root, initialItems, initialNextCursor }) {
   const [trail, setTrail] = useState([root]);
   const [items, setItems] = useState(initialItems);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const encodedToken = encodeURIComponent(token);
 
   const load = async (folder, nextTrail) => {
@@ -22,7 +23,23 @@ export function SharedFolderBrowser({ apiUrl, token, root, initialItems }) {
     if (response.ok) {
       const { data } = await response.json();
       setItems(data.items);
+      setNextCursor(data.nextCursor);
       setTrail(nextTrail);
+    }
+    setLoading(false);
+  };
+
+  const loadMore = async () => {
+    if (!nextCursor || loading) return;
+    setLoading(true);
+    const folder = trail.at(-1);
+    const query = new URLSearchParams({ cursor: nextCursor });
+    if (folder.id !== root.id) query.set("parentId", folder.id);
+    const response = await fetch(`${apiUrl}/shares/${encodedToken}/items?${query}`);
+    if (response.ok) {
+      const { data } = await response.json();
+      setItems((current) => [...current, ...data.items]);
+      setNextCursor(data.nextCursor);
     }
     setLoading(false);
   };
@@ -99,6 +116,14 @@ export function SharedFolderBrowser({ apiUrl, token, root, initialItems }) {
             ))
           : null}
       </div>
+
+      {nextCursor ? (
+        <div className="mt-3 flex justify-center">
+          <Button variant="secondary" size="sm" loading={loading} onClick={loadMore}>
+            Load more
+          </Button>
+        </div>
+      ) : null}
 
       {preview ? (
         <div className="mt-5 overflow-hidden rounded-lg border border-line bg-bg-deep">

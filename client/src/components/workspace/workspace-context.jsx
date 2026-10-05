@@ -85,7 +85,8 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
    * landing after a fast second one and overwriting it. Here a stale response
    * simply carries the wrong key and is ignored.
    */
-  const [data, setData] = useState({ key: null, items: [], total: 0, facets: null, error: null });
+  const [data, setData] = useState({ key: null, items: [], total: 0, nextCursor: null, facets: null, error: null });
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Uploads that landed in *this* folder are part of what the listing is a
   // view of, so they belong in the key rather than in an effect watching for
@@ -117,6 +118,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
             key: requestKey,
             items: page.items,
             total: page.total,
+            nextCursor: page.nextCursor ?? null,
             facets: page.facets ?? null,
             error: null,
           });
@@ -128,6 +130,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
             key: requestKey,
             items: [],
             total: 0,
+            nextCursor: null,
             facets: null,
             error: failure.message ?? "That listing could not be loaded.",
           });
@@ -175,6 +178,27 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
     setNonce((current) => current + 1);
     window.dispatchEvent(new Event("datadock:drive-changed"));
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (!data.nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await view.fetch(
+        { folderId, ...scope },
+        { sort, kinds, query, cursor: data.nextCursor },
+      );
+      setData((current) => current.key === requestKey ? {
+        ...current,
+        items: [...current.items, ...page.items],
+        total: page.total,
+        nextCursor: page.nextCursor ?? null,
+      } : current);
+    } catch (failure) {
+      notify({ title: failure.message ?? "More items could not be loaded.", type: "error" });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [data.nextCursor, folderId, kinds, loadingMore, query, requestKey, scope, sort, view]);
 
   const selection = useSelection(items);
 
@@ -533,7 +557,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       confirmingDelete, setConfirmingDelete, commitDelete,
       destination, setDestination, relocate,
       drag,
-      reload, onNavigate,
+      reload, loadMore, loadingMore, hasMore: Boolean(data.nextCursor), onNavigate,
     }),
     [
       view, folderId, path, items, total, facets, loading, refreshing, error, status,
@@ -541,7 +565,7 @@ export function WorkspaceProvider({ view, folderId = null, scope, onNavigate, ch
       scopeFor, handlers, toggleStar, renaming, commitRename, creatingFolder,
       commitNewFolder, importing, previewIndex, sharing, confirmingDelete,
       commitDelete, destination, relocate, drag,
-      reload, onNavigate,
+      reload, loadMore, loadingMore, data.nextCursor, onNavigate,
     ],
   );
 

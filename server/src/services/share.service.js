@@ -5,12 +5,14 @@ import { AppError } from "../errors/app-error.js";
 import {
   findItemById,
   findItemsByParent,
+  countItemsByParent,
   findPublicShareByToken,
   incrementPublicShareViews,
   updateItemShare,
 } from "../models/item.model.js";
 import { invalidateItemLists } from "./item-cache.service.js";
 import { addFolderStats, createFileDownload, createFilePreview } from "./item.service.js";
+import { recordNotification } from "./notification.service.js";
 
 const ACCESS = new Set(["view", "comment", "edit"]);
 
@@ -50,6 +52,7 @@ export async function createPublicShare({ ownerId, itemId: value }) {
   };
   await updateItemShare({ ownerId, itemId: id, share });
   await invalidateItemLists(ownerId);
+  await recordNotification({ userId: ownerId, type: "shared", itemId: item._id, itemName: item.name });
   return share;
 }
 
@@ -89,6 +92,14 @@ export async function stopPublicShare({ ownerId, itemId: value }) {
 export async function getPublicShare(token) {
   const item = await resolvePublicShare(token);
   await incrementPublicShareViews(item._id);
+  if ((item.share.viewCount ?? 0) === 0) {
+    await recordNotification({
+      userId: item.ownerId,
+      type: "viewed",
+      itemId: item._id,
+      itemName: item.name,
+    });
+  }
   await invalidateItemLists(item.ownerId);
   return {
     id: item._id.toHexString(),
@@ -110,15 +121,23 @@ export async function getPublicShareDownload(token) {
   return createFileDownload(item);
 }
 
-export async function listPublicShareItems({ token, parentId }) {
+export async function listPublicShareItems({ token, parentId, cursor, limit }) {
   const root = await resolvePublicFolder(token);
   const folder = parentId ? await resolveSharedItem(root, parentId, "folder") : root;
-  const items = await findItemsByParent({ ownerId: root.ownerId, parentId: folder._id });
+  const skip = Math.max(0, Number.parseInt(cursor, 10) || 0);
+  const pageSize = Math.min(100, Math.max(1, Number(limit) || 100));
+  const filters = { trashedAt: null };
+  const [items, total] = await Promise.all([
+    findItemsByParent({ ownerId: root.ownerId, parentId: folder._id, filters, limit: pageSize, skip }),
+    countItemsByParent({ ownerId: root.ownerId, parentId: folder._id, filters }),
+  ]);
   const itemsWithStats = await addFolderStats(root.ownerId, items);
 
   return {
     folder: { id: folder._id.toHexString(), name: folder.name },
     items: itemsWithStats.map(publicChild),
+    total,
+    nextCursor: skip + items.length < total ? String(skip + items.length) : null,
   };
 }
 

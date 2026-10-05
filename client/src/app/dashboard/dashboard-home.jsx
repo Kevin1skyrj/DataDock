@@ -2,10 +2,15 @@
 
 import { ArrowRight, Clock, Upload } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import { PreviewDialog } from "@/components/preview/preview-dialog";
-import { Panel, PanelSkeleton, StorageActivity } from "@/components/storage/storage-panels";
+import {
+  Panel,
+  PanelError,
+  PanelSkeleton,
+  StorageActivity,
+} from "@/components/storage/storage-panels";
 import { Button } from "@/components/ui/button";
 import { UploadMenu } from "@/components/upload/upload-menu";
 import { ImportDialog } from "@/components/upload/import-dialog";
@@ -40,6 +45,47 @@ function useGreeting() {
   return useSyncExternalStore(subscribeToNothing, greeting, () => null);
 }
 
+const loadRecent = () =>
+  listItems({
+    sort: { field: "openedAt", direction: "desc" },
+    filter: { recent: true },
+    limit: 6,
+  }).then((page) => page.items);
+
+const loadActivity = () => getStorageActivity(6);
+
+function useDashboardResource(load, revision) {
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState({ data: null, error: null });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    load()
+      .then((data) => {
+        if (!cancelled) setState({ data, error: null });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setState((current) => ({
+            data: current.data,
+            error: "This section could not be loaded.",
+          }));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [load, revision, attempt]);
+
+  const retry = useCallback(() => {
+    setState((current) => ({ ...current, error: null }));
+    setAttempt((current) => current + 1);
+  }, []);
+  return { ...state, retry };
+}
+
 /**
  * The first screen after signing in.
  *
@@ -54,30 +100,13 @@ function useGreeting() {
  */
 export function DashboardHome() {
   const session = useSession();
-  const [summary, setSummary] = useState(null);
-  const [recent, setRecent] = useState(null);
-  const [activity, setActivity] = useState(null);
   const [previewIndex, setPreviewIndex] = useState(null);
   const [importing, setImporting] = useState(null);
   const [nonce, setNonce] = useState(0);
   const hello = useGreeting();
-
-  useEffect(() => {
-    let cancelled = false;
-    const set = (setter) => (value) => {
-      if (!cancelled) setter(value);
-    };
-
-    getStorageSummary().then(set(setSummary));
-    listItems({ sort: { field: "openedAt", direction: "desc" }, filter: { recent: true }, limit: 6 })
-      .then((page) => page.items)
-      .then(set(setRecent));
-    getStorageActivity(6).then(set(setActivity));
-
-    return () => {
-      cancelled = true;
-    };
-  }, [nonce]);
+  const summary = useDashboardResource(getStorageSummary, nonce);
+  const recent = useDashboardResource(loadRecent, nonce);
+  const activity = useDashboardResource(loadActivity, nonce);
 
   useEffect(() => {
     const refresh = () => setNonce((current) => current + 1);
@@ -85,8 +114,8 @@ export function DashboardHome() {
     return () => window.removeEventListener("datadock:drive-changed", refresh);
   }, []);
 
-  const used = summary ? summary.used + summary.trashed : 0;
-  const percent = summary ? (used / summary.quota) * 100 : 0;
+  const used = summary.data ? summary.data.used + summary.data.trashed : 0;
+  const percent = summary.data ? (used / summary.data.quota) * 100 : 0;
 
   return (
     <div className="min-h-full overflow-y-auto p-3 sm:p-4">
@@ -100,8 +129,8 @@ export function DashboardHome() {
               {hello ? `${hello}, ${session.name.split(" ")[0]}` : " "}
             </h1>
             <p className="text-base text-muted-foreground">
-              {summary
-                ? `${summary.fileCount} files across ${summary.folderCount} folders.`
+              {summary.data
+                ? `${summary.data.fileCount} files across ${summary.data.folderCount} folders.`
                 : " "}
             </p>
           </div>
@@ -120,9 +149,11 @@ export function DashboardHome() {
               </Button>
             }
           >
-            {recent === null ? (
+            {recent.error ? (
+              <PanelError message={recent.error} onRetry={recent.retry} />
+            ) : recent.data === null ? (
               <PanelSkeleton rows={5} />
-            ) : recent.length === 0 ? (
+            ) : recent.data.length === 0 ? (
               <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
                 <span className="grid size-10 place-items-center rounded-xl bg-surface text-dim">
                   <Clock className="size-4" />
@@ -137,7 +168,7 @@ export function DashboardHome() {
               </div>
             ) : (
               <ul className="flex flex-col p-1.5">
-                {recent.map((file, index) => (
+                {recent.data.map((file, index) => (
                   <li key={file.id}>
                     <button
                       type="button"
@@ -174,12 +205,14 @@ export function DashboardHome() {
               </Button>
             }
           >
-            {summary ? (
+            {summary.error ? (
+              <PanelError message={summary.error} onRetry={summary.retry} />
+            ) : summary.data ? (
               <div className="flex flex-col gap-3 p-5">
                 <p className="text-xl font-medium text-foreground">
                   {formatBytes(used)}
                   <span className="ml-1.5 text-base font-normal text-dim">
-                    of {formatBytes(summary.quota)}
+                    of {formatBytes(summary.data.quota)}
                   </span>
                 </p>
 
@@ -191,7 +224,7 @@ export function DashboardHome() {
                 </div>
 
                 <p className="text-sm text-dim">
-                  {formatBytes(summary.available)} available on {summary.plan.name}
+                  {formatBytes(summary.data.available)} available on {summary.data.plan.name}
                 </p>
               </div>
             ) : (
@@ -201,14 +234,20 @@ export function DashboardHome() {
 
           {/* ----------------------------------------------- activity -- */}
           <Panel title="Recent activity" className="lg:col-span-2">
-            {activity ? <StorageActivity events={activity} /> : <PanelSkeleton rows={5} />}
+            {activity.error ? (
+              <PanelError message={activity.error} onRetry={activity.retry} />
+            ) : activity.data ? (
+              <StorageActivity events={activity.data} />
+            ) : (
+              <PanelSkeleton rows={5} />
+            )}
           </Panel>
         </div>
       </div>
 
       <PreviewDialog
         open={previewIndex != null}
-        items={recent ?? []}
+        items={recent.data ?? []}
         index={previewIndex ?? 0}
         actions={[]}
         onClose={() => setPreviewIndex(null)}

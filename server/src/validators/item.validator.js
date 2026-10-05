@@ -63,6 +63,8 @@ export const itemListQuerySchema = z
       .enum(["name", "kind", "size", "updatedAt", "createdAt", "openedAt", "trashedAt"])
       .optional(),
     direction: z.enum(["asc", "desc"]).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    cursor: z.string().regex(/^\d+$/, "Invalid page cursor").optional(),
   })
   .strict();
 

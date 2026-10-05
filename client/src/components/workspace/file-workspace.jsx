@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { PreviewDialog } from "@/components/preview/preview-dialog";
 import { ShareDialog } from "@/components/sharing/share-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
 import { ImportDialog } from "@/components/upload/import-dialog";
 import { UploadDropZone } from "@/components/upload/upload-drop-zone";
 import { DetailsPanel } from "@/components/workspace/details-panel";
@@ -47,7 +48,7 @@ function WorkspaceFrame({ header }) {
     importing, setImporting,
     previewIndex, setPreviewIndex, sharing, setSharing,
     confirmingDelete, setConfirmingDelete, commitDelete,
-    handlers, actionsFor, view, path,
+    handlers, actionsFor, view, path, hasMore, loadMore, loadingMore,
   } = useWorkspace();
 
   const mode = useViewMode();
@@ -184,6 +185,14 @@ function WorkspaceFrame({ header }) {
             our own MIME type and is rejected outright. */}
         <UploadDropZone parentId={folderId} />
       </div>
+
+      {hasMore ? (
+        <div className="flex justify-center border-t border-line px-4 py-2">
+          <Button variant="ghost" size="sm" loading={loadingMore} onClick={loadMore}>
+            Load more
+          </Button>
+        </div>
+      ) : null}
 
       <StatusBar />
 

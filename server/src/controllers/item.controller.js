@@ -25,6 +25,8 @@ export async function getItems(req, res, next) {
       query: query.q,
       sortField: query.sort,
       sortDirection: query.direction,
+      limit: query.limit,
+      cursor: query.cursor,
     });
     res.status(200).json({
       success: true,

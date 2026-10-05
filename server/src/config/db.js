@@ -24,6 +24,9 @@ export function getDatabase() {
   }
   return database;
 }
+export function pingDatabase() {
+  return getDatabase().command({ ping: 1 });
+}
 export async function closeDatabaseConnection() {
   await client.close();
   database = undefined;

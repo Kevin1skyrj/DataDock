@@ -100,3 +100,7 @@ export function logout() {
 export function logoutAll() {
   return authRequest("/auth/logout-all", { method: "POST" });
 }
+
+export function deleteAccount(details) {
+  return authRequest("/auth/me", { method: "DELETE", body: details });
+}

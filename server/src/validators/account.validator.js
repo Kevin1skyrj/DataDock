@@ -23,3 +23,8 @@ export const notificationPreferencesSchema = z
   .refine((preferences) => Object.keys(preferences).length > 0, {
     message: "Choose at least one notification preference to update",
   });
+
+export const deleteAccountSchema = z.object({
+  confirmation: z.literal("DELETE", { error: "Type DELETE to confirm" }),
+  password: z.string().max(200).optional(),
+}).strict();

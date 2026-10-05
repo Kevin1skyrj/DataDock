@@ -24,7 +24,7 @@ function Frame({ children, className }) {
   return (
     <div
       className={cn(
-        "grid h-full w-full place-items-center overflow-auto bg-bg-deep p-6",
+        "flex h-full min-h-0 w-full min-w-0 items-center justify-center overflow-hidden bg-bg-deep p-6",
         className,
       )}
     >
@@ -43,7 +43,7 @@ export function PreviewImage({ preview, item }) {
       <img
         src={preview.url}
         alt={item.name}
-        className="max-h-full max-w-full rounded-lg object-contain shadow-elevated"
+        className="block h-full min-h-0 w-full min-w-0 rounded-lg object-contain shadow-elevated"
       />
     </Frame>
   );

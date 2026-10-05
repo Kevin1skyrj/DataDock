@@ -6,6 +6,8 @@ import {
   findItemByName,
   findItemsByParent,
   findItemsByView,
+  countItemsByParent,
+  countItemsByView,
   insertFolder,
   updateItemName,
   updateItemsStarred,
@@ -31,6 +33,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3BucketName, s3Client } from "../config/s3.js";
 import { getEffectivePlan } from "./billing.service.js";
+import { withDistributedLock } from "./redis.service.js";
 import {
   cacheItemList,
   getCachedItemList,
@@ -87,6 +90,8 @@ export async function listItems({
   query = "",
   sortField,
   sortDirection,
+  limit,
+  cursor,
 }) {
   if (!ownerId) {
     throw new Error("ownerId is required to list the items");
@@ -119,7 +124,10 @@ export async function listItems({
     recent: { trashedAt: null, openedAt: { $type: "date" } },
     starred: { trashedAt: null, starred: true },
     shared: { trashedAt: null, "share.token": { $type: "string" } },
-    trash: { trashedAt: { $ne: null } },
+    trash: {
+      trashedAt: { $ne: null },
+      $expr: { $eq: ["$_id", { $ifNull: ["$trashRootId", "$_id"] }] },
+    },
   }[view] ?? { trashedAt: null };
   const filters = {
     ...viewFilter,
@@ -140,7 +148,9 @@ export async function listItems({
     : field === "kind"
       ? { type: -1, kind: direction, normalizedName: 1, _id: direction }
     : { [field]: direction, _id: direction };
-  const cacheable = view === "folder" && !escapedQuery && !requestedKinds.length && field === "name" && direction === 1;
+  const itemLimit = Number.isInteger(limit) ? Math.min(100, Math.max(1, limit)) : 100;
+  const skip = Math.max(0, Number.parseInt(cursor, 10) || 0);
+  const cacheable = limit == null && skip === 0 && view === "folder" && !escapedQuery && !requestedKinds.length && field === "name" && direction === 1;
   const cacheKey = cacheable
     ? await getItemListCacheKey({ ownerId, parentId: resolvedParentId })
     : null;
@@ -150,15 +160,28 @@ export async function listItems({
     return cachedResult;
   }
 
-  const items = view === "folder"
-    ? await findItemsByParent({ ownerId, parentId: resolvedParentId, filters, sort })
-    : await findItemsByView({ ownerId, filters, sort });
+  const [items, countedTotal] = view === "folder"
+    ? await Promise.all([
+        findItemsByParent({
+          ownerId,
+          parentId: resolvedParentId,
+          filters,
+          sort,
+          limit: itemLimit,
+          skip,
+        }),
+        countItemsByParent({ ownerId, parentId: resolvedParentId, filters }),
+      ])
+    : await Promise.all([
+        findItemsByView({ ownerId, filters, sort, limit: itemLimit, skip }),
+        countItemsByView({ ownerId, filters }),
+      ]);
 
   const itemsWithStats = await addFolderStats(ownerId, items);
   const result = {
     items: itemsWithStats.map(toPublicItem),
-    nextCursor: null,
-    total: items.length,
+    nextCursor: skip + items.length < countedTotal ? String(skip + items.length) : null,
+    total: countedTotal ?? items.length,
   };
 
   if (cacheKey) await cacheItemList(cacheKey, result);
@@ -343,7 +366,15 @@ async function availableDuplicateName({ ownerId, parentId, name }) {
   });
 }
 
-export async function duplicateItems({ ownerId, itemIds }) {
+export function duplicateItems(input) {
+  return withDistributedLock(
+    `datadock:storage-lock:${input.ownerId}`,
+    () => duplicateItemsUnlocked(input),
+    { ttlMs: 10 * 60_000, waitMs: 10_000 },
+  );
+}
+
+async function duplicateItemsUnlocked({ ownerId, itemIds }) {
   if (!Array.isArray(itemIds) || itemIds.length === 0) {
     throw new AppError("At least one item ID is required", {
       statusCode: 400,

@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  CircleAlert,
   Copy,
   FolderX,
   HardDrive,
@@ -54,6 +55,23 @@ export function PanelSkeleton({ rows = 4 }) {
           style={{ width: `${45 + ((index * 19) % 45)}%` }}
         />
       ))}
+    </div>
+  );
+}
+
+export function PanelError({ message, onRetry }) {
+  return (
+    <div
+      role="alert"
+      className="flex min-h-32 flex-col items-center justify-center gap-3 p-5 text-center"
+    >
+      <span className="grid size-9 place-items-center rounded-lg bg-error/10 text-error">
+        <CircleAlert className="size-4" />
+      </span>
+      <p className="max-w-72 text-base text-muted-foreground">{message}</p>
+      <Button variant="secondary" size="sm" onClick={onRetry}>
+        Try again
+      </Button>
     </div>
   );
 }
