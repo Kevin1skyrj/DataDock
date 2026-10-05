@@ -19,27 +19,43 @@ export async function apiRequest(
   }
 
   const normalizedMethod = method.toUpperCase();
-  const response = await fetch(`${API_URL}${path}`, {
-    method: normalizedMethod,
-    headers: {
-      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-      ...(SAFE_METHODS.has(normalizedMethod)
-        ? {}
-        : { "X-DataDock-Client": "web" }),
-      ...headers,
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    credentials: "include",
-    cache: "no-store",
-  });
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: normalizedMethod,
+      headers: {
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+        ...(SAFE_METHODS.has(normalizedMethod)
+          ? {}
+          : { "X-DataDock-Client": "web" }),
+        ...headers,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiError("DataDock is temporarily unavailable. Please try again.", {
+      code: "api-unavailable",
+      statusCode: 503,
+    });
+  }
 
-  const payload = await response.json();
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new ApiError("DataDock returned an unexpected response. Please try again.", {
+      code: "invalid-api-response",
+      statusCode: response.ok ? 502 : response.status,
+    });
+  }
 
   if (!response.ok) {
     throw new ApiError(
-      payload.error?.message ?? "Request failed",
+      payload?.error?.message ?? "Request failed",
       {
-        code: payload.error?.code ?? "unknown-error",
+        code: payload?.error?.code ?? "unknown-error",
         statusCode: response.status,
       },
     );

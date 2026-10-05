@@ -139,9 +139,18 @@ export function SiteHeader() {
               Log in
             </Button>
 
-            <Button size="sm" render={<a href="#pricing" />} className="hidden sm:inline-flex">
-              Get started
-            </Button>
+            {(() => {
+              const { Tag, href } = linkFor("/#pricing");
+              return (
+                <Button
+                  size="sm"
+                  render={<Tag href={href} />}
+                  className="hidden sm:inline-flex"
+                >
+                  Get started
+                </Button>
+              );
+            })()}
 
             {/* `aria-expanded` and `aria-controls` are wired by the primitive
                 from the trigger/popup pair, so they are no longer spelled out
@@ -239,14 +248,19 @@ export function SiteHeader() {
               Log in
             </Button>
 
-            <Button
-              size="lg"
-              render={<a href="#pricing" />}
-              className="flex-1"
-              onClick={() => setMenuOpen(false)}
-            >
-              Get started
-            </Button>
+            {(() => {
+              const { Tag, href } = linkFor("/#pricing");
+              return (
+                <Button
+                  size="lg"
+                  render={<Tag href={href} />}
+                  className="flex-1"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Get started
+                </Button>
+              );
+            })()}
           </div>
 
           <div className="flex items-center justify-between pt-1">

@@ -9,7 +9,11 @@ export async function getExistingSession() {
   try {
     return await apiRequest("/auth/me", { headers: { Cookie: cookieHeader } });
   } catch (error) {
-    if (error instanceof ApiError && error.statusCode === 401) return null;
+    // This is only a convenience probe used by the public login/register
+    // routes. Failure to confirm a session must not make those routes crash:
+    // the form can still render and report a service problem if submission is
+    // attempted while the API is unavailable.
+    if (error instanceof ApiError) return null;
     throw error;
   }
 }

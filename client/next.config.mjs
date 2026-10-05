@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep the development compiler away from production build artifacts.
+  // Running `next build` while `next dev` is open otherwise replaces chunks
+  // underneath the browser and the next navigation falls into error.js.
+  distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
+
   /**
    * Machines allowed to reach the dev server from another origin.
    *
