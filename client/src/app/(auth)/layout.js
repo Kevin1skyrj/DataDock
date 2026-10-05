@@ -4,6 +4,7 @@ import { AuthWindow } from "@/components/auth/auth-window";
 import { HEADER_GUTTER, HeaderIsland } from "@/components/common/header-island";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { cn } from "@/lib/utils";
+import { AccentPicker } from "@/components/common/accent-picker";
 
 /**
  * The shell every authentication screen renders into.
@@ -31,8 +32,9 @@ export default function AuthLayout({ children }) {
             </Link>
 
             <div className="flex items-center gap-2">
+              <AccentPicker />
               <ThemeToggle />
-            </div>
+            </div>       
           </HeaderIsland>
         </header>
 
